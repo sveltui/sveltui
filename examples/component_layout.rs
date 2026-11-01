@@ -18,7 +18,7 @@ fn LayoutDemo() -> impl IntoNode {
                 gap=1
             >
                 <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
-                    <TextSpan color=Color::White bold=true>"component_layout: Flexbox Engine"</TextSpan>
+                    <TextSpan color=Color::White bold=true>"component_layout: Taffy Engine"</TextSpan>
                     <TextSpan color=Color::DarkGrey>{format!("Axis: {:?}", direction.get())}</TextSpan>
                 </View>
                 <Divider />

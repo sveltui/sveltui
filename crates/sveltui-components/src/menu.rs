@@ -313,8 +313,7 @@ pub fn Trigger(props: TriggerProps) -> VNode {
         sub.overflow_x = Overflow::Hidden;
         sub.padding = Padding::only(0, 0, 0, 1);
         sub = sub.child(children);
-        v.child(sub)
-            .child(TextElement::new("› ").fg(fg))
+        v.child(sub).child(TextElement::new("› ").fg(fg))
     } else {
         let mut v = ViewElement::new();
         v.visual_mut().background_color = bg;
@@ -325,7 +324,7 @@ pub fn Trigger(props: TriggerProps) -> VNode {
 
     let mut pressable = PressableElement::new();
     pressable.focus_id = Some(id);
-    pressable.semantics = Some(interaction.semantics);
+    pressable.interaction = Some(Box::new(interaction));
     pressable.on_key = Some(Rc::new(move |key, ctx| on_key(key, ctx)));
     pressable.child(inner_view).into_node()
 }
@@ -358,7 +357,7 @@ pub struct ContentProps {
 
 #[component]
 pub fn Content(props: ContentProps) -> VNode {
-    let _scroll_id = identity(None);
+    let scroll_id = identity(None);
     let menu = use_context::<MenuContext>().expect("Menu content requires a menu root");
     let placement = if menu.kind == MenuTriggerKind::Context {
         sveltui::element::layer_anchor(menu.id).map(|(x, y)| Placement::Anchor { x, y })
@@ -400,7 +399,7 @@ pub fn Content(props: ContentProps) -> VNode {
     if menu.open {
         overlay = overlay.child(view! {
             <View width=props.width border=props.border border_color={props.border_color.unwrap_or(props.bg)}
-                background_color=props.bg padding=props.padding overflow=Overflow::Scroll>
+                background_color=props.bg padding=props.padding overflow=Overflow::Scroll scroll_id=scroll_id>
                 {@render props.children}
             </View>
         });
@@ -472,7 +471,7 @@ pub fn Item(props: ItemProps) -> VNode {
 
     let mut pressable = PressableElement::new();
     pressable.focus_id = Some(id);
-    pressable.semantics = Some(interaction.semantics);
+    pressable.interaction = Some(Box::new(interaction));
     pressable.on_key = Some(on_key);
     pressable.child(v).into_node()
 }

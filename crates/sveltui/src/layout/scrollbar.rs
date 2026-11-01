@@ -2,11 +2,11 @@ use crossterm::style::Color;
 pub use taffy::style::Overflow;
 
 pub trait OverflowExt {
-    fn is_scrollable(self) -> bool;
+    fn is_scrollable(&self) -> bool;
 }
 
 impl OverflowExt for Overflow {
-    fn is_scrollable(self) -> bool {
+    fn is_scrollable(&self) -> bool {
         matches!(self, Self::Scroll)
     }
 }

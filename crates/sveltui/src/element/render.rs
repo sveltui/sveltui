@@ -1,12 +1,10 @@
 use crate::element::events::{HitMap, HitTarget, LayoutTarget, ScrollRegion};
-use crate::element::flex::layout_box;
-use crate::element::focus::{is_focused, next_render_focus_id};
-use crate::element::measure::decoration;
+use crate::element::focus::next_render_focus_id;
 use crate::element::measure::measure_node;
 use crate::element::node::{OverlayElement, VNode};
-use crate::element::scroll::{get_scroll, set_scroll};
+use crate::element::scroll::get_scroll;
 use crate::element::taffy_bridge::ComputedLayoutNode;
-use crate::layout::{BorderStyle, Overflow, Rect, compute_popover_rect};
+use crate::layout::{BorderStyle, Rect, compute_popover_rect};
 use crate::terminal::Buffer;
 use crossterm::style::Color;
 use std::rc::Rc;
@@ -81,7 +79,15 @@ pub fn render_node_interactive(
             active_fg: None,
             active_bg: None,
         };
-        render_node_offset_internal(node, None, rect.x as i32, rect.y as i32, width, height, &mut ctx);
+        render_node_offset_internal(
+            node,
+            None,
+            rect.x as i32,
+            rect.y as i32,
+            width,
+            height,
+            &mut ctx,
+        );
     }
 
     while !overlays.is_empty() {
@@ -228,20 +234,6 @@ fn render_node_offset_internal(
     height: u16,
     ctx: &mut RenderContext,
 ) {
-    if let VNode::FlexBox(b) = node
-        && let Some(id) = b.focus_id
-    {
-        ctx.hit_map.layouts.insert(
-            id,
-            LayoutTarget {
-                x,
-                y,
-                width,
-                height,
-                scrolls: ctx.scrolls.clone(),
-            },
-        );
-    }
     if let VNode::Pressable(p) = node
         && let Some(id) = p.focus_id
     {
@@ -289,7 +281,8 @@ fn render_node_offset_internal(
         // Out-of-flow overlays still render when their ancestor has no
         // intrinsic size (for example, a root containing only a dialog).
         let children = match node {
-            VNode::FlexBox(b) => Some(&b.children),
+            VNode::View(v) => Some(&v.children),
+            VNode::Pressable(p) => Some(&p.children),
             VNode::Fragment(children) => Some(children),
             _ => None,
         };
@@ -306,7 +299,7 @@ fn render_node_offset_internal(
         || y + height as i32 <= 0)
         && !matches!(
             node,
-            VNode::FlexBox(_) | VNode::View(_) | VNode::Pressable(_) | VNode::Fragment(_)
+            VNode::View(_) | VNode::Pressable(_) | VNode::Fragment(_)
         )
     {
         return;
@@ -343,14 +336,8 @@ fn render_node_offset_internal(
                                 .get(curr_x as u16, curr_y as u16)
                                 .and_then(|c| c.bg)
                         });
-                        ctx.buffer.set_char(
-                            curr_x as u16,
-                            curr_y as u16,
-                            ch,
-                            fg,
-                            bg,
-                            text.bold,
-                        );
+                        ctx.buffer
+                            .set_char(curr_x as u16, curr_y as u16, ch, fg, bg, text.bold);
                     }
                 }
             }
@@ -405,7 +392,12 @@ fn render_node_offset_internal(
             }
 
             let (bg, border, border_color, title) = if let Some(vis) = &v.visual {
-                (vis.background_color, vis.border, vis.border_color, vis.title.as_deref())
+                (
+                    vis.background_color,
+                    vis.border,
+                    vis.border_color,
+                    vis.title.as_deref(),
+                )
             } else {
                 (None, BorderStyle::None, None, None)
             };
@@ -437,7 +429,8 @@ fn render_node_offset_internal(
                 let bottom = y + height as i32 - 1;
 
                 let draw_ch = |cx: i32, cy: i32, ch: char, buf: &mut Buffer| {
-                    if cx >= 0 && cy >= 0 && cx < i32::from(buf.width) && cy < i32::from(buf.height) {
+                    if cx >= 0 && cy >= 0 && cx < i32::from(buf.width) && cy < i32::from(buf.height)
+                    {
                         buf.set_char(cx as u16, cy as u16, ch, border_color, bg, false);
                     }
                 };
@@ -519,6 +512,17 @@ fn render_node_offset_internal(
                 let is_scroll_y = v.overflow_y == taffy::style::Overflow::Scroll;
                 let is_scrollable = is_scroll_x || is_scroll_y;
 
+                let max_scroll_x = if is_scroll_x {
+                    computed.content_size.0.saturating_sub(inner_w)
+                } else {
+                    0
+                };
+                let max_scroll_y = if is_scroll_y {
+                    computed.content_size.1.saturating_sub(inner_h)
+                } else {
+                    0
+                };
+
                 let (scroll_x, scroll_y, scroll_fid) = if is_scrollable {
                     let fid = v
                         .scroll
@@ -534,6 +538,9 @@ fn render_node_offset_internal(
                             sy = s.scroll_y;
                         }
                     }
+                    sx = sx.min(max_scroll_x);
+                    sy = sy.min(max_scroll_y);
+                    crate::element::scroll::set_scroll(fid, (sx, sy));
                     (sx, sy, Some(fid))
                 } else if let Some(s) = &v.scroll {
                     (s.scroll_x, s.scroll_y, None)
@@ -541,18 +548,29 @@ fn render_node_offset_internal(
                     (0, 0, None)
                 };
 
-                let max_scroll_x = if is_scroll_x {
-                    computed.content_size.0.saturating_sub(inner_w)
-                } else {
-                    0
-                };
-                let max_scroll_y = if is_scroll_y {
-                    computed.content_size.1.saturating_sub(inner_h)
-                } else {
-                    0
-                };
-
                 if is_scrollable && let Some(id) = scroll_fid {
+                    let on_scroll: Rc<dyn Fn(i16, i16)> = Rc::new(move |mut dx, dy| {
+                        if is_scroll_x && !is_scroll_y && dx == 0 && dy != 0 {
+                            dx = dy * 2;
+                        }
+                        let (cx, cy) = get_scroll(id);
+                        let nx = (cx as i32 + dx as i32).max(0).min(max_scroll_x as i32) as u16;
+                        let ny = (cy as i32 + dy as i32).max(0).min(max_scroll_y as i32) as u16;
+                        crate::element::scroll::set_scroll(id, (nx, ny));
+                    });
+
+                    let target = HitTarget {
+                        rect: Rect::new(x.max(0) as u16, y.max(0) as u16, width, height),
+                        layer: ctx.layer,
+                        dismiss: None,
+                        on_click: None,
+                        on_click_at: None,
+                        focus_id: Some(id),
+                        on_key: None,
+                        on_scroll: Some(on_scroll),
+                    };
+                    register_target(ctx, x, y, target);
+
                     ctx.scrolls.push(ScrollRegion {
                         id,
                         x: inner_x,
@@ -566,18 +584,23 @@ fn render_node_offset_internal(
                     });
                 }
 
+                let is_clip_x = is_scroll_x || v.overflow_x == taffy::style::Overflow::Hidden;
+                let is_clip_y = is_scroll_y || v.overflow_y == taffy::style::Overflow::Hidden;
                 let mut clipped = false;
-                if is_scroll_x
-                    || is_scroll_y
-                    || v.overflow_x == taffy::style::Overflow::Hidden
-                    || v.overflow_y == taffy::style::Overflow::Hidden
-                {
-                    let clip_rect = Rect::new(
-                        inner_x.max(0) as u16,
-                        inner_y.max(0) as u16,
-                        inner_w,
-                        inner_h,
-                    );
+                if is_clip_x || is_clip_y {
+                    let clip_x = inner_x.max(0) as u16;
+                    let clip_y = inner_y.max(0) as u16;
+                    let clip_w = if is_clip_x {
+                        inner_w
+                    } else {
+                        ctx.buffer.width.saturating_sub(clip_x)
+                    };
+                    let clip_h = if is_clip_y {
+                        inner_h
+                    } else {
+                        ctx.buffer.height.saturating_sub(clip_y)
+                    };
+                    let clip_rect = Rect::new(clip_x, clip_y, clip_w, clip_h);
                     ctx.buffer.push_clip(clip_rect);
                     clipped = true;
                 }
@@ -604,445 +627,80 @@ fn render_node_offset_internal(
                     ctx.scrolls.pop();
                 }
 
-                if computed.scroll_size.1 > 0 && is_scroll_y {
+                let default_sb = crate::layout::ScrollbarStyle::default();
+                let sb_style = v
+                    .scroll
+                    .as_ref()
+                    .map(|s| &s.scrollbar_style)
+                    .unwrap_or(&default_sb);
+                let v_track_ch = sb_style.chars.vertical_track;
+                let v_thumb_ch = sb_style.chars.vertical_thumb;
+                let v_track_fg = sb_style.track_color.or(border_color);
+                let v_thumb_fg = sb_style.thumb_color.or(border_color);
+
+                let sb_vis = v
+                    .scroll
+                    .as_ref()
+                    .map_or(crate::layout::ScrollbarVisibility::Auto, |s| {
+                        s.scrollbar_visibility
+                    });
+                let show_v_sb = is_scroll_y
+                    && match sb_vis {
+                        crate::layout::ScrollbarVisibility::Always => true,
+                        crate::layout::ScrollbarVisibility::Never => false,
+                        crate::layout::ScrollbarVisibility::Auto => computed.scroll_size.1 > 0,
+                    };
+                let show_h_sb = is_scroll_x
+                    && match sb_vis {
+                        crate::layout::ScrollbarVisibility::Always => true,
+                        crate::layout::ScrollbarVisibility::Never => false,
+                        crate::layout::ScrollbarVisibility::Auto => computed.scroll_size.0 > 0,
+                    };
+
+                if show_v_sb && inner_w > 0 && inner_h > 0 {
                     let sb_x = (inner_x + inner_w as i32 - 1).max(0) as u16;
                     for row in 0..inner_h {
                         let sb_y = (inner_y + row as i32).max(0) as u16;
                         if sb_x < ctx.buffer.width && sb_y < ctx.buffer.height {
-                            ctx.buffer.set_char(sb_x, sb_y, '░', border_color, None, false);
+                            ctx.buffer
+                                .set_char(sb_x, sb_y, v_track_ch, v_track_fg, None, false);
                         }
                     }
                     let thumb_y = inner_y.max(0) as u16
                         + (scroll_y * inner_h / (computed.content_size.1.max(1)))
                             .min(inner_h.saturating_sub(1));
                     if sb_x < ctx.buffer.width && thumb_y < ctx.buffer.height {
-                        ctx.buffer.set_char(sb_x, thumb_y, '█', border_color, None, false);
+                        ctx.buffer
+                            .set_char(sb_x, thumb_y, v_thumb_ch, v_thumb_fg, None, true);
                     }
                 }
 
-                if computed.scroll_size.0 > 0 && is_scroll_x {
+                if show_h_sb && inner_w > 0 && inner_h > 0 {
+                    let h_track_ch = sb_style.chars.horizontal_track;
+                    let h_thumb_ch = sb_style.chars.horizontal_thumb;
+                    let h_track_fg = sb_style.track_color.or(border_color);
+                    let h_thumb_fg = sb_style.thumb_color.or(border_color);
+
                     let sb_y = (inner_y + inner_h as i32 - 1).max(0) as u16;
                     for col in 0..inner_w {
                         let sb_x = (inner_x + col as i32).max(0) as u16;
                         if sb_x < ctx.buffer.width && sb_y < ctx.buffer.height {
-                            ctx.buffer.set_char(sb_x, sb_y, '░', border_color, None, false);
+                            ctx.buffer
+                                .set_char(sb_x, sb_y, h_track_ch, h_track_fg, None, false);
                         }
                     }
                     let thumb_x = inner_x.max(0) as u16
                         + (scroll_x * inner_w / (computed.content_size.0.max(1)))
                             .min(inner_w.saturating_sub(1));
                     if thumb_x < ctx.buffer.width && sb_y < ctx.buffer.height {
-                        ctx.buffer.set_char(thumb_x, sb_y, '█', border_color, None, false);
+                        ctx.buffer
+                            .set_char(thumb_x, sb_y, h_thumb_ch, h_thumb_fg, None, true);
                     }
                 }
             }
 
             ctx.active_fg = prev_fg;
             ctx.active_bg = prev_bg;
-        }
-        VNode::FlexBox(b) => {
-            if b.interaction.as_ref().is_some_and(|i| i.hidden) {
-                return;
-            }
-            let previous_layer = ctx.layer;
-            if b.interaction.as_ref().is_some_and(|i| i.scope.is_some()) {
-                ctx.layer = b.focus_id;
-            }
-
-            // Fill background if specified
-            if let Some(bg) = b.bg {
-                for curr_y in y.max(0)..(y + height as i32).min(ctx.buffer.height as i32) {
-                    for curr_x in x.max(0)..(x + width as i32).min(ctx.buffer.width as i32) {
-                        if curr_x >= 0 && curr_y >= 0 {
-                            ctx.buffer.set_char(
-                                curr_x as u16,
-                                curr_y as u16,
-                                ' ',
-                                b.fg,
-                                Some(bg),
-                                false,
-                            );
-                        }
-                    }
-                }
-            }
-
-            let border_w: u16 = if b.border != BorderStyle::None { 1 } else { 0 };
-            let border_h: u16 = if b.border != BorderStyle::None { 1 } else { 0 };
-
-            if let Some(chars) = b.border.chars().filter(|_| width >= 2 && height >= 2) {
-                let right = x + width as i32 - 1;
-                let bottom = y + height as i32 - 1;
-
-                let draw_ch = |cx: i32, cy: i32, ch: char, buf: &mut Buffer| {
-                    if cx >= 0 && cy >= 0 && cx < i32::from(buf.width) && cy < i32::from(buf.height)
-                    {
-                        buf.set_char(cx as u16, cy as u16, ch, b.border_color, b.bg, false);
-                    }
-                };
-
-                draw_ch(x, y, chars.top_left, ctx.buffer);
-                draw_ch(right, y, chars.top_right, ctx.buffer);
-                draw_ch(x, bottom, chars.bottom_left, ctx.buffer);
-                draw_ch(right, bottom, chars.bottom_right, ctx.buffer);
-
-                for cx in (x + 1).max(0)..right.min(i32::from(ctx.buffer.width)) {
-                    draw_ch(cx, y, chars.horizontal, ctx.buffer);
-                    draw_ch(cx, bottom, chars.horizontal, ctx.buffer);
-                }
-
-                for cy in (y + 1).max(0)..bottom.min(i32::from(ctx.buffer.height)) {
-                    draw_ch(x, cy, chars.vertical, ctx.buffer);
-                    draw_ch(right, cy, chars.vertical, ctx.buffer);
-                }
-            }
-
-            if let Some(title) = b.title.as_deref().filter(|t| width > 4 && !t.is_empty()) {
-                let title_text = format!(" {} ", title);
-                let max_len = (width.saturating_sub(4)) as usize;
-                let displayed_title: String = title_text.chars().take(max_len).collect();
-                let start_x = x + 2;
-                for (idx, ch) in displayed_title.chars().enumerate() {
-                    let cx = start_x + idx as i32;
-                    if cx >= 0
-                        && y >= 0
-                        && cx < i32::from(ctx.buffer.width)
-                        && y < i32::from(ctx.buffer.height)
-                    {
-                        ctx.buffer
-                            .set_char(cx as u16, y as u16, ch, b.border_color, None, true);
-                    }
-                }
-            }
-
-            let inner_x = x + border_w as i32 + b.padding.left as i32;
-            let inner_y = y + border_h as i32 + b.padding.top as i32;
-            let (extra_w, extra_h) = decoration(b);
-            let inner_w = width.saturating_sub(extra_w);
-            let inner_h = height.saturating_sub(extra_h);
-
-            if let Some((cx_off, cy_off)) = b.cursor_offset
-                && b.focus_id.is_some_and(is_focused)
-            {
-                let screen_cx = inner_x + cx_off as i32;
-                let screen_cy = inner_y + cy_off as i32;
-                let clip = ctx.buffer.active_clip();
-                let in_clip = screen_cx >= clip.x as i32
-                    && screen_cx < (clip.x + clip.width) as i32
-                    && screen_cy >= clip.y as i32
-                    && screen_cy < (clip.y + clip.height) as i32;
-                if in_clip
-                    && screen_cx >= 0
-                    && screen_cy >= 0
-                    && screen_cx < ctx.buffer.width as i32
-                    && screen_cy < ctx.buffer.height as i32
-                {
-                    ctx.buffer.set_cursor(screen_cx as u16, screen_cy as u16);
-                }
-            }
-
-            if inner_w > 0 && inner_h > 0 {
-                let is_scroll_x = b.overflow_x == Overflow::Scroll;
-                let is_scroll_y = b.overflow_y == Overflow::Scroll;
-
-                let layout = layout_box(b, inner_w, inner_h);
-                let (total_children_w, total_children_h) = layout.content;
-                let (viewport_w, viewport_h) = layout.viewport;
-                let show_v_scrollbar = layout.vertical_scrollbar;
-                let show_h_scrollbar = layout.horizontal_scrollbar;
-
-                let is_scrollable = is_scroll_x || is_scroll_y;
-                let max_scroll_x = if is_scroll_x {
-                    total_children_w.saturating_sub(viewport_w)
-                } else {
-                    0
-                };
-                let max_scroll_y = if is_scroll_y {
-                    total_children_h.saturating_sub(viewport_h)
-                } else {
-                    0
-                };
-
-                // Resolve current scroll offsets (ensure stable ID for any scrollable container)
-                let (scroll_x, scroll_y, scroll_fid) = if is_scrollable {
-                    let fid = b.focus_id.unwrap_or_else(next_render_focus_id);
-                    let (mut sx, mut sy) = get_scroll(fid);
-
-                    if let Some(x) = b.scroll_x {
-                        sx = x;
-                    }
-                    if let Some(y) = b.scroll_y {
-                        sy = y;
-                    }
-
-                    sx = sx.min(max_scroll_x);
-                    sy = sy.min(max_scroll_y);
-                    set_scroll(fid, (sx, sy));
-                    (sx, sy, Some(fid))
-                } else {
-                    (0, 0, b.focus_id)
-                };
-
-                // Draw vertical scrollbar
-                if show_v_scrollbar && viewport_h > 0 && inner_w > 0 {
-                    let sb_x = inner_x + inner_w as i32 - 1;
-                    let track_h = viewport_h;
-                    let thumb_len = if total_children_h > 0 {
-                        ((track_h as f32 / total_children_h as f32) * track_h as f32)
-                            .round()
-                            .clamp(1.0, track_h as f32) as u16
-                    } else {
-                        track_h
-                    };
-
-                    let thumb_travel = track_h.saturating_sub(thumb_len);
-                    let thumb_start_y = if max_scroll_y > 0 {
-                        inner_y
-                            + ((scroll_y as f32 / max_scroll_y as f32) * thumb_travel as f32)
-                                .round() as i32
-                    } else {
-                        inner_y
-                    };
-
-                    if sb_x >= 0 && sb_x < i32::from(ctx.buffer.width) {
-                        for cy in inner_y.max(0)
-                            ..(inner_y + i32::from(track_h)).min(i32::from(ctx.buffer.height))
-                        {
-                            if cy >= 0 {
-                                if cy >= thumb_start_y && cy < thumb_start_y + thumb_len as i32 {
-                                    ctx.buffer.set_char(
-                                        sb_x as u16,
-                                        cy as u16,
-                                        b.scrollbar_style.chars.vertical_thumb,
-                                        b.scrollbar_style.thumb_color,
-                                        None,
-                                        true,
-                                    );
-                                } else {
-                                    ctx.buffer.set_char(
-                                        sb_x as u16,
-                                        cy as u16,
-                                        b.scrollbar_style.chars.vertical_track,
-                                        b.scrollbar_style.track_color,
-                                        None,
-                                        false,
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Draw horizontal scrollbar
-                if show_h_scrollbar && inner_h > 0 && viewport_w > 0 {
-                    let sb_y = inner_y + inner_h as i32 - 1;
-                    let track_w = viewport_w;
-                    let thumb_len = if total_children_w > 0 {
-                        ((track_w as f32 / total_children_w as f32) * track_w as f32)
-                            .round()
-                            .clamp(1.0, track_w as f32) as u16
-                    } else {
-                        track_w
-                    };
-
-                    let thumb_travel = track_w.saturating_sub(thumb_len);
-                    let thumb_start_x = if max_scroll_x > 0 {
-                        inner_x
-                            + ((scroll_x as f32 / max_scroll_x as f32) * thumb_travel as f32)
-                                .round() as i32
-                    } else {
-                        inner_x
-                    };
-
-                    if sb_y >= 0 && sb_y < i32::from(ctx.buffer.height) {
-                        for cx in inner_x.max(0)
-                            ..(inner_x + i32::from(track_w)).min(i32::from(ctx.buffer.width))
-                        {
-                            if cx >= 0 {
-                                if cx >= thumb_start_x && cx < thumb_start_x + thumb_len as i32 {
-                                    ctx.buffer.set_char(
-                                        cx as u16,
-                                        sb_y as u16,
-                                        b.scrollbar_style.chars.horizontal_thumb,
-                                        b.scrollbar_style.thumb_color,
-                                        None,
-                                        true,
-                                    );
-                                } else {
-                                    ctx.buffer.set_char(
-                                        cx as u16,
-                                        sb_y as u16,
-                                        b.scrollbar_style.chars.horizontal_track,
-                                        b.scrollbar_style.track_color,
-                                        None,
-                                        false,
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Draw corner intersection if both scrollbars are active
-                if show_v_scrollbar && show_h_scrollbar && inner_h > 0 && inner_w > 0 {
-                    let corner_x = inner_x + inner_w as i32 - 1;
-                    let corner_y = inner_y + inner_h as i32 - 1;
-                    if corner_x >= 0 && corner_y >= 0 {
-                        ctx.buffer.set_char(
-                            corner_x as u16,
-                            corner_y as u16,
-                            b.scrollbar_style.chars.corner,
-                            b.scrollbar_style.track_color,
-                            None,
-                            false,
-                        );
-                    }
-                }
-
-                // Register interaction
-                let on_scroll_handler: Option<Rc<dyn Fn(i16, i16)>> =
-                    b.on_scroll.clone().or_else(|| {
-                        if is_scrollable {
-                            scroll_fid.map(|fid| {
-                                Rc::new(move |dx: i16, dy: i16| {
-                                    let (cur_x, cur_y) = get_scroll(fid);
-                                    let (actual_dx, actual_dy) = if max_scroll_y == 0
-                                        && max_scroll_x > 0
-                                        && dx == 0
-                                        && dy != 0
-                                    {
-                                        (dy * 2, 0)
-                                    } else {
-                                        (dx, dy)
-                                    };
-                                    let new_x = if actual_dx < 0 {
-                                        cur_x.saturating_sub((-actual_dx) as u16)
-                                    } else {
-                                        cur_x.saturating_add(actual_dx as u16).min(max_scroll_x)
-                                    };
-                                    let new_y = if actual_dy < 0 {
-                                        cur_y.saturating_sub((-actual_dy) as u16)
-                                    } else {
-                                        cur_y.saturating_add(actual_dy as u16).min(max_scroll_y)
-                                    };
-                                    set_scroll(fid, (new_x, new_y));
-                                }) as Rc<dyn Fn(i16, i16)>
-                            })
-                        } else {
-                            None
-                        }
-                    });
-
-                if b.on_click.is_some()
-                    || b.on_click_at.is_some()
-                    || b.focus_id.is_some()
-                    || b.on_key.is_some()
-                    || on_scroll_handler.is_some()
-                {
-                    let target_rect = Rect::new(x.max(0) as u16, y.max(0) as u16, width, height);
-                    register_target(
-                        ctx,
-                        x,
-                        y,
-                        HitTarget {
-                            rect: target_rect,
-                            layer: None,
-                            dismiss: None,
-                            on_click: b.on_click.clone(),
-                            on_click_at: b.on_click_at.clone(),
-                            focus_id: scroll_fid,
-                            on_key: b.on_key.clone(),
-                            on_scroll: on_scroll_handler,
-                        },
-                    );
-                }
-
-                // Render children clipped to viewport
-                let clip_x = b.overflow_x != Overflow::Visible || show_v_scrollbar;
-                let clip_y = b.overflow_y != Overflow::Visible || show_h_scrollbar;
-                let needs_clip = clip_x || clip_y;
-                if needs_clip {
-                    let parent_clip = ctx.buffer.active_clip();
-                    let clip_rect = visible_rect(
-                        if clip_x {
-                            inner_x
-                        } else {
-                            i32::from(parent_clip.x)
-                        },
-                        if clip_y {
-                            inner_y
-                        } else {
-                            i32::from(parent_clip.y)
-                        },
-                        if clip_x {
-                            viewport_w
-                        } else {
-                            parent_clip.width
-                        },
-                        if clip_y {
-                            viewport_h
-                        } else {
-                            parent_clip.height
-                        },
-                        parent_clip,
-                    );
-                    ctx.buffer.push_clip(clip_rect);
-                }
-
-                if is_scrollable && let Some(id) = scroll_fid {
-                    ctx.scrolls.push(ScrollRegion {
-                        id,
-                        x: inner_x,
-                        y: inner_y,
-                        width: viewport_w,
-                        height: viewport_h,
-                        max_x: b.scroll_x.is_none().then_some(max_scroll_x),
-                        max_y: b.scroll_y.is_none().then_some(max_scroll_y),
-                    });
-                }
-                for child in &layout.children {
-                    render_node_offset_internal(
-                        child.node,
-                        None,
-                        inner_x + i32::from(child.rect.x) - i32::from(scroll_x),
-                        inner_y + i32::from(child.rect.y) - i32::from(scroll_y),
-                        child.rect.width,
-                        child.rect.height,
-                        ctx,
-                    );
-                }
-
-                if is_scrollable {
-                    ctx.scrolls.pop();
-                }
-                if needs_clip {
-                    ctx.buffer.pop_clip();
-                }
-            } else if b.on_click.is_some()
-                || b.on_click_at.is_some()
-                || b.focus_id.is_some()
-                || b.on_key.is_some()
-                || b.on_scroll.is_some()
-            {
-                let target_rect = Rect::new(x.max(0) as u16, y.max(0) as u16, width, height);
-                register_target(
-                    ctx,
-                    x,
-                    y,
-                    HitTarget {
-                        rect: target_rect,
-                        layer: None,
-                        dismiss: None,
-                        on_click: b.on_click.clone(),
-                        on_click_at: b.on_click_at.clone(),
-                        focus_id: b.focus_id,
-                        on_key: b.on_key.clone(),
-                        on_scroll: b.on_scroll.clone(),
-                    },
-                );
-            }
-
-            ctx.layer = previous_layer;
         }
     }
 }

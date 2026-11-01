@@ -17,7 +17,10 @@ pub struct TextMeasureData {
     pub max_lines: Option<usize>,
 }
 
-pub fn view_to_taffy_style(view: &ViewElement, parent_direction: Option<FlexDirection>) -> taffy::style::Style {
+pub fn view_to_taffy_style(
+    view: &ViewElement,
+    parent_direction: Option<FlexDirection>,
+) -> taffy::style::Style {
     let border_inset = if view
         .visual
         .as_ref()
@@ -128,7 +131,15 @@ pub fn view_to_taffy_style(view: &ViewElement, parent_direction: Option<FlexDire
             x: view.overflow_x,
             y: view.overflow_y,
         },
-        scrollbar_width: if view.overflow_x == taffy::style::Overflow::Scroll || view.overflow_y == taffy::style::Overflow::Scroll { 1.0 } else { 0.0 },
+        scrollbar_width: if (view.overflow_y == taffy::style::Overflow::Scroll
+            || view.overflow_x == taffy::style::Overflow::Scroll)
+            && (view.width != Size::Auto || view.max_width.is_some())
+            && (view.height != Size::Auto || view.max_height.is_some())
+        {
+            1.0
+        } else {
+            0.0
+        },
         ..Default::default()
     }
 }
@@ -204,8 +215,11 @@ impl LayoutEngine {
             VNode::View(view) => {
                 let style = view_to_taffy_style(view, parent_direction);
                 let dir = view.flex_direction;
-                let child_ids: Vec<NodeId> =
-                    view.children.iter().map(|c| self.build_node(c, Some(dir))).collect();
+                let child_ids: Vec<NodeId> = view
+                    .children
+                    .iter()
+                    .map(|c| self.build_node(c, Some(dir)))
+                    .collect();
                 self.tree
                     .new_with_children(style, &child_ids)
                     .unwrap_or_else(|_| self.tree.new_leaf(Style::default()).unwrap())
@@ -245,9 +259,10 @@ impl LayoutEngine {
                     align_self: if text.fill.is_some() {
                         Some(AlignSelf::Stretch)
                     } else {
-                        None
+                        Some(AlignSelf::FlexStart)
                     },
                     flex_grow: if text.fill.is_some() { 1.0 } else { 0.0 },
+                    flex_shrink: 0.0,
                     ..Default::default()
                 };
                 let context = TextMeasureData {
@@ -263,39 +278,55 @@ impl LayoutEngine {
                 if let Some(trigger) = &overlay.trigger {
                     self.build_node(trigger, parent_direction)
                 } else {
-                    self.tree.new_leaf(Style::default()).unwrap()
+                    self.tree
+                        .new_leaf(Style {
+                            display: Display::None,
+                            ..Default::default()
+                        })
+                        .unwrap()
                 }
             }
             VNode::Fragment(children) => {
-                let style = Style {
-                    display: Display::Flex,
-                    flex_direction: FlexDirection::Column,
-                    size: taffy::geometry::Size {
-                        width: Dimension::Auto,
-                        height: Dimension::Auto,
-                    },
-                    ..Default::default()
-                };
-                let child_ids: Vec<NodeId> =
-                    children.iter().map(|c| self.build_node(c, parent_direction.or(Some(FlexDirection::Column)))).collect();
-                self.tree
-                    .new_with_children(style, &child_ids)
-                    .unwrap_or_else(|_| self.tree.new_leaf(Style::default()).unwrap())
+                if children.is_empty() {
+                    self.tree
+                        .new_leaf(Style {
+                            display: Display::None,
+                            ..Default::default()
+                        })
+                        .unwrap()
+                } else {
+                    let style = Style {
+                        display: Display::Flex,
+                        flex_direction: FlexDirection::Column,
+                        size: taffy::geometry::Size {
+                            width: Dimension::Auto,
+                            height: Dimension::Auto,
+                        },
+                        ..Default::default()
+                    };
+                    let child_ids: Vec<NodeId> = children
+                        .iter()
+                        .map(|c| {
+                            self.build_node(c, parent_direction.or(Some(FlexDirection::Column)))
+                        })
+                        .collect();
+                    self.tree
+                        .new_with_children(style, &child_ids)
+                        .unwrap_or_else(|_| self.tree.new_leaf(Style::default()).unwrap())
+                }
             }
-            VNode::FlexBox(_) | VNode::Empty => self.tree.new_leaf(Style::default()).unwrap(),
+            VNode::Empty => self
+                .tree
+                .new_leaf(Style {
+                    display: Display::None,
+                    ..Default::default()
+                })
+                .unwrap(),
         }
     }
 
-    fn extract_node_layout(
-        &self,
-        taffy_node: NodeId,
-        vnode: &VNode,
-    ) -> ComputedLayoutNode {
-        let l = self
-            .tree
-            .layout(taffy_node)
-            .cloned()
-            .unwrap_or_default();
+    fn extract_node_layout(&self, taffy_node: NodeId, vnode: &VNode) -> ComputedLayoutNode {
+        let l = self.tree.layout(taffy_node).cloned().unwrap_or_default();
 
         let x = l.location.x.max(0.0).round() as u16;
         let y = l.location.y.max(0.0).round() as u16;
@@ -304,8 +335,27 @@ impl LayoutEngine {
         let content_w = l.content_size.width.max(0.0).round() as u16;
         let content_h = l.content_size.height.max(0.0).round() as u16;
 
-        let scroll_w = content_w.saturating_sub(width);
-        let scroll_h = content_h.saturating_sub(height);
+        let scrollbar_gutter_x = if let VNode::View(v) = vnode {
+            if v.overflow_y == taffy::style::Overflow::Scroll && content_h > height {
+                1
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+        let scrollbar_gutter_y = if let VNode::View(v) = vnode {
+            if v.overflow_x == taffy::style::Overflow::Scroll && content_w > width {
+                1
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+
+        let scroll_w = content_w.saturating_sub(width.saturating_sub(scrollbar_gutter_x));
+        let scroll_h = content_h.saturating_sub(height.saturating_sub(scrollbar_gutter_y));
 
         let children_nodes = self.tree.children(taffy_node).unwrap_or_default();
         let child_vnodes = match vnode {

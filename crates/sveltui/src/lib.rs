@@ -7,11 +7,11 @@
 //! ```
 //! use sveltui::prelude::*;
 //! let control = view! {
-//!     <FlexBox tab_stop=true activation=Activation::Press
+//!     <Pressable tab_stop=true activation=Activation::Press
 //!         semantics={Semantics::new(Role::Button, "Custom action")}
 //!         on_click={|| { /* perform the action */ }}>
 //!         <TextSpan>"Custom action"</TextSpan>
-//!     </FlexBox>
+//!     </Pressable>
 //! };
 //! ```
 //!
@@ -62,12 +62,12 @@ pub use element::collection::*;
 pub use element::interaction::*;
 pub use element::text_buffer::*;
 pub use element::{
-    ContextProvider, ContextProviderProps, ErrorBoundary, ErrorBoundaryProps, FlexBox,
-    FlexBoxElement, FlexBoxProps, FocusHandle, FocusId, FocusState, HitMap, IntoClickHandler,
-    IntoClickHandlerAt, IntoKeyHandler, IntoNode, IntoPropOption, IntoScrollHandler,
-    OptionSnippetExt, Overlay, OverlayElement, OverlayProps, Paragraph, ParagraphProps, Pressable,
-    PressableElement, PressableProps, Snippet, TextElement, TextSpan, TextSpanProps, VNode, View,
-    ViewElement, ViewProps, is_focused, is_layer_open, use_focus,
+    ContextProvider, ContextProviderProps, ErrorBoundary, ErrorBoundaryProps, FocusHandle, FocusId,
+    FocusState, HitMap, IntoClickHandler, IntoClickHandlerAt, IntoKeyHandler, IntoNode,
+    IntoPropOption, IntoScrollHandler, OptionSnippetExt, Overlay, OverlayElement, OverlayProps,
+    Paragraph, ParagraphProps, Pressable, PressableElement, PressableProps, Snippet, TextElement,
+    TextSpan, TextSpanProps, VNode, View, ViewElement, ViewProps, is_focused, is_layer_open,
+    use_focus,
 };
 pub use layout::{
     Align, BorderStyle, FlexDirection, FlexDirectionExt, Justify, Margin, Overflow, OverflowExt,
@@ -90,17 +90,18 @@ pub mod prelude {
     pub use crate::element::interaction::*;
     pub use crate::element::text_buffer::*;
     pub use crate::element::{
-        ContextProvider, ContextProviderProps, ErrorBoundary, ErrorBoundaryProps, FlexBox,
-        FlexBoxElement, FlexBoxProps, FocusHandle, FocusId, FocusState, HitMap, IntoClickHandler,
-        IntoClickHandlerAt, IntoKeyHandler, IntoNode, IntoPropOption, IntoScrollHandler,
-        OptionSnippetExt, Overlay, OverlayElement, OverlayProps, Paragraph, ParagraphProps,
-        Pressable, PressableElement, PressableProps, Snippet, TextElement, TextSpan,
-        TextSpanProps, VNode, View, ViewElement, ViewProps, is_focused, is_layer_open, use_focus,
+        ContextProvider, ContextProviderProps, ErrorBoundary, ErrorBoundaryProps, FocusHandle,
+        FocusId, FocusState, HitMap, IntoClickHandler, IntoClickHandlerAt, IntoKeyHandler,
+        IntoNode, IntoPropOption, IntoScrollHandler, OptionSnippetExt, Overlay, OverlayElement,
+        OverlayProps, Paragraph, ParagraphProps, Pressable, PressableElement, PressableProps,
+        Snippet, TextElement, TextSpan, TextSpanProps, VNode, View, ViewElement, ViewProps,
+        is_focused, is_layer_open, use_focus,
     };
     pub use crate::layout::{
         Align, AlignContent, AlignItems, AlignSelf, BorderStyle, Display, FlexDirection,
-        FlexDirectionExt, FlexWrap, Justify, JustifyContent, Margin, Overflow, OverflowExt, Padding,
-        Placement, Point, Position, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility, Size,
+        FlexDirectionExt, FlexWrap, Justify, JustifyContent, Margin, Overflow, OverflowExt,
+        Padding, Placement, Point, Position, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility,
+        Size,
     };
     pub use crate::reactive::{
         AsyncState, BlockingFuture, ComponentScope, Derived, ReadSignal, State, TaskHandle,

@@ -50,15 +50,16 @@ fn test_text_area_basic_instantiation() {
 
     let node = area.into_node();
     match node {
-        VNode::Pressable(p) => {
-            match &p.children[0] {
-                VNode::View(v) => {
-                    assert_eq!(v.visual.as_ref().and_then(|vis| vis.title.clone()), Some("Notes".to_string()));
-                    assert_eq!(v.children.len(), 2);
-                }
-                _ => panic!("Expected View node inside Pressable"),
+        VNode::Pressable(p) => match &p.children[0] {
+            VNode::View(v) => {
+                assert_eq!(
+                    v.visual.as_ref().and_then(|vis| vis.title.clone()),
+                    Some("Notes".to_string())
+                );
+                assert_eq!(v.children.len(), 2);
             }
-        }
+            _ => panic!("Expected View node inside Pressable"),
+        },
         _ => panic!("Expected Pressable node"),
     }
 }

@@ -6,7 +6,7 @@ fn key(code: KeyCode) -> KeyEvent {
     KeyEvent::new(code, KeyModifiers::NONE)
 }
 fn button(id: usize) -> VNode {
-    FlexBoxElement::new()
+    PressableElement::new()
         .focus_id(id)
         .tab_stop(true)
         .activation(Activation::Press)
@@ -20,12 +20,14 @@ fn bind(manager: &mut FocusManager, node: VNode) {
 fn focusability_is_opt_in_and_listeners_do_not_implicitly_consume() {
     let hit = Rc::new(Cell::new(0));
     let seen = hit.clone();
-    let node = FlexBoxElement::new()
-        .child(FlexBoxElement::new().focus_id(1).on_click(|| {}))
-        .child(FlexBoxElement::new().focus_id(2).on_key(move |_, _| {
-            seen.set(seen.get() + 1);
-            EventResult::Ignored
-        }))
+    let node = PressableElement::new()
+        .child(PressableElement::new().focus_id(1).on_click(|| {}))
+        .child(PressableElement::new().focus_id(2).on_key(
+            move |_: KeyEvent, _: &mut EventContext| {
+                seen.set(seen.get() + 1);
+                EventResult::Ignored
+            },
+        ))
         .child(button(3))
         .into_node();
     let mut manager = FocusManager::new();
@@ -43,9 +45,9 @@ fn focusability_is_opt_in_and_listeners_do_not_implicitly_consume() {
 fn events_bubble_through_nonfocusable_listeners_and_stop_when_handled() {
     let calls = Rc::new(Cell::new(0));
     let seen = calls.clone();
-    let parent = FlexBoxElement::new()
+    let parent = PressableElement::new()
         .focus_id(1)
-        .on_key(move |key, ctx| {
+        .on_key(move |key: KeyEvent, ctx: &mut EventContext| {
             seen.set(seen.get() + 1);
             if key.code == KeyCode::Esc {
                 ctx.exit();
@@ -69,12 +71,12 @@ fn events_bubble_through_nonfocusable_listeners_and_stop_when_handled() {
 fn group_has_one_tab_stop_and_owns_arrows_and_disabled_activation() {
     let actions = Rc::new(Cell::new(0));
     let clicked = actions.clone();
-    let group = FlexBoxElement::new()
+    let group = PressableElement::new()
         .focus_id(10)
         .focus_group(FocusGroup::menu())
         .child(button(1))
         .child(
-            FlexBoxElement::new()
+            PressableElement::new()
                 .focus_id(2)
                 .tab_stop(true)
                 .disabled(true)
@@ -82,7 +84,7 @@ fn group_has_one_tab_stop_and_owns_arrows_and_disabled_activation() {
                 .on_click(move || clicked.set(clicked.get() + 1)),
         )
         .child(button(3));
-    let node = FlexBoxElement::new()
+    let node = PressableElement::new()
         .child(group)
         .child(button(4))
         .into_node();
@@ -102,14 +104,14 @@ fn group_has_one_tab_stop_and_owns_arrows_and_disabled_activation() {
 
 #[test]
 fn modal_scope_contains_navigation_and_blocks_background_keys() {
-    let root = FlexBoxElement::new()
+    let root = PressableElement::new()
         .child(button(1))
         .child(
             OverlayElement::new()
                 .id(FocusId(100))
                 .open(true)
                 .layer(DismissLayer::dialog())
-                .content(FlexBoxElement::new().child(button(2)).child(button(3))),
+                .content(PressableElement::new().child(button(2)).child(button(3))),
         )
         .into_node();
     let mut manager = FocusManager::new();
@@ -132,7 +134,7 @@ fn controlled_dismissal_is_one_action_and_restores_the_opener() {
     let closed = Rc::new(Cell::new(0));
     let count = closed.clone();
     let make = |open, count: Rc<Cell<usize>>| {
-        FlexBoxElement::new()
+        PressableElement::new()
             .child(button(1))
             .child(
                 OverlayElement::new()
@@ -157,7 +159,7 @@ fn controlled_dismissal_is_one_action_and_restores_the_opener() {
 #[test]
 fn menu_tab_exits_its_chain_without_losing_the_next_destination_on_reconcile() {
     let make = |open| {
-        FlexBoxElement::new()
+        PressableElement::new()
             .child(button(1))
             .child(
                 OverlayElement::new()
@@ -167,7 +169,7 @@ fn menu_tab_exits_its_chain_without_losing_the_next_destination_on_reconcile() {
                     .managed(true)
                     .layer(DismissLayer::menu())
                     .content(
-                        FlexBoxElement::new()
+                        PressableElement::new()
                             .focus_id(10)
                             .focus_group(FocusGroup::menu())
                             .child(button(2)),
@@ -210,7 +212,7 @@ fn removal_uses_logical_order_and_hidden_controls_are_excluded() {
     let mut manager = FocusManager::new();
     bind(
         &mut manager,
-        FlexBoxElement::new()
+        PressableElement::new()
             .child(button(1))
             .child(button(2))
             .child(button(3))
@@ -219,10 +221,10 @@ fn removal_uses_logical_order_and_hidden_controls_are_excluded() {
     manager.focus(FocusId(2));
     bind(
         &mut manager,
-        FlexBoxElement::new()
+        PressableElement::new()
             .child(button(1))
             .child(
-                FlexBoxElement::new()
+                PressableElement::new()
                     .focus_id(2)
                     .tab_stop(true)
                     .hidden(true),
@@ -238,8 +240,7 @@ fn empty_dialog_focuses_its_container_and_plain_layout_allocates_no_records() {
     let mut manager = FocusManager::new();
     bind(
         &mut manager,
-        FlexBoxElement::new()
-            .focus_id(1)
+        ViewElement::new()
             .child(TextElement::new("plain"))
             .into_node(),
     );
