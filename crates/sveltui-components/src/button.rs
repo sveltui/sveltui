@@ -66,7 +66,7 @@ pub fn Button(props: ButtonProps) -> impl IntoNode {
                 {#if props.children.is_some()}
                     {@render props.children}
                 {:else if let Some(label) = &props.label}
-                    <TextSpan fg=text_color bold=is_active>{label.clone()}</TextSpan>
+                    <TextSpan foreground_color=text_color bold=is_active>{label.clone()}</TextSpan>
                 {/if}
             </View>
         </Pressable>

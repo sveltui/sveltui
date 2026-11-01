@@ -110,11 +110,11 @@ pub fn Switch(props: SwitchProps) -> impl IntoNode {
                 align_items=AlignItems::FlexStart
                 flex_direction=FlexDirection::Row
             >
-                <TextSpan fg=text_color bold=focused>{switch_display}</TextSpan>
+                <TextSpan foreground_color=text_color bold=focused>{switch_display}</TextSpan>
                 {#if props.children.is_some()}
                     {@render props.children}
                 {:else if !label_str.is_empty()}
-                    <TextSpan fg=text_color bold=focused>{format!(" {}", label_str)}</TextSpan>
+                    <TextSpan foreground_color=text_color bold=focused>{format!(" {}", label_str)}</TextSpan>
                 {/if}
             </View>
         </Pressable>

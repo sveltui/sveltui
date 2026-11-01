@@ -34,13 +34,13 @@ fn ActiveSession(props: ActiveSessionProps) -> impl IntoNode {
 
     view! {
         <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) gap=1>
-            <TextSpan color=Color::White bold=true>"Active Session Component"</TextSpan>
+            <TextSpan foreground_color=Color::White bold=true>"Active Session Component"</TextSpan>
             <Divider />
-            <TextSpan color=Color::DarkGrey>"Recent Lifecycle Activity:"</TextSpan>
+            <TextSpan foreground_color=Color::DarkGrey>"Recent Lifecycle Activity:"</TextSpan>
             {#each logs.get() as log}
-                <TextSpan color=Color::White>{log}</TextSpan>
+                <TextSpan foreground_color=Color::White>{log}</TextSpan>
             {:else}
-                <TextSpan color=Color::DarkGrey>"No events recorded yet"</TextSpan>
+                <TextSpan foreground_color=Color::DarkGrey>"No events recorded yet"</TextSpan>
             {/each}
         </View>
     }
@@ -66,7 +66,7 @@ fn LifecycleDemo() -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <TextSpan color=Color::White bold=true>"framework_lifecycle: on_mount, on_destroy & effect"</TextSpan>
+                <TextSpan foreground_color=Color::White bold=true>"framework_lifecycle: on_mount, on_destroy & effect"</TextSpan>
                 <Divider />
 
                 <View flex_direction=FlexDirection::Row gap=1>
@@ -93,7 +93,7 @@ fn LifecycleDemo() -> impl IntoNode {
                         padding=Padding::all(2)
                         align_items=Align::Center
                     >
-                        <TextSpan color=Color::DarkGrey>"Component unmounted. Cleanups executed."</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>"Component unmounted. Cleanups executed."</TextSpan>
                     </View>
                 {/if}
             </View>

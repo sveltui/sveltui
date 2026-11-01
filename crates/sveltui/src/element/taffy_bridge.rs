@@ -255,8 +255,26 @@ impl LayoutEngine {
                 }
             }
             VNode::Text(text) => {
+                // Unwrapped text keeps its intrinsic minimum so stretching a
+                // narrow parent doesn't silently truncate visible overflow.
+                let min_size = if !text.wrap && text.fill.is_none() {
+                    let lines = crate::element::text::lines(text, None);
+                    taffy::geometry::Size {
+                        width: Dimension::Length(
+                            lines
+                                .iter()
+                                .map(|line| line.chars().count())
+                                .max()
+                                .unwrap_or(0) as f32,
+                        ),
+                        height: Dimension::Length(lines.len() as f32),
+                    }
+                } else {
+                    taffy::geometry::Size::auto()
+                };
                 let style = Style {
                     display: Display::Flex,
+                    min_size,
                     size: taffy::geometry::Size {
                         width: Dimension::Auto,
                         height: Dimension::Auto,
@@ -264,7 +282,9 @@ impl LayoutEngine {
                     align_self: if text.fill.is_some() {
                         Some(AlignSelf::Stretch)
                     } else {
-                        Some(AlignSelf::FlexStart)
+                        // Inherit the container's align_items just like View
+                        // children; forcing FlexStart disables center/end/stretch.
+                        None
                     },
                     flex_grow: if text.fill.is_some() { 1.0 } else { 0.0 },
                     flex_shrink: 0.0,

@@ -20,7 +20,7 @@ struct CardGridProps {
 fn CardGrid(props: CardGridProps) -> impl IntoNode {
     view! {
         <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) gap=1>
-            <TextSpan color=Color::White bold=true>{props.title.clone()}</TextSpan>
+            <TextSpan foreground_color=Color::White bold=true>{props.title.clone()}</TextSpan>
             <Divider />
             <View flex_direction=FlexDirection::Row gap=2>
                 {#each props.items as item}
@@ -63,8 +63,8 @@ fn SnippetsDemo() -> impl IntoNode {
                             padding=Padding::all(1)
                             gap=1
                         >
-                            <TextSpan color=Color::White bold=true>{project.name.clone()}</TextSpan>
-                            <TextSpan color=Color::DarkGrey>{format!("Stars: *{}", project.stars)}</TextSpan>
+                            <TextSpan foreground_color=Color::White bold=true>{project.name.clone()}</TextSpan>
+                            <TextSpan foreground_color=Color::DarkGrey>{format!("Stars: *{}", project.stars)}</TextSpan>
                             <Badge bg=Color::Green fg=Color::DarkGreen>{project.language.clone()}</Badge>
                         </View>
                     {/snippet}

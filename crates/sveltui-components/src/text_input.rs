@@ -204,7 +204,7 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
                 opt_title=props.title
                 opt_cursor_offset=cursor_offset
             >
-                <TextSpan fg=text_color bold=focused>{display_text}</TextSpan>
+                <TextSpan foreground_color=text_color bold=focused>{display_text}</TextSpan>
             </View>
         </Pressable>
     }

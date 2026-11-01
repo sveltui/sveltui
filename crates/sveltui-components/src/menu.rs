@@ -512,5 +512,5 @@ pub fn GroupHeading(props: GroupHeadingProps) -> VNode {
 pub struct SeparatorProps {}
 #[component]
 pub fn Separator(_props: SeparatorProps) -> VNode {
-    view! { <Pressable focus_id={identity(None)} semantics={Semantics::new(Role::Separator, "")}><Paragraph fg=Color::DarkGrey fill='─'>""</Paragraph></Pressable> }
+    view! { <Pressable focus_id={identity(None)} semantics={Semantics::new(Role::Separator, "")}><Paragraph foreground_color=Color::DarkGrey fill='─'>""</Paragraph></Pressable> }
 }

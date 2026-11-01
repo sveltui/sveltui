@@ -74,12 +74,12 @@ fn assert_wrapping(paragraph: VNode) {
 
 #[test]
 fn paragraph_children_wrap_without_losing_text_after_resizing() {
-    assert_wrapping(view! { <Paragraph fg=Color::White>{TEXT}</Paragraph> });
+    assert_wrapping(view! { <Paragraph foreground_color=Color::White>{TEXT}</Paragraph> });
 }
 
 #[test]
 fn paragraph_content_property_wraps_without_losing_text_after_resizing() {
-    assert_wrapping(view! { <Paragraph fg=Color::White content=TEXT /> });
+    assert_wrapping(view! { <Paragraph foreground_color=Color::White content=TEXT /> });
 }
 
 #[test]

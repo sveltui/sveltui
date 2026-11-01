@@ -14,8 +14,8 @@ fn FlakyWidget(props: FlakyWidgetProps) -> impl IntoNode {
 
     view! {
         <View border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
-            <TextSpan color=Color::White bold=true>"Child Widget: Running Healthy"</TextSpan>
-            <TextSpan color=Color::DarkGrey>"Calculations proceeding normally. Click 'Trigger Panic' below to test isolation."</TextSpan>
+            <TextSpan foreground_color=Color::White bold=true>"Child Widget: Running Healthy"</TextSpan>
+            <TextSpan foreground_color=Color::DarkGrey>"Calculations proceeding normally. Click 'Trigger Panic' below to test isolation."</TextSpan>
         </View>
     }
 }
@@ -33,7 +33,7 @@ fn ErrorBoundaryDemo() -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <TextSpan color=Color::White bold=true>"framework_error_boundary: Crash Isolation & Recovery"</TextSpan>
+                <TextSpan foreground_color=Color::White bold=true>"framework_error_boundary: Crash Isolation & Recovery"</TextSpan>
                 <Divider />
 
                 <View flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
@@ -60,9 +60,9 @@ fn ErrorBoundaryDemo() -> impl IntoNode {
                             padding=Padding::all(1)
                             gap=1
                         >
-                            <TextSpan color=Color::White bold=true>"[ErrorBoundary Caught Failure]"</TextSpan>
-                            <TextSpan color=Color::DarkGrey>{format!("Panic payload: {error}")}</TextSpan>
-                            <TextSpan color=Color::DarkGrey>"Outer application remains fully interactive. Click 'Recover' above."</TextSpan>
+                            <TextSpan foreground_color=Color::White bold=true>"[ErrorBoundary Caught Failure]"</TextSpan>
+                            <TextSpan foreground_color=Color::DarkGrey>{format!("Panic payload: {error}")}</TextSpan>
+                            <TextSpan foreground_color=Color::DarkGrey>"Outer application remains fully interactive. Click 'Recover' above."</TextSpan>
                         </View>
                     {/snippet}
 

@@ -25,17 +25,17 @@ fn InteractiveShowcase() -> impl IntoNode {
                 gap=1
             >
                 <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
-                    <TextSpan color=Color::White bold=true>"component_interactive: Full Widgets Dashboard"</TextSpan>
+                    <TextSpan foreground_color=Color::White bold=true>"component_interactive: Full Widgets Dashboard"</TextSpan>
                     <Badge label=status_tag.get() />
                 </View>
                 <Divider />
 
-                <TextSpan color=Color::DarkGrey>"Progress Bar Component:"</TextSpan>
+                <TextSpan foreground_color=Color::DarkGrey>"Progress Bar Component:"</TextSpan>
                 <View flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
                     <View width=48>
                         <ProgressBar ratio={progress.get() / 100.0} />
                     </View>
-                    <TextSpan color=Color::White>{format!("{}%", progress.get() as u32)}</TextSpan>
+                    <TextSpan foreground_color=Color::White>{format!("{}%", progress.get() as u32)}</TextSpan>
                     <Button on_click={advance_progress}>
                         "+15%"
                     </Button>
@@ -43,9 +43,9 @@ fn InteractiveShowcase() -> impl IntoNode {
 
                 <Divider />
 
-                <TextSpan color=Color::DarkGrey>"Form & Input Controls:"</TextSpan>
+                <TextSpan foreground_color=Color::DarkGrey>"Form & Input Controls:"</TextSpan>
                 <View flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
-                    <TextSpan color=Color::DarkGrey>"User:"</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>"User:"</TextSpan>
                     <TextInput value=username placeholder="Enter username..." width=32 />
                 </View>
 
@@ -57,7 +57,7 @@ fn InteractiveShowcase() -> impl IntoNode {
                 <Divider />
 
                 <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
-                    <TextSpan color=Color::DarkGrey>"Tab: Navigate | Space/Enter: Toggle | Esc: Quit"</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>"Tab: Navigate | Space/Enter: Toggle | Esc: Quit"</TextSpan>
                     <Button
                         on_click={move || status_tag.set(String::from("v0.2.0-rc"))}
                     >

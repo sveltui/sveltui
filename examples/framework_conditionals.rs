@@ -22,11 +22,11 @@ fn ConditionalsDemo() -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <TextSpan color=Color::White bold=true>"framework_conditionals: {#if} Branches"</TextSpan>
+                <TextSpan foreground_color=Color::White bold=true>"framework_conditionals: {#if} Branches"</TextSpan>
                 <Divider />
 
                 <View flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
-                    <TextSpan color=Color::DarkGrey>"Switch Role:"</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>"Switch Role:"</TextSpan>
                     <Button
                         on_click={move || role.set(AuthRole::LoggedOut)}
                     >
@@ -51,23 +51,23 @@ fn ConditionalsDemo() -> impl IntoNode {
                 // Conditional rendering with {#if} ... {:else if} ... {:else}
                 {#if role.get() == AuthRole::Admin}
                     <View border=BorderStyle::Single border_color=Color::White padding=Padding::all(1)>
-                        <TextSpan color=Color::White bold=true>"[Admin Access Granted]"</TextSpan>
-                        <TextSpan color=Color::DarkGrey>"You have read, write, and execute permissions across all clusters."</TextSpan>
+                        <TextSpan foreground_color=Color::White bold=true>"[Admin Access Granted]"</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>"You have read, write, and execute permissions across all clusters."</TextSpan>
                     </View>
                 {:else if role.get() == AuthRole::Guest}
                     <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
-                        <TextSpan color=Color::White>"[Guest Session]"</TextSpan>
-                        <TextSpan color=Color::DarkGrey>"Read-only public workspace access."</TextSpan>
+                        <TextSpan foreground_color=Color::White>"[Guest Session]"</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>"Read-only public workspace access."</TextSpan>
                     </View>
                 {:else}
                     <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
-                        <TextSpan color=Color::DarkGrey>"Session locked. Please authenticate to view resources."</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>"Session locked. Please authenticate to view resources."</TextSpan>
                     </View>
                 {/if}
 
                 {#if show_details.get()}
                     <View padding=Padding::symmetric(1, 0)>
-                        <TextSpan color=Color::DarkGrey>{format!("Current status: {:?}", match role.get() {
+                        <TextSpan foreground_color=Color::DarkGrey>{format!("Current status: {:?}", match role.get() {
                             AuthRole::LoggedOut => "Anonymous visitor",
                             AuthRole::Guest => "Authenticated guest #408",
                             AuthRole::Admin => "Root administrator (Superuser)",

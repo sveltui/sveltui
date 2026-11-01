@@ -37,10 +37,10 @@ fn ScrollDemo() -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <TextSpan color=Color::White bold=true>"component_scroll: Virtual Scrolling & Overflow"</TextSpan>
+                <TextSpan foreground_color=Color::White bold=true>"component_scroll: Virtual Scrolling & Overflow"</TextSpan>
                 <Divider />
 
-                <TextSpan color=Color::DarkGrey>
+                <TextSpan foreground_color=Color::DarkGrey>
                     "Mouse Wheel / Trackpad / Shift+Wheel or Arrow Keys scroll both axes seamlessly."
                 </TextSpan>
 
@@ -55,7 +55,7 @@ fn ScrollDemo() -> impl IntoNode {
                     >
                         "Reset Lines"
                     </Button>
-                    <TextSpan color=Color::DarkGrey>{format!("Current log lines: {}", lines_count.get())}</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>{format!("Current log lines: {}", lines_count.get())}</TextSpan>
                 </View>
 
                 <View height=1 />
@@ -73,7 +73,7 @@ fn ScrollDemo() -> impl IntoNode {
                         scrollbar_visibility=ScrollbarVisibility::Auto
                     >
                         {#each log_entries as entry}
-                            <TextSpan color=Color::White>{entry}</TextSpan>
+                            <TextSpan foreground_color=Color::White>{entry}</TextSpan>
                         {/each}
                     </View>
                 </Pressable>
@@ -81,7 +81,7 @@ fn ScrollDemo() -> impl IntoNode {
                 <View height=1 />
                 <Divider />
 
-                <TextSpan color=Color::DarkGrey>"Tab: Focus scroll container | Wheel / Shift+Wheel: Scroll axes | Q/Esc: Quit"</TextSpan>
+                <TextSpan foreground_color=Color::DarkGrey>"Tab: Focus scroll container | Wheel / Shift+Wheel: Scroll axes | Q/Esc: Quit"</TextSpan>
             </View>
         </View>
     }

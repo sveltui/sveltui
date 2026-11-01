@@ -42,7 +42,7 @@ pub fn Divider(props: DividerProps) -> impl IntoNode {
                 {#if props.children.is_some()}
                     {@render props.children}
                 {:else}
-                    <Paragraph fill='─' fg=color>{text}</Paragraph>
+                    <Paragraph fill='─' foreground_color=color>{text}</Paragraph>
                 {/if}
             </View>
         </Pressable>

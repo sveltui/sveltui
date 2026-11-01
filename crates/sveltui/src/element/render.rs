@@ -25,12 +25,18 @@ fn scrollbar_thumb(track: u16, viewport: u16, content: u16, offset: u16) -> std:
     start..start + length
 }
 
+struct PendingOverlay {
+    overlay: OverlayElement,
+    anchor_rect: Option<Rect>,
+    foreground: Option<Color>,
+}
+
 struct RenderContext<'a> {
     buffer: &'a mut Buffer,
     hit_map: &'a mut HitMap,
     layer: Option<crate::element::FocusId>,
     scrolls: Vec<ScrollRegion>,
-    overlays: &'a mut Vec<(OverlayElement, Option<Rect>)>,
+    overlays: &'a mut Vec<PendingOverlay>,
     active_fg: Option<Color>,
     active_bg: Option<Color>,
 }
@@ -108,8 +114,8 @@ pub fn render_node_interactive(
 
     while !overlays.is_empty() {
         let current_overlays = std::mem::take(&mut overlays);
-        for (overlay, anchor_rect) in current_overlays {
-            render_single_overlay(overlay, anchor_rect, rect, buffer, hit_map, &mut overlays);
+        for pending in current_overlays {
+            render_single_overlay(pending, rect, buffer, hit_map, &mut overlays);
         }
     }
     hit_map.finish_interactions();
@@ -143,28 +149,25 @@ pub fn render_node_offset(
     let screen_rect = Rect::new(0, 0, buffer.width, buffer.height);
     while !overlays.is_empty() {
         let current_overlays = std::mem::take(&mut overlays);
-        for (overlay, anchor_rect) in current_overlays {
-            render_single_overlay(
-                overlay,
-                anchor_rect,
-                screen_rect,
-                buffer,
-                hit_map,
-                &mut overlays,
-            );
+        for pending in current_overlays {
+            render_single_overlay(pending, screen_rect, buffer, hit_map, &mut overlays);
         }
     }
     hit_map.finish_interactions();
 }
 
 fn render_single_overlay(
-    overlay: OverlayElement,
-    anchor_rect: Option<Rect>,
+    pending: PendingOverlay,
     screen: Rect,
     buffer: &mut Buffer,
     hit_map: &mut HitMap,
-    overlays: &mut Vec<(OverlayElement, Option<Rect>)>,
+    overlays: &mut Vec<PendingOverlay>,
 ) {
+    let PendingOverlay {
+        overlay,
+        anchor_rect,
+        foreground,
+    } = pending;
     if !overlay.open {
         return;
     }
@@ -226,7 +229,7 @@ fn render_single_overlay(
             layer: Some(overlay.id),
             scrolls: Vec::new(),
             overlays,
-            active_fg: None,
+            active_fg: foreground,
             active_bg: None,
         };
         render_node_offset_internal(
@@ -288,7 +291,11 @@ fn render_node_offset_internal(
         };
 
         if overlay.open {
-            ctx.overlays.push((overlay.clone(), anchor_rect));
+            ctx.overlays.push(PendingOverlay {
+                overlay: overlay.clone(),
+                anchor_rect,
+                foreground: ctx.active_fg,
+            });
         }
         return;
     }
@@ -296,6 +303,15 @@ fn render_node_offset_internal(
     if width == 0 || height == 0 {
         // Out-of-flow overlays still render when their ancestor has no
         // intrinsic size (for example, a root containing only a dialog).
+        let previous_fg = ctx.active_fg;
+        if let VNode::View(view) = node
+            && let Some(foreground) = view
+                .visual
+                .as_ref()
+                .and_then(|visual| visual.foreground_color)
+        {
+            ctx.active_fg = Some(foreground);
+        }
         let children = match node {
             VNode::View(v) => Some(&v.children),
             VNode::Pressable(p) => Some(&p.children),
@@ -307,6 +323,7 @@ fn render_node_offset_internal(
                 render_node_offset_internal(child, None, x, y, 0, 0, ctx);
             }
         }
+        ctx.active_fg = previous_fg;
         return;
     }
     if (x >= ctx.buffer.width as i32

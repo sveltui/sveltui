@@ -177,16 +177,16 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
             >
                 {#if is_empty}
                     {#if show_line_numbers}
-                        <TextSpan fg=Color::DarkGrey>{format!("{:>width$}  {}", 1, props.placeholder, width = digits)}</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>{format!("{:>width$}  {}", 1, props.placeholder, width = digits)}</TextSpan>
                     {:else}
-                        <TextSpan fg=Color::DarkGrey>{props.placeholder.clone()}</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>{props.placeholder.clone()}</TextSpan>
                     {/if}
                 {:else}
                     {#each lines.iter().enumerate() as (idx, line_text)}
                         {#if show_line_numbers}
-                            <TextSpan fg=Color::White>{format!("{:>width$}  {}", scroll_row + idx + 1, line_text, width = digits)}</TextSpan>
+                            <TextSpan foreground_color=Color::White>{format!("{:>width$}  {}", scroll_row + idx + 1, line_text, width = digits)}</TextSpan>
                         {:else}
-                            <TextSpan fg=Color::White>{line_text.clone()}</TextSpan>
+                            <TextSpan foreground_color=Color::White>{line_text.clone()}</TextSpan>
                         {/if}
                     {/each}
                 {/if}
