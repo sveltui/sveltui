@@ -52,7 +52,7 @@ fn LoopsDemo() -> impl IntoNode {
     };
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=68
                 border=BorderStyle::Single
@@ -60,7 +60,7 @@ fn LoopsDemo() -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween>
+                <View flex_direction=FlexDirection::Row justify_content=JustifyContent::SpaceBetween>
                     <TextSpan foreground_color=Color::White bold=true>"framework_loops: {#each} List Rendering"</TextSpan>
                     <TextSpan foreground_color=Color::DarkGrey>{format!("Items: {}", tasks.get().len())}</TextSpan>
                 </View>
@@ -83,7 +83,7 @@ fn LoopsDemo() -> impl IntoNode {
                 // Render tasks or show empty list fallback
                 <View gap=1 border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
                     {#each tasks.get() as task (task.id)}
-                        <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
+                        <View flex_direction=FlexDirection::Row justify_content=JustifyContent::SpaceBetween align_items=AlignItems::Center>
                             <View flex_direction=FlexDirection::Row gap=1>
                                 <TextSpan foreground_color=if task.done { Color::DarkGrey } else { Color::White }>
                                     {if task.done { "[x]" } else { "[ ]" }}
@@ -95,7 +95,7 @@ fn LoopsDemo() -> impl IntoNode {
                             <TextSpan foreground_color=Color::DarkGrey>{format!("id:{}", task.id)}</TextSpan>
                         </View>
                     {:else}
-                        <View align_items=Align::Center padding=Padding::symmetric(0, 1)>
+                        <View align_items=AlignItems::Center padding=Padding::symmetric(0, 1)>
                             <TextSpan foreground_color=Color::DarkGrey>"No tasks remaining. Click '+ Add Task' above!"</TextSpan>
                         </View>
                     {/each}

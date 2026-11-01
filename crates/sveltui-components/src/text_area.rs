@@ -18,10 +18,10 @@ pub struct TextAreaProps {
     pub set_buffer: Option<WriteSignal<TextBuffer>>,
     #[prop(default = String::from("Type text here..."))]
     pub placeholder: String,
-    #[prop(default = Size::Fixed(40))]
-    pub width: Size,
-    #[prop(default = Size::Fixed(8))]
-    pub height: Size,
+    #[prop(default = Dimension::Length(40.0))]
+    pub width: Dimension,
+    #[prop(default = Dimension::Length(8.0))]
+    pub height: Dimension,
     #[prop(optional)]
     pub title: Option<String>,
     #[prop(default = false)]
@@ -46,7 +46,7 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
     };
 
     let visible_height = match props.height {
-        Size::Fixed(h) => (h.saturating_sub(2)).max(1) as usize,
+        Dimension::Length(h) => ((h.round() as u16).saturating_sub(2)).max(1) as usize,
         _ => 6,
     };
 
@@ -80,7 +80,9 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
     };
 
     let visible_width = match props.width {
-        Size::Fixed(w) => (w.saturating_sub(4 + gutter_width as u16)).max(1) as usize,
+        Dimension::Length(w) => {
+            ((w.round() as u16).saturating_sub(4 + gutter_width as u16)).max(1) as usize
+        }
         _ => 30,
     };
 

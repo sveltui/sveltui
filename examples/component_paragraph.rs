@@ -15,10 +15,10 @@ fn ParagraphDemo() -> impl IntoNode {
     let scroll_id = use_hook(FocusId::new);
     let poem = THE_RAVEN.join("\n\n");
     view! {
-        <View width=Size::Fill height=Size::Fill
-            align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0)
+            align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <Pressable focus_id=scroll_id tab_stop=true>
-                <View width=Size::Fill max_width=68 height=Size::Fill max_height=40
+                <View width=Dimension::Percent(1.0) max_width=68 height=Dimension::Percent(1.0) max_height=40
                     scroll_id=scroll_id
                     border=BorderStyle::Single
                     border_color=Color::DarkGrey padding=Padding::all(1) gap=1

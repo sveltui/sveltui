@@ -96,7 +96,7 @@ fn long_scroll_ranges_do_not_overflow_thumb_arithmetic() {
     let id = FocusId::new();
     let node = view! {
         <View width=4 height=100 overflow_y=Overflow::Scroll scroll_id=id>
-            <View width=1 height=60000 />
+            <View width=1 height=60000 flex_shrink=0.0 />
         </View>
     };
     set_scroll(id, (0, 59900));
@@ -111,7 +111,7 @@ fn hidden_scrollbars_keep_the_full_content_viewport() {
     let node = view! {
         <View width=10 height=3 overflow=Overflow::Scroll scroll_id=id
             scrollbar_visibility=ScrollbarVisibility::Never>
-            <Pressable focus_id=child><View width=Size::Fill height=6 /></Pressable>
+            <Pressable focus_id=child><View height=6 flex_shrink=0.0 /></Pressable>
         </View>
     };
     let (buffer, hits) = render(&node, 10, 3);

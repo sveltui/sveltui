@@ -219,21 +219,33 @@ impl IntoPropOption<crossterm::style::Color> for crossterm::style::Color {
     }
 }
 
-impl IntoPropOption<crate::layout::Size> for crate::layout::Size {
-    fn into_prop_option(self) -> Option<crate::layout::Size> {
+impl IntoPropOption<crate::layout::Dimension> for crate::layout::Dimension {
+    fn into_prop_option(self) -> Option<crate::layout::Dimension> {
         Some(self)
     }
 }
 
-impl IntoPropOption<crate::layout::Size> for u16 {
-    fn into_prop_option(self) -> Option<crate::layout::Size> {
-        Some(crate::layout::Size::Fixed(self))
+impl IntoPropOption<crate::layout::Dimension> for u16 {
+    fn into_prop_option(self) -> Option<crate::layout::Dimension> {
+        Some(crate::layout::Dimension::Length(f32::from(self)))
     }
 }
 
-impl IntoPropOption<crate::layout::Size> for i32 {
-    fn into_prop_option(self) -> Option<crate::layout::Size> {
-        Some(crate::layout::Size::Fixed(self as u16))
+impl IntoPropOption<crate::layout::Dimension> for i32 {
+    fn into_prop_option(self) -> Option<crate::layout::Dimension> {
+        Some(crate::layout::Dimension::Length(self.max(0) as f32))
+    }
+}
+
+impl IntoPropOption<crate::layout::Dimension> for f32 {
+    fn into_prop_option(self) -> Option<crate::layout::Dimension> {
+        Some(crate::layout::IntoDimension::into_dimension(self))
+    }
+}
+
+impl IntoPropOption<crate::layout::Dimension> for f64 {
+    fn into_prop_option(self) -> Option<crate::layout::Dimension> {
+        Some(crate::layout::IntoDimension::into_dimension(self))
     }
 }
 
@@ -363,17 +375,5 @@ impl IntoPropOption<Option<String>> for Option<String> {
 impl IntoPropOption<crate::layout::Placement> for crate::layout::Placement {
     fn into_prop_option(self) -> Option<crate::layout::Placement> {
         Some(self)
-    }
-}
-
-impl IntoPropOption<taffy::style::AlignItems> for crate::layout::Align {
-    fn into_prop_option(self) -> Option<taffy::style::AlignItems> {
-        Some(self.into())
-    }
-}
-
-impl IntoPropOption<taffy::style::JustifyContent> for crate::layout::Justify {
-    fn into_prop_option(self) -> Option<taffy::style::JustifyContent> {
-        Some(self.into())
     }
 }

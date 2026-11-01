@@ -16,7 +16,7 @@ fn DropdownDemo() -> impl IntoNode {
     };
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=68
                 border=BorderStyle::Single
@@ -33,7 +33,7 @@ fn DropdownDemo() -> impl IntoNode {
 
                 <View height=1 />
 
-                <View flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=2 align_items=AlignItems::Center>
                     <DropdownMenu::Root open=is_open on_open_change={move |next| menu_open.set(next)}>
                         <DropdownMenu::Trigger>
                             "File Menu ▾"

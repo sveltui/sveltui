@@ -68,8 +68,8 @@ pub struct TextInputProps {
     pub set_buffer: Option<WriteSignal<TextBuffer>>,
     #[prop(default = String::from("Type here..."))]
     pub placeholder: String,
-    #[prop(default = Size::Fixed(24))]
-    pub width: Size,
+    #[prop(default = Dimension::Length(24.0))]
+    pub width: Dimension,
     #[prop(optional)]
     pub title: Option<String>,
     #[prop(optional)]
@@ -94,7 +94,7 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
     };
 
     let visible_width = match props.width {
-        Size::Fixed(w) => (w.saturating_sub(4)).max(1) as usize,
+        Dimension::Length(w) => ((w.round() as u16).saturating_sub(4)).max(1) as usize,
         _ => 20,
     };
 

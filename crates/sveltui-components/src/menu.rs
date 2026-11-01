@@ -304,12 +304,13 @@ pub fn Trigger(props: TriggerProps) -> VNode {
     });
     let inner_view = if kind == MenuTriggerKind::Submenu {
         let mut v = ViewElement::new();
-        v.width = Size::Fill;
+        v.width = Dimension::Auto;
         v.flex_direction = FlexDirection::Row;
         v.visual_mut().background_color = bg;
         v.visual_mut().foreground_color = Some(fg);
         let mut sub = ViewElement::new();
-        sub.width = Size::Fill;
+        sub.flex_grow = 1.0;
+        sub.flex_basis = Dimension::Length(0.0);
         sub.overflow_x = Overflow::Hidden;
         sub.padding = Padding::only(0, 0, 0, 1);
         sub = sub.child(children);
@@ -337,8 +338,8 @@ pub struct ContentProps {
     pub anchor: Option<FocusId>,
     #[prop(optional)]
     pub placement: Option<Placement>,
-    #[prop(default = Size::Fixed(24))]
-    pub width: Size,
+    #[prop(default = Dimension::Length(24.0))]
+    pub width: Dimension,
     #[prop(default = BorderStyle::Single)]
     pub border: BorderStyle,
     #[prop(optional)]
@@ -462,8 +463,8 @@ pub fn Item(props: ItemProps) -> VNode {
         }
     });
     let mut v = ViewElement::new();
-    v.width = Size::Fill;
-    v.height = Size::fixed(1);
+    v.width = Dimension::Auto;
+    v.height = Dimension::Length(1.0);
     v.visual_mut().foreground_color = Some(fg);
     v.visual_mut().background_color = active.then_some(props.focus_bg.unwrap_or(Color::White));
     v.padding = Padding::symmetric(1, 0);
@@ -498,7 +499,7 @@ pub fn Group(props: GroupProps) -> VNode {
     }
     let children = props.children.render(());
     let semantics = Semantics::new(Role::Group, heading(&children).unwrap_or_default());
-    view! { <Pressable focus_id={identity(None)} semantics=semantics><View width=Size::Fill>{children}</View></Pressable> }
+    view! { <Pressable focus_id={identity(None)} semantics=semantics><View>{children}</View></Pressable> }
 }
 pub type GroupHeadingProps = GroupProps;
 #[component]

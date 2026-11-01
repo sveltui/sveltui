@@ -312,7 +312,15 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
                 #field_name: self.#field_name.flatten(),
             });
         } else {
-            if field_name == "children" {
+            if matches!(field_ty, syn::Type::Path(path) if path.path.segments.last().is_some_and(|segment| segment.ident == "Dimension"))
+            {
+                setters.push(quote! {
+                    pub fn #field_name(mut self, val: impl #root::IntoDimension) -> Self {
+                        self.#field_name = Some(val.into_dimension());
+                        self
+                    }
+                });
+            } else if field_name == "children" {
                 setters.push(quote! {
                     pub fn slot_children(mut self, val: impl Into<#field_ty>) -> Self {
                         self.#field_name = Some(val.into());

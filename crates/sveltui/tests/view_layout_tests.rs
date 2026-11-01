@@ -16,22 +16,22 @@ fn render(node: &VNode, width: u16, height: u16) -> Buffer {
 fn test_view_flex_row_layout() {
     let child1 = View(
         ViewProps::builder()
-            .width(Size::fixed(10))
-            .height(Size::fixed(5))
+            .width(Dimension::Length(10.0))
+            .height(Dimension::Length(5.0))
             .build(),
     )
     .into_node();
     let child2 = View(
         ViewProps::builder()
-            .width(Size::fixed(20))
-            .height(Size::fixed(5))
+            .width(Dimension::Length(20.0))
+            .height(Dimension::Length(5.0))
             .build(),
     )
     .into_node();
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(60))
-            .height(Size::fixed(10))
+            .width(Dimension::Length(60.0))
+            .height(Dimension::Length(10.0))
             .flex_direction(FlexDirection::Row)
             .gap(2)
             .child(child1)
@@ -55,22 +55,22 @@ fn test_view_flex_row_layout() {
 fn test_view_flex_column_layout() {
     let child1 = View(
         ViewProps::builder()
-            .width(Size::fixed(20))
-            .height(Size::fixed(3))
+            .width(Dimension::Length(20.0))
+            .height(Dimension::Length(3.0))
             .build(),
     )
     .into_node();
     let child2 = View(
         ViewProps::builder()
-            .width(Size::fixed(20))
-            .height(Size::fixed(4))
+            .width(Dimension::Length(20.0))
+            .height(Dimension::Length(4.0))
             .build(),
     )
     .into_node();
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(40))
-            .height(Size::fixed(20))
+            .width(Dimension::Length(40.0))
+            .height(Dimension::Length(20.0))
             .flex_direction(FlexDirection::Column)
             .gap(1)
             .child(child1)
@@ -88,25 +88,25 @@ fn test_view_flex_column_layout() {
 }
 
 #[test]
-fn test_view_sizing_fixed_percent_fill() {
+fn test_view_sizing_lengths_and_percentages() {
     let child_fixed = View(
         ViewProps::builder()
-            .width(Size::fixed(15))
-            .height(Size::fixed(5))
+            .width(Dimension::Length(15.0))
+            .height(Dimension::Length(5.0))
             .build(),
     )
     .into_node();
     let child_percent = View(
         ViewProps::builder()
-            .width(Size::percent(50.0))
-            .height(Size::fixed(5))
+            .width(Dimension::Percent(0.5))
+            .height(Dimension::Length(5.0))
             .build(),
     )
     .into_node();
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(100))
-            .height(Size::fixed(20))
+            .width(Dimension::Length(100.0))
+            .height(Dimension::Length(20.0))
             .flex_direction(FlexDirection::Column)
             .child(child_fixed)
             .child(child_percent)
@@ -124,17 +124,17 @@ fn test_view_sizing_fixed_percent_fill() {
 fn test_view_min_max_constraints() {
     let child_clamped = View(
         ViewProps::builder()
-            .width(Size::fixed(100))
-            .max_width(Size::fixed(35))
-            .min_width(Size::fixed(10))
-            .height(Size::fixed(2))
+            .width(Dimension::Length(100.0))
+            .max_width(Dimension::Length(35.0))
+            .min_width(Dimension::Length(10.0))
+            .height(Dimension::Length(2.0))
             .build(),
     )
     .into_node();
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(80))
-            .height(Size::fixed(20))
+            .width(Dimension::Length(80.0))
+            .height(Dimension::Length(20.0))
             .child(child_clamped)
             .build(),
     )
@@ -149,16 +149,16 @@ fn test_view_min_max_constraints() {
 fn test_view_padding_and_margin() {
     let child = View(
         ViewProps::builder()
-            .width(Size::fixed(10))
-            .height(Size::fixed(5))
+            .width(Dimension::Length(10.0))
+            .height(Dimension::Length(5.0))
             .margin(Margin::all(2))
             .build(),
     )
     .into_node();
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(50))
-            .height(Size::fixed(30))
+            .width(Dimension::Length(50.0))
+            .height(Dimension::Length(30.0))
             .padding(Padding::all(3))
             .child(child)
             .build(),
@@ -178,15 +178,15 @@ fn test_view_padding_and_margin() {
 fn test_view_alignment_justify_content_center() {
     let child = View(
         ViewProps::builder()
-            .width(Size::fixed(20))
-            .height(Size::fixed(5))
+            .width(Dimension::Length(20.0))
+            .height(Dimension::Length(5.0))
             .build(),
     )
     .into_node();
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(60))
-            .height(Size::fixed(20))
+            .width(Dimension::Length(60.0))
+            .height(Dimension::Length(20.0))
             .flex_direction(FlexDirection::Row)
             .justify_content(JustifyContent::Center)
             .child(child)
@@ -204,23 +204,23 @@ fn test_view_alignment_justify_content_center() {
 fn test_view_alignment_align_self() {
     let child1 = View(
         ViewProps::builder()
-            .width(Size::fixed(10))
-            .height(Size::fixed(5))
+            .width(Dimension::Length(10.0))
+            .height(Dimension::Length(5.0))
             .build(),
     )
     .into_node();
     let child2 = View(
         ViewProps::builder()
-            .width(Size::fixed(10))
-            .height(Size::fixed(5))
+            .width(Dimension::Length(10.0))
+            .height(Dimension::Length(5.0))
             .align_self(AlignSelf::FlexEnd)
             .build(),
     )
     .into_node();
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(50))
-            .height(Size::fixed(20))
+            .width(Dimension::Length(50.0))
+            .height(Dimension::Length(20.0))
             .flex_direction(FlexDirection::Row)
             .align_items(AlignItems::FlexStart)
             .child(child1)
@@ -240,21 +240,21 @@ fn test_view_flex_grow() {
     let child1 = View(
         ViewProps::builder()
             .flex_grow(1.0)
-            .height(Size::fixed(5))
+            .height(Dimension::Length(5.0))
             .build(),
     )
     .into_node();
     let child2 = View(
         ViewProps::builder()
             .flex_grow(2.0)
-            .height(Size::fixed(5))
+            .height(Dimension::Length(5.0))
             .build(),
     )
     .into_node();
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(60))
-            .height(Size::fixed(20))
+            .width(Dimension::Length(60.0))
+            .height(Dimension::Length(20.0))
             .flex_direction(FlexDirection::Row)
             .child(child1)
             .child(child2)
@@ -275,8 +275,9 @@ fn test_view_scrolling_overflow_content_size() {
         children.push(
             View(
                 ViewProps::builder()
-                    .width(Size::fixed(20))
-                    .height(Size::fixed(3))
+                    .width(Dimension::Length(20.0))
+                    .height(Dimension::Length(3.0))
+                    .flex_shrink(0.0)
                     .build(),
             )
             .into_node(),
@@ -284,8 +285,8 @@ fn test_view_scrolling_overflow_content_size() {
     }
     let root = View(
         ViewProps::builder()
-            .width(Size::fixed(30))
-            .height(Size::fixed(10))
+            .width(Dimension::Length(30.0))
+            .height(Dimension::Length(10.0))
             .flex_direction(FlexDirection::Column)
             .overflow_y(Overflow::Scroll)
             .children(children)

@@ -42,15 +42,15 @@ fn divider_does_not_force_an_auto_container_to_an_arbitrary_width() {
 }
 
 #[test]
-fn divider_honors_fixed_percentage_fill_and_width_limits() {
+fn divider_honors_fixed_percentage_auto_and_width_limits() {
     for (width, min, max, expected) in [
-        (Size::Fixed(8), 0, 40, 8),
-        (Size::Percent(50.0), 0, 40, 20),
-        (Size::Fill, 0, 40, 40),
-        (Size::Fill, 0, 12, 12),
-        (Size::Fixed(8), 12, 14, 12),
-        (Size::Fixed(8), 12, 6, 12),
-        (Size::Fixed(0), 0, 40, 0),
+        (Dimension::Length(8.0), 0, 40, 8),
+        (Dimension::Percent(0.5), 0, 40, 20),
+        (Dimension::Percent(1.0), 0, 40, 40),
+        (Dimension::Percent(1.0), 0, 12, 12),
+        (Dimension::Length(8.0), 12, 14, 12),
+        (Dimension::Length(8.0), 12, 6, 12),
+        (Dimension::Length(0.0), 0, 40, 0),
     ] {
         let node = view! {
             <View width=40>
@@ -71,8 +71,8 @@ fn divider_fills_its_share_of_a_flex_row() {
     let node = view! {
         <View width=50 height=1 flex_direction=FlexDirection::Row gap=1>
             <View width=10 height=1><TextSpan>"Fixed"</TextSpan></View>
-            <Divider />
-            <Divider max_width=12 />
+            <Divider flex_grow=1.0_f32 flex_basis=0 />
+            <Divider max_width=12 flex_grow=1.0_f32 flex_basis=0 />
         </View>
     };
     let buffer = render(&node, 60, 3);
@@ -85,7 +85,7 @@ fn divider_fills_its_share_of_a_flex_row() {
 #[test]
 fn titled_dividers_clip_and_fill_after_resizing_the_same_tree() {
     let node = view! {
-        <View width=Size::Fill height=2>
+        <View width=Dimension::Percent(1.0) height=2>
             <Divider title="Settings" />
         </View>
     };
@@ -106,7 +106,7 @@ fn divider_excludes_the_scrollbar_and_preserves_colors() {
     let node = view! {
         <View width=10 height=3 overflow=Overflow::Scroll background_color=Color::White>
             <Divider color=Color::Black />
-            <View height=4 />
+            <View height=4 flex_shrink=0.0 />
         </View>
     };
     let buffer = render(&node, 20, 5);
@@ -135,7 +135,7 @@ fn divider_fill_does_not_create_horizontal_scroll_content() {
 #[test]
 fn text_fill_uses_allocated_width_without_inflating_intrinsic_measurement() {
     let node = view! {
-        <View width=6 height=3 align_items=Align::Stretch>
+        <View width=6 height=3 align_items=AlignItems::Stretch>
             <Paragraph fill='.'>"ab\nx"</Paragraph>
         </View>
     };

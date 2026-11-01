@@ -5,8 +5,8 @@ use crate::element::interaction::{
 };
 use crate::element::snippet::Snippet;
 use crate::layout::{
-    BorderStyle, FlexDirection, Margin, Overflow, Padding, Placement, ScrollbarStyle,
-    ScrollbarVisibility, Size,
+    BorderStyle, Dimension, FlexDirection, IntoDimension, Margin, Overflow, Padding, Placement,
+    ScrollbarStyle, ScrollbarVisibility,
 };
 use crossterm::event::KeyEvent;
 use crossterm::style::Color;
@@ -385,12 +385,12 @@ impl fmt::Debug for ScrollData {
 
 #[derive(Clone, Debug)]
 pub struct ViewElement {
-    pub width: Size,
-    pub height: Size,
-    pub min_width: Option<Size>,
-    pub max_width: Option<Size>,
-    pub min_height: Option<Size>,
-    pub max_height: Option<Size>,
+    pub width: Dimension,
+    pub height: Dimension,
+    pub min_width: Option<Dimension>,
+    pub max_width: Option<Dimension>,
+    pub min_height: Option<Dimension>,
+    pub max_height: Option<Dimension>,
     pub margin: Margin,
     pub padding: Padding,
     pub gap: u16,
@@ -398,8 +398,11 @@ pub struct ViewElement {
     pub align_items: Option<AlignItems>,
     pub justify_content: Option<JustifyContent>,
     pub align_self: Option<AlignSelf>,
+    /// Native flex growth factor; defaults to 0.
     pub flex_grow: f32,
+    /// Native flex shrink factor; defaults to 1.
     pub flex_shrink: f32,
+    pub flex_basis: Dimension,
     pub flex_wrap: FlexWrap,
     pub overflow_x: Overflow,
     pub overflow_y: Overflow,
@@ -411,8 +414,8 @@ pub struct ViewElement {
 impl Default for ViewElement {
     fn default() -> Self {
         Self {
-            width: Size::default(),
-            height: Size::default(),
+            width: Dimension::Auto,
+            height: Dimension::Auto,
             min_width: None,
             max_width: None,
             min_height: None,
@@ -425,7 +428,8 @@ impl Default for ViewElement {
             justify_content: None,
             align_self: None,
             flex_grow: 0.0,
-            flex_shrink: 0.0,
+            flex_shrink: 1.0,
+            flex_basis: Dimension::Auto,
             flex_wrap: FlexWrap::NoWrap,
             overflow_x: Overflow::Visible,
             overflow_y: Overflow::Visible,
@@ -458,52 +462,52 @@ impl ViewElement {
         self
     }
 
-    pub fn width(mut self, w: impl Into<Size>) -> Self {
-        self.width = w.into();
+    pub fn width(mut self, w: impl IntoDimension) -> Self {
+        self.width = w.into_dimension();
         self
     }
 
-    pub fn height(mut self, h: impl Into<Size>) -> Self {
-        self.height = h.into();
+    pub fn height(mut self, h: impl IntoDimension) -> Self {
+        self.height = h.into_dimension();
         self
     }
 
-    pub fn min_width(mut self, mw: impl Into<Size>) -> Self {
-        self.min_width = Some(mw.into());
+    pub fn min_width(mut self, mw: impl IntoDimension) -> Self {
+        self.min_width = Some(mw.into_dimension());
         self
     }
 
-    pub fn opt_min_width(mut self, mw: Option<Size>) -> Self {
+    pub fn opt_min_width(mut self, mw: Option<Dimension>) -> Self {
         self.min_width = mw;
         self
     }
 
-    pub fn max_width(mut self, mw: impl Into<Size>) -> Self {
-        self.max_width = Some(mw.into());
+    pub fn max_width(mut self, mw: impl IntoDimension) -> Self {
+        self.max_width = Some(mw.into_dimension());
         self
     }
 
-    pub fn opt_max_width(mut self, mw: Option<Size>) -> Self {
+    pub fn opt_max_width(mut self, mw: Option<Dimension>) -> Self {
         self.max_width = mw;
         self
     }
 
-    pub fn min_height(mut self, mh: impl Into<Size>) -> Self {
-        self.min_height = Some(mh.into());
+    pub fn min_height(mut self, mh: impl IntoDimension) -> Self {
+        self.min_height = Some(mh.into_dimension());
         self
     }
 
-    pub fn opt_min_height(mut self, mh: Option<Size>) -> Self {
+    pub fn opt_min_height(mut self, mh: Option<Dimension>) -> Self {
         self.min_height = mh;
         self
     }
 
-    pub fn max_height(mut self, mh: impl Into<Size>) -> Self {
-        self.max_height = Some(mh.into());
+    pub fn max_height(mut self, mh: impl IntoDimension) -> Self {
+        self.max_height = Some(mh.into_dimension());
         self
     }
 
-    pub fn opt_max_height(mut self, mh: Option<Size>) -> Self {
+    pub fn opt_max_height(mut self, mh: Option<Dimension>) -> Self {
         self.max_height = mh;
         self
     }
@@ -525,6 +529,11 @@ impl ViewElement {
 
     pub fn flex_shrink(mut self, fs: f32) -> Self {
         self.flex_shrink = fs;
+        self
+    }
+
+    pub fn flex_basis(mut self, basis: impl IntoDimension) -> Self {
+        self.flex_basis = basis.into_dimension();
         self
     }
 
@@ -667,12 +676,12 @@ impl ViewElement {
 
 #[derive(Clone)]
 pub struct ViewProps {
-    pub width: Size,
-    pub height: Size,
-    pub min_width: Option<Size>,
-    pub max_width: Option<Size>,
-    pub min_height: Option<Size>,
-    pub max_height: Option<Size>,
+    pub width: Dimension,
+    pub height: Dimension,
+    pub min_width: Option<Dimension>,
+    pub max_width: Option<Dimension>,
+    pub min_height: Option<Dimension>,
+    pub max_height: Option<Dimension>,
     pub margin: Margin,
     pub padding: Padding,
     pub gap: u16,
@@ -680,8 +689,11 @@ pub struct ViewProps {
     pub align_items: Option<AlignItems>,
     pub justify_content: Option<JustifyContent>,
     pub align_self: Option<AlignSelf>,
+    /// Native flex growth factor; defaults to 0.
     pub flex_grow: f32,
+    /// Native flex shrink factor; defaults to 1.
     pub flex_shrink: f32,
+    pub flex_basis: Dimension,
     pub flex_wrap: FlexWrap,
     pub overflow_x: Overflow,
     pub overflow_y: Overflow,
@@ -693,8 +705,8 @@ pub struct ViewProps {
 impl Default for ViewProps {
     fn default() -> Self {
         Self {
-            width: Size::default(),
-            height: Size::default(),
+            width: Dimension::Auto,
+            height: Dimension::Auto,
             min_width: None,
             max_width: None,
             min_height: None,
@@ -707,7 +719,8 @@ impl Default for ViewProps {
             justify_content: None,
             align_self: None,
             flex_grow: 0.0,
-            flex_shrink: 0.0,
+            flex_shrink: 1.0,
+            flex_basis: Dimension::Auto,
             flex_wrap: FlexWrap::NoWrap,
             overflow_x: Overflow::Visible,
             overflow_y: Overflow::Visible,
@@ -730,52 +743,52 @@ impl ViewProps {
 }
 
 impl ViewPropsBuilder {
-    pub fn width(mut self, width: impl Into<Size>) -> Self {
-        self.props.width = width.into();
+    pub fn width(mut self, width: impl IntoDimension) -> Self {
+        self.props.width = width.into_dimension();
         self
     }
 
-    pub fn height(mut self, height: impl Into<Size>) -> Self {
-        self.props.height = height.into();
+    pub fn height(mut self, height: impl IntoDimension) -> Self {
+        self.props.height = height.into_dimension();
         self
     }
 
-    pub fn min_width(mut self, min_width: impl Into<Size>) -> Self {
-        self.props.min_width = Some(min_width.into());
+    pub fn min_width(mut self, min_width: impl IntoDimension) -> Self {
+        self.props.min_width = Some(min_width.into_dimension());
         self
     }
 
-    pub fn opt_min_width(mut self, min_width: Option<Size>) -> Self {
+    pub fn opt_min_width(mut self, min_width: Option<Dimension>) -> Self {
         self.props.min_width = min_width;
         self
     }
 
-    pub fn max_width(mut self, max_width: impl Into<Size>) -> Self {
-        self.props.max_width = Some(max_width.into());
+    pub fn max_width(mut self, max_width: impl IntoDimension) -> Self {
+        self.props.max_width = Some(max_width.into_dimension());
         self
     }
 
-    pub fn opt_max_width(mut self, max_width: Option<Size>) -> Self {
+    pub fn opt_max_width(mut self, max_width: Option<Dimension>) -> Self {
         self.props.max_width = max_width;
         self
     }
 
-    pub fn min_height(mut self, min_height: impl Into<Size>) -> Self {
-        self.props.min_height = Some(min_height.into());
+    pub fn min_height(mut self, min_height: impl IntoDimension) -> Self {
+        self.props.min_height = Some(min_height.into_dimension());
         self
     }
 
-    pub fn opt_min_height(mut self, min_height: Option<Size>) -> Self {
+    pub fn opt_min_height(mut self, min_height: Option<Dimension>) -> Self {
         self.props.min_height = min_height;
         self
     }
 
-    pub fn max_height(mut self, max_height: impl Into<Size>) -> Self {
-        self.props.max_height = Some(max_height.into());
+    pub fn max_height(mut self, max_height: impl IntoDimension) -> Self {
+        self.props.max_height = Some(max_height.into_dimension());
         self
     }
 
-    pub fn opt_max_height(mut self, max_height: Option<Size>) -> Self {
+    pub fn opt_max_height(mut self, max_height: Option<Dimension>) -> Self {
         self.props.max_height = max_height;
         self
     }
@@ -837,6 +850,11 @@ impl ViewPropsBuilder {
 
     pub fn flex_shrink(mut self, shrink: f32) -> Self {
         self.props.flex_shrink = shrink;
+        self
+    }
+
+    pub fn flex_basis(mut self, basis: impl IntoDimension) -> Self {
+        self.props.flex_basis = basis.into_dimension();
         self
     }
 
@@ -1028,6 +1046,7 @@ pub fn View(props: ViewProps) -> ViewElement {
         align_self: props.align_self,
         flex_grow: props.flex_grow,
         flex_shrink: props.flex_shrink,
+        flex_basis: props.flex_basis,
         flex_wrap: props.flex_wrap,
         overflow_x: props.overflow_x,
         overflow_y: props.overflow_y,

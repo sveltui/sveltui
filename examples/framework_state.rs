@@ -7,8 +7,8 @@ fn StateDemo() -> impl IntoNode {
     let greeting = derived(move || format!("Hi there, {}", name.get()));
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <TextInput value={name}  title="Name" placeholder="Enter name here" width=Size::Fill/>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
+            <TextInput value={name}  title="Name" placeholder="Enter name here" width=Dimension::Percent(1.0)/>
 
             {#if !name.get().is_empty()}
                 <Divider />

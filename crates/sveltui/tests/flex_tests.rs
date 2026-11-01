@@ -45,12 +45,16 @@ fn intrinsic_dimensions_follow_direction_with_gap_border_and_padding() {
 fn justification_and_cross_alignment_work_on_both_axes() {
     for direction in [FlexDirection::Row, FlexDirection::Column] {
         for (justify, positions) in [
-            (Justify::Start, [0, 3]),
-            (Justify::Center, [3, 6]),
-            (Justify::End, [5, 8]),
-            (Justify::SpaceBetween, [0, 8]),
+            (JustifyContent::FlexStart, [0, 3]),
+            (JustifyContent::Center, [3, 6]),
+            (JustifyContent::FlexEnd, [5, 8]),
+            (JustifyContent::SpaceBetween, [0, 8]),
         ] {
-            for (align, cross) in [(Align::Start, 0), (Align::Center, 2), (Align::End, 4)] {
+            for (align, cross) in [
+                (AlignItems::FlexStart, 0),
+                (AlignItems::Center, 2),
+                (AlignItems::FlexEnd, 4),
+            ] {
                 let ids = [FocusId::new(), FocusId::new()];
                 let (width, height) = direction.axes(10, 6);
                 let (cw, ch) = direction.axes(2, 2);
@@ -73,19 +77,19 @@ fn justification_and_cross_alignment_work_on_both_axes() {
 }
 
 #[test]
-fn fill_shares_remaining_space_and_redistributes_capped_allocations() {
+fn flex_growth_shares_remaining_space_and_redistributes_capped_allocations() {
     for direction in [FlexDirection::Row, FlexDirection::Column] {
         let ids = [FocusId::new(), FocusId::new(), FocusId::new()];
         let (width, height) = direction.axes(100, 4);
-        let (fixed_w, fixed_h) = direction.axes(Size::Fixed(20), Size::Fill);
-        let (fill_w, fill_h) = direction.axes(Size::Fill, Size::Fill);
+        let (fixed_w, fixed_h) = direction.axes(Dimension::Length(20.0), Dimension::Auto);
+        let (fill_w, fill_h) = direction.axes(Dimension::Auto, Dimension::Auto);
         let (max_w_a, max_h_a) = direction.axes(30, u16::MAX);
         let (max_w_b, max_h_b) = direction.axes(60, u16::MAX);
         let node = view! {
             <View flex_direction=direction width=width height=height>
-                <Pressable focus_id={ids[0]} tab_stop=true><View width=fixed_w height=fixed_h /></Pressable>
-                <Pressable focus_id={ids[1]} tab_stop=true><View width=fill_w height=fill_h max_width=max_w_a max_height=max_h_a /></Pressable>
-                <Pressable focus_id={ids[2]} tab_stop=true><View width=fill_w height=fill_h max_width=max_w_b max_height=max_h_b /></Pressable>
+                <Pressable focus_id={ids[0]} tab_stop=true><View width=fixed_w height=fixed_h flex_shrink=0.0 /></Pressable>
+                <Pressable focus_id={ids[1]} tab_stop=true><View width=fill_w height=fill_h flex_grow=1.0 flex_basis=0 max_width=max_w_a max_height=max_h_a /></Pressable>
+                <Pressable focus_id={ids[2]} tab_stop=true><View width=fill_w height=fill_h flex_grow=1.0 flex_basis=0 max_width=max_w_b max_height=max_h_b /></Pressable>
             </View>
         };
         let (_, hits) = render(&node, width, height);
@@ -97,13 +101,13 @@ fn fill_shares_remaining_space_and_redistributes_capped_allocations() {
 }
 
 #[test]
-fn fill_minimums_are_resolved_before_other_child_maximums() {
+fn flex_minimums_are_resolved_before_other_child_maximums() {
     let a = FocusId::new();
     let b = FocusId::new();
     let node = view! {
         <View flex_direction=FlexDirection::Row width=100 height=1>
-            <Pressable focus_id=a tab_stop=true><View width=Size::Fill min_width=90 height=1 /></Pressable>
-            <Pressable focus_id=b tab_stop=true><View width=Size::Fill max_width=20 height=1 /></Pressable>
+            <Pressable focus_id=a tab_stop=true><View flex_grow=1.0 flex_basis=0 min_width=90 height=1 /></Pressable>
+            <Pressable focus_id=b tab_stop=true><View flex_grow=1.0 flex_basis=0 max_width=20 height=1 /></Pressable>
         </View>
     };
     let (_, hits) = render(&node, 100, 2);
@@ -112,13 +116,13 @@ fn fill_minimums_are_resolved_before_other_child_maximums() {
 }
 
 #[test]
-fn fill_remainders_go_to_earlier_siblings_after_gaps() {
+fn flex_remainders_go_to_earlier_siblings_after_gaps() {
     let ids = [FocusId::new(), FocusId::new(), FocusId::new()];
     let node = view! {
         <View flex_direction=FlexDirection::Row width=10 height=1 gap=1>
-            <Pressable focus_id={ids[0]} tab_stop=true><View width=Size::Fill height=1 /></Pressable>
-            <Pressable focus_id={ids[1]} tab_stop=true><View width=Size::Fill height=1 /></Pressable>
-            <Pressable focus_id={ids[2]} tab_stop=true><View width=Size::Fill height=1 /></Pressable>
+            <Pressable focus_id={ids[0]} tab_stop=true><View flex_grow=1.0 flex_basis=0 height=1 /></Pressable>
+            <Pressable focus_id={ids[1]} tab_stop=true><View flex_grow=1.0 flex_basis=0 height=1 /></Pressable>
+            <Pressable focus_id={ids[2]} tab_stop=true><View flex_grow=1.0 flex_basis=0 height=1 /></Pressable>
         </View>
     };
     let (_, hits) = render(&node, 10, 2);
@@ -133,10 +137,10 @@ fn stretch_respects_explicit_sizes_and_maximums() {
     let b = FocusId::new();
     let c = FocusId::new();
     let node = view! {
-        <View width=10 height=6 align_items=Align::Stretch>
+        <View width=10 height=6 align_items=AlignItems::Stretch>
             <Pressable focus_id=a tab_stop=true><View height=1 max_width=6><TextSpan>"a"</TextSpan></View></Pressable>
             <Pressable focus_id=b tab_stop=true><View height=1 width=3 /></Pressable>
-            <Pressable focus_id=c tab_stop=true><View height=1 width=Size::Fill max_width=5 /></Pressable>
+            <Pressable focus_id=c tab_stop=true><View height=1 width=Dimension::Percent(1.0) max_width=5 /></Pressable>
         </View>
     };
     let (_, hits) = render(&node, 20, 10);
@@ -146,14 +150,14 @@ fn stretch_respects_explicit_sizes_and_maximums() {
 }
 
 #[test]
-fn percentage_and_fill_use_the_constrained_parent_content_box() {
+fn percentages_and_stretch_use_the_constrained_parent_content_box() {
     let parent = FocusId::new();
     let child = FocusId::new();
     let node = view! {
         <View width=40 border=BorderStyle::Single padding=Padding::all(1)>
             <Pressable focus_id=parent tab_stop=true>
-                <View width=Size::Percent(50.0) border=BorderStyle::Single>
-                    <Pressable focus_id=child tab_stop=true><View width=Size::Fill height=1 /></Pressable>
+                <View width=Dimension::Percent(0.5) border=BorderStyle::Single>
+                    <Pressable focus_id=child tab_stop=true><View width=Dimension::Percent(1.0) height=1 /></Pressable>
                 </View>
             </Pressable>
         </View>
@@ -196,8 +200,8 @@ fn horizontal_flex_scrolls_without_shrinking_fixed_children() {
     let node = view! {
         <View width=10 height=3 flex_direction=FlexDirection::Row
             overflow_x=Overflow::Scroll scroll_x=6 scroll_id=id>
-            <View width=8 height=1><TextSpan>"ABCDEFGH"</TextSpan></View>
-            <View width=8 height=1><TextSpan>"ijklmnop"</TextSpan></View>
+            <View width=8 height=1 flex_shrink=0.0><TextSpan>"ABCDEFGH"</TextSpan></View>
+            <View width=8 height=1 flex_shrink=0.0><TextSpan>"ijklmnop"</TextSpan></View>
         </View>
     };
     let (buffer, _) = render(&node, 20, 5);
@@ -212,7 +216,7 @@ fn vertical_scrollbar_reduces_fill_width_without_causing_horizontal_scroll() {
     let child = FocusId::new();
     let node = view! {
         <View width=10 height=3 overflow=Overflow::Scroll>
-            <Pressable focus_id=child tab_stop=true><View width=Size::Fill height=5 /></Pressable>
+            <Pressable focus_id=child tab_stop=true><View height=5 flex_shrink=0.0 /></Pressable>
         </View>
     };
     let (buffer, hits) = render(&node, 20, 10);
@@ -226,7 +230,7 @@ fn coupled_scrollbars_and_tiny_viewports_do_not_panic() {
     for (width, height) in [(10, 3), (1, 1), (0, 0)] {
         let node = view! {
             <View width=width height=height overflow=Overflow::Scroll>
-                <View width=10 height=4 />
+                <View width=10 height=4 flex_shrink=0.0 />
             </View>
         };
         let (buffer, _) = render(&node, width, height);
@@ -245,7 +249,7 @@ fn overlay_trigger_keeps_its_allocated_percentage_size_and_anchor() {
         <View width=40 height=4 flex_direction=FlexDirection::Row>
             <View width=10 height=2 />
             <Overlay open=true placement=Placement::BottomStart
-                trigger={view! { <Pressable focus_id=trigger tab_stop=true><View width=Size::Percent(50.0) height=2 /></Pressable> }}>
+                trigger={view! { <Pressable focus_id=trigger tab_stop=true><View width=Dimension::Percent(0.5) height=2 /></Pressable> }}>
                 <Pressable focus_id=popup tab_stop=true><View width=5 height=1><TextSpan>"popup"</TextSpan></View></Pressable>
             </Overlay>
         </View>
@@ -284,8 +288,8 @@ fn cursor_and_focus_ancestry_follow_nested_row_layout() {
         view! {
             <Pressable focus_id=parent tab_stop=true>
                 <View flex_direction=FlexDirection::Row width=30 height=5 gap=1>
-                    <View width=4 height=3 />
-                    <TextInput value=value set_value=set_value width=Size::Fill id=input />
+                    <View width=4 height=3 flex_shrink=0.0 />
+                    <TextInput value=value set_value=set_value width=Dimension::Percent(1.0) id=input />
                 </View>
             </Pressable>
         }
@@ -320,13 +324,13 @@ fn scrolled_hit_targets_match_visible_cells_and_keep_local_click_coordinates() {
     let received_at = received.clone();
     let child = view! {
         <Pressable focus_id=first tab_stop=true on_click_at={move |x, y| received_at.set(Some((x, y)))}>
-            <View width=8 height=1><TextSpan>"ABCDEFGH"</TextSpan></View>
+            <View width=8 height=1 flex_shrink=0.0><TextSpan>"ABCDEFGH"</TextSpan></View>
         </Pressable>
     };
     let node = view! {
         <View width=10 height=3 flex_direction=FlexDirection::Row overflow_x=Overflow::Scroll scroll_x=6>
             {child}
-            <Pressable focus_id=second tab_stop=true><View width=8 height=1><TextSpan>"ijklmnop"</TextSpan></View></Pressable>
+            <Pressable focus_id=second tab_stop=true><View width=8 height=1 flex_shrink=0.0><TextSpan>"ijklmnop"</TextSpan></View></Pressable>
         </View>
     };
     let (_, hits) = render(&node, 20, 5);
@@ -386,7 +390,7 @@ fn space_between_handles_empty_singleton_and_excess_content() {
             .map(|id| view! { <Pressable focus_id=id tab_stop=true><View width=6 height=1 /></Pressable> })
             .collect::<Vec<_>>();
         let node = view! {
-            <View width=10 height=1 flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween>
+            <View width=10 height=1 flex_direction=FlexDirection::Row justify_content=JustifyContent::SpaceBetween>
                 {children}
             </View>
         };
@@ -403,8 +407,8 @@ fn percentage_full_width_is_distinct_from_sharing_remaining_space() {
     let fill = FocusId::new();
     let node = view! {
         <View flex_direction=FlexDirection::Row width=20 height=1>
-            <Pressable focus_id=percentage tab_stop=true><View width=Size::Percent(100.0) height=1 /></Pressable>
-            <Pressable focus_id=fill tab_stop=true><View width=Size::Fill min_width=3 height=1 /></Pressable>
+            <Pressable focus_id=percentage tab_stop=true><View width=Dimension::Percent(1.0) height=1 flex_shrink=0.0 /></Pressable>
+            <Pressable focus_id=fill tab_stop=true><View flex_grow=1.0 flex_basis=0 min_width=3 height=1 /></Pressable>
         </View>
     };
     let (_, hits) = render(&node, 30, 4);
@@ -425,14 +429,14 @@ fn one_overflow_axis_does_not_clip_visible_overflow_on_the_other() {
 }
 
 #[test]
-fn auto_cross_size_does_not_reserve_scrollbars_for_unsplit_fill_siblings() {
+fn auto_cross_size_does_not_reserve_scrollbars_for_flex_siblings() {
     for direction in [FlexDirection::Row, FlexDirection::Column] {
-        let (width, height) = direction.axes(Size::Fixed(20), Size::Auto);
-        let (child_w, child_h) = direction.axes(Size::Fill, Size::Fixed(6));
+        let (width, height) = direction.axes(Dimension::Length(20.0), Dimension::Auto);
+        let (child_w, child_h) = direction.axes(Dimension::Auto, Dimension::Length(6.0));
         let node = view! {
             <View flex_direction=direction width=width height=height overflow=Overflow::Scroll>
-                <View width=child_w height=child_h />
-                <View width=child_w height=child_h />
+                <View width=child_w height=child_h flex_grow=1.0 flex_basis=0 />
+                <View width=child_w height=child_h flex_grow=1.0 flex_basis=0 />
             </View>
         };
         assert_eq!(measure_node(&node, 80, 80), direction.axes(20, 6));

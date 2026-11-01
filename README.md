@@ -58,10 +58,10 @@ fn Counter () -> impl IntoNode {
 
     view! {
       <View
-        height=Size::Fill
-        width=Size::Fill
-        justify_content=Justify::Center
-        align_items=Align::Center
+        height=Dimension::Percent(1.0)
+        width=Dimension::Percent(1.0)
+        justify_content=JustifyContent::Center
+        align_items=AlignItems::Center
         gap=4
       >
 

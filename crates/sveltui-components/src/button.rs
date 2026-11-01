@@ -10,10 +10,10 @@ pub struct ButtonProps {
     pub disabled: bool,
     #[prop(optional)]
     pub on_click: Option<Rc<dyn Fn()>>,
-    #[prop(default)]
-    pub width: Size,
-    #[prop(default)]
-    pub height: Size,
+    #[prop(default = Dimension::Auto)]
+    pub width: Dimension,
+    #[prop(default = Dimension::Auto)]
+    pub height: Dimension,
     #[prop(optional)]
     pub border: Option<BorderStyle>,
     #[prop(optional)]

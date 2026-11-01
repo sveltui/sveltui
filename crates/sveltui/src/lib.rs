@@ -70,11 +70,11 @@ pub use element::{
     use_focus,
 };
 pub use layout::{
-    Align, BorderStyle, FlexDirection, FlexDirectionExt, Justify, Margin, Overflow, OverflowExt,
-    Padding, Placement, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility, Size,
+    AlignContent, AlignItems, AlignSelf, Display, FlexWrap, JustifyContent, Point, Position,
 };
 pub use layout::{
-    AlignContent, AlignItems, AlignSelf, Display, FlexWrap, JustifyContent, Point, Position,
+    BorderStyle, Dimension, FlexDirection, FlexDirectionExt, IntoDimension, Margin, Overflow,
+    OverflowExt, Padding, Placement, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility,
 };
 pub use reactive::{
     AsyncState, BlockingFuture, ComponentScope, Derived, ReadSignal, Runtime, State, TaskHandle,
@@ -98,10 +98,9 @@ pub mod prelude {
         is_focused, is_layer_open, use_focus,
     };
     pub use crate::layout::{
-        Align, AlignContent, AlignItems, AlignSelf, BorderStyle, Display, FlexDirection,
-        FlexDirectionExt, FlexWrap, Justify, JustifyContent, Margin, Overflow, OverflowExt,
+        AlignContent, AlignItems, AlignSelf, BorderStyle, Dimension, Display, FlexDirection,
+        FlexDirectionExt, FlexWrap, IntoDimension, JustifyContent, Margin, Overflow, OverflowExt,
         Padding, Placement, Point, Position, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility,
-        Size,
     };
     pub use crate::reactive::{
         AsyncState, BlockingFuture, ComponentScope, Derived, ReadSignal, State, TaskHandle,
