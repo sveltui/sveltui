@@ -6,6 +6,7 @@ use taffy::prelude::*;
 #[derive(Clone, Debug, Default)]
 pub struct ComputedLayoutNode {
     pub rect: Rect,
+    pub viewport_size: (u16, u16),
     pub content_size: (u16, u16),
     pub scroll_size: (u16, u16),
     pub children: Vec<ComputedLayoutNode>,
@@ -135,6 +136,10 @@ pub fn view_to_taffy_style(
             || view.overflow_x == taffy::style::Overflow::Scroll)
             && (view.width != Size::Auto || view.max_width.is_some())
             && (view.height != Size::Auto || view.max_height.is_some())
+            && view
+                .scroll
+                .as_ref()
+                .is_none_or(|s| s.scrollbar_visibility != crate::layout::ScrollbarVisibility::Never)
         {
             1.0
         } else {
@@ -326,6 +331,12 @@ impl LayoutEngine {
     }
 
     fn extract_node_layout(&self, taffy_node: NodeId, vnode: &VNode) -> ComputedLayoutNode {
+        // A single-child Pressable shares its child's Taffy node and geometry.
+        if let VNode::Pressable(p) = vnode
+            && p.children.len() == 1
+        {
+            return self.extract_node_layout(taffy_node, &p.children[0]);
+        }
         let l = self.tree.layout(taffy_node).cloned().unwrap_or_default();
 
         let x = l.location.x.max(0.0).round() as u16;
@@ -335,27 +346,34 @@ impl LayoutEngine {
         let content_w = l.content_size.width.max(0.0).round() as u16;
         let content_h = l.content_size.height.max(0.0).round() as u16;
 
-        let scrollbar_gutter_x = if let VNode::View(v) = vnode {
-            if v.overflow_y == taffy::style::Overflow::Scroll && content_h > height {
-                1
-            } else {
-                0
-            }
+        let (content_w, content_h, viewport_w, viewport_h) = if let VNode::View(v) = vnode {
+            let border = u16::from(
+                v.visual
+                    .as_ref()
+                    .is_some_and(|v| v.border != BorderStyle::None),
+            );
+            let padding_w = v.padding.left.saturating_add(v.padding.right);
+            let padding_h = v.padding.top.saturating_add(v.padding.bottom);
+            // Taffy's content extent includes the leading border and both
+            // padding edges. Scroll offsets and clipping use content coordinates.
+            (
+                content_w.saturating_sub(border.saturating_add(padding_w)),
+                content_h.saturating_sub(border.saturating_add(padding_h)),
+                width
+                    .saturating_sub(border * 2)
+                    .saturating_sub(padding_w)
+                    .saturating_sub(l.scrollbar_size.width as u16),
+                height
+                    .saturating_sub(border * 2)
+                    .saturating_sub(padding_h)
+                    .saturating_sub(l.scrollbar_size.height as u16),
+            )
         } else {
-            0
-        };
-        let scrollbar_gutter_y = if let VNode::View(v) = vnode {
-            if v.overflow_x == taffy::style::Overflow::Scroll && content_w > width {
-                1
-            } else {
-                0
-            }
-        } else {
-            0
+            (content_w, content_h, width, height)
         };
 
-        let scroll_w = content_w.saturating_sub(width.saturating_sub(scrollbar_gutter_x));
-        let scroll_h = content_h.saturating_sub(height.saturating_sub(scrollbar_gutter_y));
+        let scroll_w = content_w.saturating_sub(viewport_w);
+        let scroll_h = content_h.saturating_sub(viewport_h);
 
         let children_nodes = self.tree.children(taffy_node).unwrap_or_default();
         let child_vnodes = match vnode {
@@ -383,6 +401,7 @@ impl LayoutEngine {
 
         ComputedLayoutNode {
             rect: Rect::new(x, y, width, height),
+            viewport_size: (viewport_w, viewport_h),
             content_size: (content_w, content_h),
             scroll_size: (scroll_w, scroll_h),
             children: computed_children,

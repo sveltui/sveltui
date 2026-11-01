@@ -84,7 +84,7 @@ fn FormDemo() -> impl IntoNode {
                 />
 
                 <TextArea
-                    value=bio.read()
+                    value=bio
                     title="Biography"
                     width=48
                     height=4
@@ -126,3 +126,7 @@ fn main() -> std::io::Result<()> {
         .on_key(sveltui::app::exit_shortcuts)
         .run()
 }
+
+#[cfg(test)]
+#[path = "__tests__/form_tests.rs"]
+mod form_tests;

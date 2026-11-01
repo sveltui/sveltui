@@ -19,6 +19,7 @@ fn ParagraphDemo() -> impl IntoNode {
             align_items=Align::Center justify_content=Justify::Center>
             <Pressable focus_id=scroll_id tab_stop=true>
                 <View width=Size::Fill max_width=68 height=Size::Fill max_height=40
+                    scroll_id=scroll_id
                     border=BorderStyle::Single
                     border_color=Color::DarkGrey padding=Padding::all(1) gap=1
                     overflow_y=Overflow::Scroll>
