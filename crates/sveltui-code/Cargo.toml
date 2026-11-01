@@ -1,0 +1,26 @@
+[package]
+name = "sveltui-code"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords = ["tui", "code-editor", "syntax-highlighting", "textmate", "syntect"]
+categories.workspace = true
+description = "TextMate syntax-highlighted code preview and editor components for sveltui"
+
+[dependencies]
+sveltui = { workspace = true }
+sveltui-macros = { workspace = true }
+crossterm = { workspace = true }
+syntect = { workspace = true }
+
+[[bench]]
+name = "buffer_benchmarks"
+harness = false
+
+[[example]]
+name = "code_editor"
+path = "../../examples/code_editor.rs"
