@@ -61,32 +61,32 @@ fn KeyboardInspector(props: KeyboardInspectorProps) -> impl IntoNode {
                 gap=1
             >
                 <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
-                    <TextSpan color=Color::White bold=true>"component_keyboard: Key & Modifier Inspector"</TextSpan>
-                    <TextSpan color=Color::DarkGrey>{format!("Events: {}", props.event_count.get())}</TextSpan>
+                    <TextSpan foreground_color=Color::White bold=true>"component_keyboard: Key & Modifier Inspector"</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>{format!("Events: {}", props.event_count.get())}</TextSpan>
                 </View>
                 <Divider />
 
-                <TextSpan color=Color::DarkGrey>"Press any key combination to analyze code and active modifiers:"</TextSpan>
+                <TextSpan foreground_color=Color::DarkGrey>"Press any key combination to analyze code and active modifiers:"</TextSpan>
                 <View height=1 />
 
                 <View border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
-                    <TextSpan color=Color::White bold=true>{format!("Key Code:  {}", props.last_key.get())}</TextSpan>
-                    <TextSpan color=Color::DarkGrey>{format!("Modifiers: {}", props.last_mods.get())}</TextSpan>
+                    <TextSpan foreground_color=Color::White bold=true>{format!("Key Code:  {}", props.last_key.get())}</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>{format!("Modifiers: {}", props.last_mods.get())}</TextSpan>
                 </View>
 
                 <View height=1 />
-                <TextSpan color=Color::DarkGrey>"Recent Key History (last 5):"</TextSpan>
+                <TextSpan foreground_color=Color::DarkGrey>"Recent Key History (last 5):"</TextSpan>
 
                 <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) min_height=6>
                     {#each props.history.get() as item}
-                        <TextSpan color=Color::White>{item}</TextSpan>
+                        <TextSpan foreground_color=Color::White>{item}</TextSpan>
                     {:else}
-                        <TextSpan color=Color::DarkGrey>"No keyboard input captured yet. Press keys!"</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>"No keyboard input captured yet. Press keys!"</TextSpan>
                     {/each}
                 </View>
 
                 <Divider />
-                <TextSpan color=Color::DarkGrey>"Press 'Ctrl+C' or 'Esc' to exit the application."</TextSpan>
+                <TextSpan foreground_color=Color::DarkGrey>"Press 'Ctrl+C' or 'Esc' to exit the application."</TextSpan>
             </View>
         </View>
     }

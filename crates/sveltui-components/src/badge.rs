@@ -27,7 +27,7 @@ pub fn Badge(props: BadgeProps) -> impl IntoNode {
         {#if props.children.is_some()}
             {@render props.children}
         {:else if let Some(label) = &props.label}
-            <TextSpan fg=props.fg>{label.clone()}</TextSpan>
+            <TextSpan foreground_color=props.fg>{label.clone()}</TextSpan>
         {/if}
         </View>
     }

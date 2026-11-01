@@ -1,6 +1,10 @@
 use sveltui::prelude::*;
 use sveltui_components::*;
 
+#[cfg(test)]
+#[path = "__tests__/layout_tests.rs"]
+mod layout_tests;
+
 #[component]
 fn LayoutDemo() -> impl IntoNode {
     let direction = state(FlexDirection::Row);
@@ -9,19 +13,13 @@ fn LayoutDemo() -> impl IntoNode {
     view! {
         <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
             <View
-                width=76
+                width=Size::Fill
+                max_width=100
                 height=Size::Fill
-                max_height=30
-                border=BorderStyle::Double
+                max_height=50
+                border=BorderStyle::Single
                 border_color=Color::DarkGrey
-                padding=Padding::all(1)
-                gap=1
             >
-                <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
-                    <TextSpan color=Color::White bold=true>"component_layout: Taffy Engine"</TextSpan>
-                    <TextSpan color=Color::DarkGrey>{format!("Axis: {:?}", direction.get())}</TextSpan>
-                </View>
-                <Divider />
 
                 <View flex_direction=FlexDirection::Row gap=1>
                     <Button
@@ -49,53 +47,37 @@ fn LayoutDemo() -> impl IntoNode {
                     height=Size::Fill
                     flex_direction=direction.get()
                     gap=gap.get()
-                    border=BorderStyle::Single
-                    border_color=Color::DarkGrey
-                    padding=Padding::all(1)
                     overflow=Overflow::Scroll
                 >
                     <View
                         width=Size::Fill
                         height=Size::Fill
-                        min_width=16
-                        min_height=3
-                        border=BorderStyle::Single
-                        border_color=Color::White
-                        padding=Padding::all(1)
+                        min_height=6
+                        background_color=Color::Red
                     >
-                        <TextSpan color=Color::White bold=true>"Child A"</TextSpan>
-                        <TextSpan color=Color::DarkGrey>"Flexible share"</TextSpan>
                     </View>
 
                     <View
                         width=Size::Fill
                         height=Size::Fill
-                        min_width=16
-                        min_height=3
-                        border=BorderStyle::Single
-                        border_color=Color::White
-                        padding=Padding::all(1)
+                        min_height=6
+                        background_color=Color::Green
                     >
-                        <TextSpan color=Color::White bold=true>"Child B"</TextSpan>
-                        <TextSpan color=Color::DarkGrey>"Shares space"</TextSpan>
                     </View>
 
                     <View
                         width=Size::Fill
                         height=Size::Fill
-                        min_width=16
-                        min_height=3
-                        border=BorderStyle::Single
-                        border_color=Color::White
-                        padding=Padding::all(1)
+                        min_height=6
+                        background_color=Color::Blue
                     >
-                        <TextSpan color=Color::White bold=true>"Child C"</TextSpan>
-                        <TextSpan color=Color::DarkGrey>"Even flex split"</TextSpan>
                     </View>
                 </View>
 
                 <Divider />
-                <TextSpan color=Color::DarkGrey>"Tab: Switch controls | Space/Enter: Click | Q/Esc: Quit"</TextSpan>
+                <View justify_content=Justify::Center align_items=AlignItems::Center>
+                    <TextSpan>"Tab: Switch controls | Space/Enter: Click | Q/Esc: Quit"</TextSpan>
+                </View>
             </View>
         </View>
     }

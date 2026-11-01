@@ -23,19 +23,19 @@ fn ParagraphDemo() -> impl IntoNode {
                     border=BorderStyle::Single
                     border_color=Color::DarkGrey padding=Padding::all(1) gap=1
                     overflow_y=Overflow::Scroll>
-                    <TextSpan color=Color::White bold=true>"The Raven"</TextSpan>
-                    <TextSpan color=Color::DarkGrey>"Edgar Allan Poe"</TextSpan>
+                    <TextSpan foreground_color=Color::White bold=true>"The Raven"</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>"Edgar Allan Poe"</TextSpan>
                     <Divider />
 
-                    <Paragraph fg=Color::DarkGrey max_lines=2>
+                    <Paragraph foreground_color=Color::DarkGrey max_lines=2>
                         {poem.clone()}
                     </Paragraph>
 
                     <Divider title="Full poem" />
-                    <Paragraph fg=Color::White content=poem />
+                    <Paragraph foreground_color=Color::White content=poem />
 
                     <Divider />
-                    <Paragraph fg=Color::DarkGrey>"Tab: Focus | Up / Down / Wheel: Scroll | Q / Esc: Quit"</Paragraph>
+                    <Paragraph foreground_color=Color::DarkGrey>"Tab: Focus | Up / Down / Wheel: Scroll | Q / Esc: Quit"</Paragraph>
                 </View>
             </Pressable>
         </View>

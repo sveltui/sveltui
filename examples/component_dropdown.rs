@@ -24,10 +24,10 @@ fn DropdownDemo() -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <TextSpan color=Color::White bold=true>"component_dropdown: Menus & Hierarchical Submenus"</TextSpan>
+                <TextSpan foreground_color=Color::White bold=true>"component_dropdown: Menus & Hierarchical Submenus"</TextSpan>
                 <Divider />
 
-                <TextSpan color=Color::DarkGrey>
+                <TextSpan foreground_color=Color::DarkGrey>
                     "Use ↑/↓ to navigate menu items, → to open submenu, ← to go back, Enter to select."
                 </TextSpan>
 
@@ -65,8 +65,8 @@ fn DropdownDemo() -> impl IntoNode {
                 <Divider />
 
                 <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
-                    <TextSpan color=Color::White>{format!("Selected Option: {}", selected_action.get())}</TextSpan>
-                    <TextSpan color=Color::DarkGrey>"Esc / Tab: Close dropdown | Arrow keys: Navigate items"</TextSpan>
+                    <TextSpan foreground_color=Color::White>{format!("Selected Option: {}", selected_action.get())}</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>"Esc / Tab: Close dropdown | Arrow keys: Navigate items"</TextSpan>
                 </View>
             </View>
         </View>

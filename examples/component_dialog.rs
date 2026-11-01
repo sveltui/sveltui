@@ -18,10 +18,10 @@ fn DialogDemo() -> impl IntoNode {
                 border_color=Color::DarkGrey
                 padding=Padding::all(1)
             >
-                <Paragraph color=Color::White bold=true>"component_dialog: Modals, Popovers & Scoped Traps"</Paragraph>
+                <Paragraph foreground_color=Color::White bold=true>"component_dialog: Modals, Popovers & Scoped Traps"</Paragraph>
                 <Divider />
 
-                <TextSpan color=Color::DarkGrey>
+                <TextSpan foreground_color=Color::DarkGrey>
                     "Dialogs contain keyboard navigation until dismissed with Escape or Action buttons."
                 </TextSpan>
 
@@ -45,8 +45,8 @@ fn DialogDemo() -> impl IntoNode {
                             </Button>
                         {/snippet}
                         <View border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
-                            <TextSpan color=Color::White bold=true>"Popover Details"</TextSpan>
-                            <TextSpan color=Color::DarkGrey>"Anchored to trigger element."</TextSpan>
+                            <TextSpan foreground_color=Color::White bold=true>"Popover Details"</TextSpan>
+                            <TextSpan foreground_color=Color::DarkGrey>"Anchored to trigger element."</TextSpan>
                             <Button
                                 on_click={move || {
                                     action_log.set(String::from("Popover action confirmed."));
@@ -63,8 +63,8 @@ fn DialogDemo() -> impl IntoNode {
                 <Divider />
 
                 <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
-                    <TextSpan color=Color::White>{format!("Status: {}", action_log.get())}</TextSpan>
-                    <TextSpan color=Color::DarkGrey>"Escape: Dismiss top-layer | Tab: Navigate inside trap"</TextSpan>
+                    <TextSpan foreground_color=Color::White>{format!("Status: {}", action_log.get())}</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>"Escape: Dismiss top-layer | Tab: Navigate inside trap"</TextSpan>
                 </View>
 
                 // Modal Dialog Overlay
@@ -77,8 +77,8 @@ fn DialogDemo() -> impl IntoNode {
                     on_close={move || dialog_open.set(false)}
                 >
                     <View padding=Padding::all(1) gap=1>
-                        <TextSpan color=Color::White>"Proceed with irreversible cluster deployment?"</TextSpan>
-                        <TextSpan color=Color::DarkGrey>"This will overwrite current staging replicas."</TextSpan>
+                        <TextSpan foreground_color=Color::White>"Proceed with irreversible cluster deployment?"</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>"This will overwrite current staging replicas."</TextSpan>
                         <View height=1 />
                         <View flex_direction=FlexDirection::Row gap=1 justify_content=Justify::End>
                             <Button

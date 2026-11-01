@@ -46,7 +46,7 @@ pub fn ProgressBar(props: ProgressBarProps) -> impl IntoNode {
                 justify_content=JustifyContent::Center
                 align_items=AlignItems::FlexStart
             >
-                <TextSpan fg=props.fill_color bold=true>{bar_text}</TextSpan>
+                <TextSpan foreground_color=props.fill_color bold=true>{bar_text}</TextSpan>
             </View>
         </Pressable>
     }

@@ -61,8 +61,8 @@ fn LoopsDemo() -> impl IntoNode {
                 gap=1
             >
                 <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween>
-                    <TextSpan color=Color::White bold=true>"framework_loops: {#each} List Rendering"</TextSpan>
-                    <TextSpan color=Color::DarkGrey>{format!("Items: {}", tasks.get().len())}</TextSpan>
+                    <TextSpan foreground_color=Color::White bold=true>"framework_loops: {#each} List Rendering"</TextSpan>
+                    <TextSpan foreground_color=Color::DarkGrey>{format!("Items: {}", tasks.get().len())}</TextSpan>
                 </View>
                 <Divider />
 
@@ -85,18 +85,18 @@ fn LoopsDemo() -> impl IntoNode {
                     {#each tasks.get() as task (task.id)}
                         <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
                             <View flex_direction=FlexDirection::Row gap=1>
-                                <TextSpan color=if task.done { Color::DarkGrey } else { Color::White }>
+                                <TextSpan foreground_color=if task.done { Color::DarkGrey } else { Color::White }>
                                     {if task.done { "[x]" } else { "[ ]" }}
                                 </TextSpan>
-                                <TextSpan color=if task.done { Color::DarkGrey } else { Color::White }>
+                                <TextSpan foreground_color=if task.done { Color::DarkGrey } else { Color::White }>
                                     {task.title.clone()}
                                 </TextSpan>
                             </View>
-                            <TextSpan color=Color::DarkGrey>{format!("id:{}", task.id)}</TextSpan>
+                            <TextSpan foreground_color=Color::DarkGrey>{format!("id:{}", task.id)}</TextSpan>
                         </View>
                     {:else}
                         <View align_items=Align::Center padding=Padding::symmetric(0, 1)>
-                            <TextSpan color=Color::DarkGrey>"No tasks remaining. Click '+ Add Task' above!"</TextSpan>
+                            <TextSpan foreground_color=Color::DarkGrey>"No tasks remaining. Click '+ Add Task' above!"</TextSpan>
                         </View>
                     {/each}
                 </View>

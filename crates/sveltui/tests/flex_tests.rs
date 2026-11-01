@@ -533,13 +533,13 @@ fn menu_defaults_blend_borders_and_dim_disabled_custom_children() {
                     placement={Placement::Anchor { x: 0, y: 0 }}>
                     <Menu::Item disabled=true>
                         <View flex_direction=FlexDirection::Row>
-                            <TextSpan fg=Color::White bold=true>"Disabled"</TextSpan>
-                            <View><TextSpan fg=Color::Red bold=true>"Nested"</TextSpan></View>
+                            <TextSpan foreground_color=Color::White bold=true>"Disabled"</TextSpan>
+                            <View><TextSpan foreground_color=Color::Red bold=true>"Nested"</TextSpan></View>
                         </View>
                     </Menu::Item>
                     <Menu::Sub>
                         <Menu::SubTrigger disabled=true>
-                            <TextSpan fg=Color::White bold=true>"Unavailable"</TextSpan>
+                            <TextSpan foreground_color=Color::White bold=true>"Unavailable"</TextSpan>
                         </Menu::SubTrigger>
                         <Menu::SubContent />
                     </Menu::Sub>

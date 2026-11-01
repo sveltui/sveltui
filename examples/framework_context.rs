@@ -19,10 +19,10 @@ fn DeepThemedWidget() -> impl IntoNode {
     view! {
         <View border=theme.border_style border_color=theme.primary_color padding=Padding::all(1) gap=1>
             <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween>
-                <TextSpan color=theme.primary_color bold=true>"Themed Consumer Box"</TextSpan>
+                <TextSpan foreground_color=theme.primary_color bold=true>"Themed Consumer Box"</TextSpan>
                 <Badge label=theme.badge_label />
             </View>
-            <TextSpan color=Color::DarkGrey>"Reads theme values injected by ancestor <ContextProvider value=...>"</TextSpan>
+            <TextSpan foreground_color=Color::DarkGrey>"Reads theme values injected by ancestor <ContextProvider value=...>"</TextSpan>
         </View>
     }
 }
@@ -57,7 +57,7 @@ fn ContextDemo() -> impl IntoNode {
                     padding=Padding::all(1)
                     gap=1
                 >
-                    <TextSpan color=Color::White bold=true>"framework_context: Context API with <ContextProvider>"</TextSpan>
+                    <TextSpan foreground_color=Color::White bold=true>"framework_context: Context API with <ContextProvider>"</TextSpan>
                     <Divider />
 
                     <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
@@ -75,7 +75,7 @@ fn ContextDemo() -> impl IntoNode {
                         badge_label: "Local Override",
                     }>
                         <View padding=Padding::symmetric(0, 1)>
-                            <TextSpan color=Color::DarkGrey>"Below is an isolated sub-tree with an overridden Theme Provider:"</TextSpan>
+                            <TextSpan foreground_color=Color::DarkGrey>"Below is an isolated sub-tree with an overridden Theme Provider:"</TextSpan>
                             <View height=1 />
                             <DeepThemedWidget />
                         </View>

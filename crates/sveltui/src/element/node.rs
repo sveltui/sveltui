@@ -1326,8 +1326,8 @@ pub fn Pressable(props: PressableProps) -> PressableElement {
 #[derive(Clone, Default)]
 pub struct TextSpanProps {
     pub content: Option<String>,
-    pub fg: Option<Color>,
-    pub bg: Option<Color>,
+    pub foreground_color: Option<Color>,
+    pub background_color: Option<Color>,
     pub bold: bool,
     pub italic: bool,
     pub underline: bool,
@@ -1350,27 +1350,20 @@ impl TextSpanPropsBuilder {
         self.props.content = Some(content.into());
         self
     }
-    pub fn color(mut self, color: Color) -> Self {
-        self.props.fg = Some(color);
+    pub fn foreground_color(mut self, fg: Color) -> Self {
+        self.props.foreground_color = Some(fg);
         self
     }
-    pub fn fg(mut self, fg: Color) -> Self {
-        self.props.fg = Some(fg);
+    pub fn opt_foreground_color(mut self, fg: Option<Color>) -> Self {
+        self.props.foreground_color = fg;
         self
     }
-    pub fn opt_fg(mut self, fg: Option<Color>) -> Self {
-        self.props.fg = fg;
+    pub fn background_color(mut self, bg: Color) -> Self {
+        self.props.background_color = Some(bg);
         self
     }
-    pub fn opt_color(self, color: Option<Color>) -> Self {
-        self.opt_fg(color)
-    }
-    pub fn bg(mut self, bg: Color) -> Self {
-        self.props.bg = Some(bg);
-        self
-    }
-    pub fn opt_bg(mut self, bg: Option<Color>) -> Self {
-        self.props.bg = bg;
+    pub fn opt_background_color(mut self, bg: Option<Color>) -> Self {
+        self.props.background_color = bg;
         self
     }
     pub fn bold(mut self, bold: bool) -> Self {
@@ -1420,10 +1413,10 @@ pub fn TextSpan(props: TextSpanProps) -> TextElement {
         }
     }
     let mut el = TextElement::new(text_content);
-    if let Some(fg) = props.fg {
+    if let Some(fg) = props.foreground_color {
         el = el.fg(fg);
     }
-    if let Some(bg) = props.bg {
+    if let Some(bg) = props.background_color {
         el = el.bg(bg);
     }
     if props.bold {
@@ -1445,8 +1438,8 @@ pub struct ParagraphProps {
     /// Omit this property to show every line.
     pub max_lines: Option<usize>,
     pub fill: Option<char>,
-    pub fg: Option<Color>,
-    pub bg: Option<Color>,
+    pub foreground_color: Option<Color>,
+    pub background_color: Option<Color>,
     pub bold: bool,
     pub italic: bool,
     pub underline: bool,
@@ -1477,27 +1470,20 @@ impl ParagraphPropsBuilder {
         self.props.fill = Some(fill);
         self
     }
-    pub fn color(mut self, color: Color) -> Self {
-        self.props.fg = Some(color);
+    pub fn foreground_color(mut self, fg: Color) -> Self {
+        self.props.foreground_color = Some(fg);
         self
     }
-    pub fn fg(mut self, fg: Color) -> Self {
-        self.props.fg = Some(fg);
+    pub fn opt_foreground_color(mut self, fg: Option<Color>) -> Self {
+        self.props.foreground_color = fg;
         self
     }
-    pub fn opt_fg(mut self, fg: Option<Color>) -> Self {
-        self.props.fg = fg;
+    pub fn background_color(mut self, bg: Color) -> Self {
+        self.props.background_color = Some(bg);
         self
     }
-    pub fn opt_color(self, color: Option<Color>) -> Self {
-        self.opt_fg(color)
-    }
-    pub fn bg(mut self, bg: Color) -> Self {
-        self.props.bg = Some(bg);
-        self
-    }
-    pub fn opt_bg(mut self, bg: Option<Color>) -> Self {
-        self.props.bg = bg;
+    pub fn opt_background_color(mut self, bg: Option<Color>) -> Self {
+        self.props.background_color = bg;
         self
     }
     pub fn bold(mut self, bold: bool) -> Self {
@@ -1554,10 +1540,10 @@ pub fn Paragraph(props: ParagraphProps) -> TextElement {
     if let Some(fill) = props.fill {
         el = el.fill(fill);
     }
-    if let Some(fg) = props.fg {
+    if let Some(fg) = props.foreground_color {
         el = el.fg(fg);
     }
-    if let Some(bg) = props.bg {
+    if let Some(bg) = props.background_color {
         el = el.bg(bg);
     }
     if props.bold {

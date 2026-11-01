@@ -94,6 +94,7 @@ test = true
 [[example]]
 name = "component_layout"
 path = "../../examples/component_layout.rs"
+test = true
 
 [[example]]
 name = "component_interactive"

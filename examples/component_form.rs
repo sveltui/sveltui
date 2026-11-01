@@ -66,7 +66,7 @@ fn FormDemo() -> impl IntoNode {
                 width=54
                 gap=1
             >
-                <TextSpan color=Color::White bold=true>"Create Account"</TextSpan>
+                <TextSpan foreground_color=Color::White bold=true>"Create Account"</TextSpan>
                 <Divider />
 
                 <TextInput
@@ -110,10 +110,10 @@ fn FormDemo() -> impl IntoNode {
                         border_color=Color::White
                         padding=Padding::all(1)
                     >
-                        <TextSpan color=Color::White bold=true>"[Registration Confirmed]"</TextSpan>
+                        <TextSpan foreground_color=Color::White bold=true>"[Registration Confirmed]"</TextSpan>
                         <TextSpan>{format!("Name: {}", sub_opt.as_ref().unwrap().name)}</TextSpan>
-                        <TextSpan color=Color::DarkGrey>{format!("Email: {}", sub_opt.as_ref().unwrap().email)}</TextSpan>
-                        <TextSpan color=Color::DarkGrey>{format!("Newsletter: {}", sub_opt.as_ref().unwrap().newsletter)}</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>{format!("Email: {}", sub_opt.as_ref().unwrap().email)}</TextSpan>
+                        <TextSpan foreground_color=Color::DarkGrey>{format!("Newsletter: {}", sub_opt.as_ref().unwrap().newsletter)}</TextSpan>
                     </View>
                 {/if}
             </View>
