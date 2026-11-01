@@ -9,7 +9,7 @@ members = [
 default-members = ["crates/sveltui"]
 
 [workspace.package]
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2024"
 rust-version = "1.85"
 authors = ["themosthigh"]
@@ -20,9 +20,10 @@ keywords = ["tui", "terminal", "reactive", "svelte", "ui"]
 categories = ["command-line-interface", "gui"]
 
 [workspace.dependencies]
-sveltui = { path = "crates/sveltui", version = "0.1.0-alpha.1" }
-sveltui-code = { path = "crates/sveltui-code", version = "0.1.0-alpha.1" }
-sveltui-macros = { path = "crates/sveltui-macros", version = "0.1.0-alpha.1" }
+sveltui = { path = "crates/sveltui", version = "0.1.0-alpha.2" }
+sveltui-code = { path = "crates/sveltui-code", version = "0.1.0-alpha.2" }
+sveltui-components = { path = "crates/sveltui-components", version = "0.1.0-alpha.2" }
+sveltui-macros = { path = "crates/sveltui-macros", version = "0.1.0-alpha.2" }
 crossterm = "0.28"
 taffy = { version = "0.7", default-features = false, features = ["std", "alloc", "flexbox", "grid", "content_size", "taffy_tree"] }
 criterion = { version = "0.5", default-features = false }

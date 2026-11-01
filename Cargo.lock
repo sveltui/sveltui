@@ -693,7 +693,7 @@ checksum = "d0d5d4b1981b8bbbb7aed204cae5726d683d5d6ac7e74ec54122ea28f315e7c8"
 
 [[package]]
 name = "sveltui"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "criterion",
  "crossterm",
@@ -705,7 +705,7 @@ dependencies = [
 
 [[package]]
 name = "sveltui-code"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "crossterm",
  "sveltui",
@@ -715,7 +715,7 @@ dependencies = [
 
 [[package]]
 name = "sveltui-components"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "crossterm",
  "sveltui",
@@ -724,7 +724,7 @@ dependencies = [
 
 [[package]]
 name = "sveltui-macros"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "proc-macro2",
  "quote",
