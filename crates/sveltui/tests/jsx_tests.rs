@@ -7,12 +7,12 @@ fn test_jsx_custom_components_expansion() {
     let (checked, set_checked) = create_signal(true);
 
     let _node: VNode = view! {
-        <FlexBox
+        <View
             min_width=20
             max_width=80
             min_height=5
             max_height=30
-            overflow=Overflow::Scroll
+            overflow_y=Overflow::Scroll
             scrollbar_visibility=ScrollbarVisibility::Auto
         >
             <Button>"Click Me"</Button>
@@ -22,7 +22,7 @@ fn test_jsx_custom_components_expansion() {
             <Divider title="Separator" />
             <ProgressBar ratio=0.75f32 width=20u16 />
             <Badge bg=Color::Green fg=Color::Black>"Active"</Badge>
-        </FlexBox>
+        </View>
     };
 }
 
@@ -32,7 +32,7 @@ fn test_jsx_overlay_components_expansion() {
     let (modal_open, set_modal_open) = create_signal(false);
 
     let _node: VNode = view! {
-        <FlexBox width=80 height=24>
+        <View width=80 height=24>
             <DropdownMenu::Root open={is_open.get()} on_open_change={move |next| set_open.set(next)}>
                 <DropdownMenu::Trigger>"Actions"</DropdownMenu::Trigger>
                 <DropdownMenu::Content placement=Placement::BottomStart>
@@ -49,11 +49,11 @@ fn test_jsx_overlay_components_expansion() {
                 on_close={move || set_modal_open.set(false)}
             >
                 <TextSpan>"Are you sure you want to delete this file?"</TextSpan>
-                <FlexBox justify_content=Justify::End>
+                <View justify_content=JustifyContent::FlexEnd>
                     <Button on_click={move || set_modal_open.set(false)}>"Cancel"</Button>
                     <Button on_click={move || set_modal_open.set(false)}>"Delete"</Button>
-                </FlexBox>
+                </View>
             </Dialog>
-        </FlexBox>
+        </View>
     };
 }

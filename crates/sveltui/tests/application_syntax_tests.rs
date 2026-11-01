@@ -7,16 +7,16 @@ use sveltui_components::*;
 #[component]
 fn Application() -> impl IntoNode {
     view! {
-        <FlexBox border=BorderStyle::Single padding=Padding::all(1)>
+        <View border=BorderStyle::Single padding=Padding::all(1)>
             <TextSpan>"Hello, sveltui"</TextSpan>
-        </FlexBox>
+        </View>
     }
 }
 
 #[test]
 fn test_section_1_application_setup() {
     let node = view! { <Application /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 // Section 2: State
@@ -25,13 +25,13 @@ fn Counter() -> impl IntoNode {
     let count = state(0);
 
     view! {
-        <FlexBox>
+        <View>
             <TextSpan>{count.get().to_string()}</TextSpan>
             <Button on_click={move || count.update(|value| *value += 1)}>
                 "Increment"
             </Button>
             <Button on_click={move || count.set(0)}>"Reset"</Button>
-        </FlexBox>
+        </View>
     }
 }
 
@@ -45,7 +45,7 @@ fn test_section_2_state() {
     assert_eq!(count.get(), 0);
 
     let node = view! { <Counter /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 // Section 3: Derived State
@@ -56,12 +56,12 @@ fn Total() -> impl IntoNode {
     let total = derived(move || quantity.get() * unit_price.get());
 
     view! {
-        <FlexBox>
+        <View>
             <TextSpan>{format!("Total: {}", total.get())}</TextSpan>
             <Button on_click={move || quantity.update(|value| *value += 1)}>
                 "Add one"
             </Button>
-        </FlexBox>
+        </View>
     }
 }
 
@@ -75,7 +75,7 @@ fn test_section_3_derived_state() {
     assert_eq!(total.get(), 50);
 
     let node = view! { <Total /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 // Section 4: Effects
@@ -165,12 +165,12 @@ fn CounterPanel() -> impl IntoNode {
     let count = state(0);
 
     view! {
-        <FlexBox>
+        <View>
             <CounterValue count=count />
             <Button on_click={move || count.update(|value| *value += 1)}>
                 "Increment"
             </Button>
-        </FlexBox>
+        </View>
     }
 }
 
@@ -185,7 +185,7 @@ fn test_section_7_props() {
     }
 
     let panel = view! { <CounterPanel /> };
-    assert!(matches!(panel, VNode::FlexBox(_)));
+    assert!(matches!(panel, VNode::View(_)));
 }
 
 // Section 8: Optional & Default Props
@@ -201,12 +201,12 @@ struct GreetingProps {
 #[component]
 fn Greeting(props: GreetingProps) -> impl IntoNode {
     view! {
-        <FlexBox gap={if props.compact { 0 } else { 1 }}>
+        <View gap={if props.compact { 0 } else { 1 }}>
             <TextSpan>{format!("Hello, {}", props.name.get())}</TextSpan>
             {#if let Some(subtitle) = &props.subtitle}
                 <TextSpan>{subtitle.clone()}</TextSpan>
             {/if}
-        </FlexBox>
+        </View>
     }
 }
 
@@ -215,10 +215,10 @@ fn Greetings() -> impl IntoNode {
     let name = state(String::from("Ada"));
 
     view! {
-        <FlexBox>
+        <View>
             <Greeting name=name />
             <Greeting name=name subtitle=Some(String::from("Welcome")) compact=true />
-        </FlexBox>
+        </View>
     }
 }
 
@@ -227,15 +227,15 @@ fn test_section_8_optional_default_props() {
     let name = state(String::from("Ada"));
 
     let g1 = view! { <Greeting name=name /> };
-    assert!(matches!(g1, VNode::FlexBox(_)));
+    assert!(matches!(g1, VNode::View(_)));
 
     let g2 = view! {
         <Greeting name=name subtitle=Some(String::from("Welcome")) compact=true />
     };
-    assert!(matches!(g2, VNode::FlexBox(_)));
+    assert!(matches!(g2, VNode::View(_)));
 
     let all = view! { <Greetings /> };
-    assert!(matches!(all, VNode::FlexBox(_)));
+    assert!(matches!(all, VNode::View(_)));
 }
 
 // Section 9: Children & Snippets
@@ -252,15 +252,15 @@ struct DialogProps {
 #[component]
 fn Dialog(props: DialogProps) -> impl IntoNode {
     view! {
-        <FlexBox border=BorderStyle::Double padding=Padding::all(1)>
-            <FlexBox>{@render props.header}</FlexBox>
+        <View border=BorderStyle::Double padding=Padding::all(1)>
+            <View>{@render props.header}</View>
             <Divider />
-            <FlexBox>{@render props.children}</FlexBox>
+            <View>{@render props.children}</View>
             {#if let Some(footer) = &props.footer}
                 <Divider />
-                <FlexBox>{@render footer}</FlexBox>
+                <View>{@render footer}</View>
             {/if}
-        </FlexBox>
+        </View>
     }
 }
 
@@ -285,7 +285,7 @@ fn ConfirmDelete() -> impl IntoNode {
 #[test]
 fn test_section_9_children_and_snippets() {
     let node = view! { <ConfirmDelete /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 // Section 10: Parameterized Snippets
@@ -299,11 +299,11 @@ struct ListViewProps<T: 'static> {
 #[component]
 fn ListView<T: Clone + 'static>(props: ListViewProps<T>) -> impl IntoNode {
     view! {
-        <FlexBox>
+        <View>
             {#each props.items.get() as item}
                 {@render props.row(item)}
             {/each}
-        </FlexBox>
+        </View>
     }
 }
 
@@ -323,7 +323,7 @@ fn UserDirectory() -> impl IntoNode {
 #[test]
 fn test_section_10_parameterized_snippets() {
     let node = view! { <UserDirectory /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 // Section 11: Conditionals
@@ -336,7 +336,7 @@ struct ConnectionStatusProps {
 #[component]
 fn ConnectionStatus(props: ConnectionStatusProps) -> impl IntoNode {
     view! {
-        <FlexBox>
+        <View>
             {#if props.connected.get()}
                 <Badge label="Online" />
             {:else if props.retries.get() > 3}
@@ -344,7 +344,7 @@ fn ConnectionStatus(props: ConnectionStatusProps) -> impl IntoNode {
             {:else}
                 <TextSpan>{format!("Retrying ({})...", props.retries.get())}</TextSpan>
             {/if}
-        </FlexBox>
+        </View>
     }
 }
 
@@ -353,16 +353,16 @@ fn test_section_11_conditionals() {
     let connected = state(true);
     let retries = state(0);
     let node = view! { <ConnectionStatus connected=connected retries=retries /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 
     connected.set(false);
     retries.set(5);
     let node2 = view! { <ConnectionStatus connected=connected retries=retries /> };
-    assert!(matches!(node2, VNode::FlexBox(_)));
+    assert!(matches!(node2, VNode::View(_)));
 
     retries.set(1);
     let node3 = view! { <ConnectionStatus connected=connected retries=retries /> };
-    assert!(matches!(node3, VNode::FlexBox(_)));
+    assert!(matches!(node3, VNode::View(_)));
 }
 
 // Section 12: Loops
@@ -382,16 +382,16 @@ struct TaskListProps {
 #[component]
 fn TaskList(props: TaskListProps) -> impl IntoNode {
     view! {
-        <FlexBox>
+        <View>
             {#each props.tasks.get() as task (task.id)}
-                <FlexBox flex_direction=FlexDirection::Row gap=1>
+                <View flex_direction=FlexDirection::Row gap=1>
                     <Checkbox checked=task.done />
                     <TextSpan>{task.title.clone()}</TextSpan>
-                </FlexBox>
+                </View>
             {:else}
                 <TextSpan>"No tasks remaining"</TextSpan>
             {/each}
-        </FlexBox>
+        </View>
     }
 }
 
@@ -404,11 +404,11 @@ fn test_section_12_loops() {
     }]);
 
     let node = view! { <TaskList tasks=tasks /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 
     tasks.set(vec![]);
     let empty_node = view! { <TaskList tasks=tasks /> };
-    assert!(matches!(empty_node, VNode::FlexBox(_)));
+    assert!(matches!(empty_node, VNode::View(_)));
 }
 
 // Section 13: Components With Macros vs Without Macros
@@ -420,12 +420,12 @@ struct StepperProps {
 #[component]
 fn Stepper(props: StepperProps) -> impl IntoNode {
     view! {
-        <FlexBox>
+        <View>
             <TextSpan>{props.value.get().to_string()}</TextSpan>
             <Button on_click={move || props.value.update(|current| *current += 1)}>
                 "+"
             </Button>
-        </FlexBox>
+        </View>
     }
 }
 
@@ -436,7 +436,7 @@ fn StepperPanel() -> impl IntoNode {
 }
 
 fn stepper(value: State<i32>) -> impl IntoNode {
-    FlexBoxElement::new()
+    ViewElement::new()
         .child(TextElement::new(value.get().to_string()))
         .child(Button(
             ButtonProps::builder()
@@ -454,10 +454,10 @@ fn stepper_panel() -> impl IntoNode {
 #[test]
 fn test_section_13_components_with_and_without_macros() {
     let with_macro = view! { <StepperPanel /> };
-    assert!(matches!(with_macro, VNode::FlexBox(_)));
+    assert!(matches!(with_macro, VNode::View(_)));
 
     let without_macro = stepper_panel().into_node();
-    assert!(matches!(without_macro, VNode::FlexBox(_)));
+    assert!(matches!(without_macro, VNode::View(_)));
 }
 
 // Section 14: Context Providers
@@ -471,10 +471,10 @@ fn SessionName() -> impl IntoNode {
     let session = use_context::<SessionContext>().expect("Session provider required");
 
     view! {
-        <FlexBox>
+        <View>
             <TextSpan>{session.username.get()}</TextSpan>
             <TextInput value=session.username />
-        </FlexBox>
+        </View>
     }
 }
 
@@ -494,7 +494,7 @@ fn SessionProvider() -> impl IntoNode {
 #[test]
 fn test_section_14_context_providers() {
     let node = view! { <SessionProvider /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 // Section 15: Error Boundaries
@@ -522,7 +522,7 @@ fn NumberEditor() -> impl IntoNode {
     let input = state(String::from("42"));
 
     view! {
-        <FlexBox>
+        <View>
             <TextInput value=input />
             <ErrorBoundary>
                 {#snippet fallback(error)}
@@ -531,14 +531,14 @@ fn NumberEditor() -> impl IntoNode {
 
                 <ParsedNumber input=input />
             </ErrorBoundary>
-        </FlexBox>
+        </View>
     }
 }
 
 #[test]
 fn test_section_15_error_boundaries() {
     let valid_editor = view! { <NumberEditor /> };
-    assert!(matches!(valid_editor, VNode::FlexBox(_)));
+    assert!(matches!(valid_editor, VNode::View(_)));
 
     // Test panic catching with bad input
     let bad_input = state(String::from("not_a_number"));
@@ -580,7 +580,7 @@ fn Document() -> impl IntoNode {
     let path = state(String::from("valid.txt"));
 
     view! {
-        <FlexBox>
+        <View>
             <TextInput value=path />
             {#await load_document(path.get())}
                 <TextSpan>"Loading..."</TextSpan>
@@ -589,14 +589,14 @@ fn Document() -> impl IntoNode {
             {:catch error}
                 <TextSpan>{format!("Could not load document: {error}")}</TextSpan>
             {/await}
-        </FlexBox>
+        </View>
     }
 }
 
 #[test]
 fn test_section_16_async_and_await() {
     let node = view! { <Document /> };
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 // Section 17: Background Tasks
@@ -635,9 +635,9 @@ fn InteractiveCounter() -> impl IntoNode {
     }));
 
     view! {
-        <FlexBox>
+        <View>
             <TextSpan>{format!("Count is: {}", count.get())}</TextSpan>
-        </FlexBox>
+        </View>
     }
 }
 
@@ -647,7 +647,7 @@ fn test_state_persistence_across_render_passes() {
     let node1 = view! { <InteractiveCounter /> };
     end_frame();
 
-    if let VNode::FlexBox(b) = node1 {
+    if let VNode::View(b) = node1 {
         if let VNode::Text(t) = &b.children[0] {
             assert_eq!(t.content, "Count is: 0");
         } else {
@@ -666,7 +666,7 @@ fn test_state_persistence_across_render_passes() {
     let node2 = view! { <InteractiveCounter /> };
     end_frame();
 
-    if let VNode::FlexBox(b) = node2 {
+    if let VNode::View(b) = node2 {
         if let VNode::Text(t) = &b.children[0] {
             assert_eq!(t.content, "Count is: 1");
         } else {
@@ -686,7 +686,7 @@ fn test_state_persistence_across_render_passes() {
     let node3 = view! { <InteractiveCounter /> };
     end_frame();
 
-    if let VNode::FlexBox(b) = node3 {
+    if let VNode::View(b) = node3 {
         if let VNode::Text(t) = &b.children[0] {
             assert_eq!(t.content, "Count is: 3");
         } else {

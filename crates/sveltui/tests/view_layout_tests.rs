@@ -14,8 +14,20 @@ fn render(node: &VNode, width: u16, height: u16) -> Buffer {
 
 #[test]
 fn test_view_flex_row_layout() {
-    let child1 = View(ViewProps::builder().width(Size::fixed(10)).height(Size::fixed(5)).build()).into_node();
-    let child2 = View(ViewProps::builder().width(Size::fixed(20)).height(Size::fixed(5)).build()).into_node();
+    let child1 = View(
+        ViewProps::builder()
+            .width(Size::fixed(10))
+            .height(Size::fixed(5))
+            .build(),
+    )
+    .into_node();
+    let child2 = View(
+        ViewProps::builder()
+            .width(Size::fixed(20))
+            .height(Size::fixed(5))
+            .build(),
+    )
+    .into_node();
     let root = View(
         ViewProps::builder()
             .width(Size::fixed(60))
@@ -41,8 +53,20 @@ fn test_view_flex_row_layout() {
 
 #[test]
 fn test_view_flex_column_layout() {
-    let child1 = View(ViewProps::builder().width(Size::fixed(20)).height(Size::fixed(3)).build()).into_node();
-    let child2 = View(ViewProps::builder().width(Size::fixed(20)).height(Size::fixed(4)).build()).into_node();
+    let child1 = View(
+        ViewProps::builder()
+            .width(Size::fixed(20))
+            .height(Size::fixed(3))
+            .build(),
+    )
+    .into_node();
+    let child2 = View(
+        ViewProps::builder()
+            .width(Size::fixed(20))
+            .height(Size::fixed(4))
+            .build(),
+    )
+    .into_node();
     let root = View(
         ViewProps::builder()
             .width(Size::fixed(40))
@@ -65,8 +89,20 @@ fn test_view_flex_column_layout() {
 
 #[test]
 fn test_view_sizing_fixed_percent_fill() {
-    let child_fixed = View(ViewProps::builder().width(Size::fixed(15)).height(Size::fixed(5)).build()).into_node();
-    let child_percent = View(ViewProps::builder().width(Size::percent(50.0)).height(Size::fixed(5)).build()).into_node();
+    let child_fixed = View(
+        ViewProps::builder()
+            .width(Size::fixed(15))
+            .height(Size::fixed(5))
+            .build(),
+    )
+    .into_node();
+    let child_percent = View(
+        ViewProps::builder()
+            .width(Size::percent(50.0))
+            .height(Size::fixed(5))
+            .build(),
+    )
+    .into_node();
     let root = View(
         ViewProps::builder()
             .width(Size::fixed(100))
@@ -140,7 +176,13 @@ fn test_view_padding_and_margin() {
 
 #[test]
 fn test_view_alignment_justify_content_center() {
-    let child = View(ViewProps::builder().width(Size::fixed(20)).height(Size::fixed(5)).build()).into_node();
+    let child = View(
+        ViewProps::builder()
+            .width(Size::fixed(20))
+            .height(Size::fixed(5))
+            .build(),
+    )
+    .into_node();
     let root = View(
         ViewProps::builder()
             .width(Size::fixed(60))
@@ -160,7 +202,13 @@ fn test_view_alignment_justify_content_center() {
 
 #[test]
 fn test_view_alignment_align_self() {
-    let child1 = View(ViewProps::builder().width(Size::fixed(10)).height(Size::fixed(5)).build()).into_node();
+    let child1 = View(
+        ViewProps::builder()
+            .width(Size::fixed(10))
+            .height(Size::fixed(5))
+            .build(),
+    )
+    .into_node();
     let child2 = View(
         ViewProps::builder()
             .width(Size::fixed(10))
@@ -189,8 +237,20 @@ fn test_view_alignment_align_self() {
 
 #[test]
 fn test_view_flex_grow() {
-    let child1 = View(ViewProps::builder().flex_grow(1.0).height(Size::fixed(5)).build()).into_node();
-    let child2 = View(ViewProps::builder().flex_grow(2.0).height(Size::fixed(5)).build()).into_node();
+    let child1 = View(
+        ViewProps::builder()
+            .flex_grow(1.0)
+            .height(Size::fixed(5))
+            .build(),
+    )
+    .into_node();
+    let child2 = View(
+        ViewProps::builder()
+            .flex_grow(2.0)
+            .height(Size::fixed(5))
+            .build(),
+    )
+    .into_node();
     let root = View(
         ViewProps::builder()
             .width(Size::fixed(60))
@@ -212,7 +272,15 @@ fn test_view_flex_grow() {
 fn test_view_scrolling_overflow_content_size() {
     let mut children = Vec::new();
     for _ in 0..10 {
-        children.push(View(ViewProps::builder().width(Size::fixed(20)).height(Size::fixed(3)).build()).into_node());
+        children.push(
+            View(
+                ViewProps::builder()
+                    .width(Size::fixed(20))
+                    .height(Size::fixed(3))
+                    .build(),
+            )
+            .into_node(),
+        );
     }
     let root = View(
         ViewProps::builder()

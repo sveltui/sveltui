@@ -1,8 +1,8 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
+use std::hint::black_box;
 use sveltui::element::taffy_bridge::LayoutEngine;
 use sveltui::element::{IntoNode, TextElement, VNode, View, ViewProps};
 use sveltui::layout::{FlexDirection, Margin, Padding, Size};
-use std::hint::black_box;
 
 fn create_view_tree(n: usize) -> VNode {
     let mut children = Vec::with_capacity(n);
@@ -51,19 +51,15 @@ fn bench_layout_scaling(c: &mut Criterion) {
             },
         );
 
-        group.bench_with_input(
-            BenchmarkId::new("resize_container", size),
-            &size,
-            |b, _| {
-                let mut engine = LayoutEngine::new();
-                let mut width = 120;
-                b.iter(|| {
-                    width = if width == 120 { 160 } else { 120 };
-                    let computed = engine.compute_layout(black_box(&tree), black_box(width), 50);
-                    black_box(computed);
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("resize_container", size), &size, |b, _| {
+            let mut engine = LayoutEngine::new();
+            let mut width = 120;
+            b.iter(|| {
+                width = if width == 120 { 160 } else { 120 };
+                let computed = engine.compute_layout(black_box(&tree), black_box(width), 50);
+                black_box(computed);
+            });
+        });
     }
 
     group.finish();

@@ -22,7 +22,7 @@ struct UserTableProps<T: 'static> {
 #[component]
 fn UserTable<T: Clone + 'static>(props: UserTableProps<T>) -> impl IntoNode {
     view! {
-        <FlexBox border=BorderStyle::Single padding=Padding::all(1) gap=1>
+        <View border=BorderStyle::Single padding=Padding::all(1) gap=1>
             <TextSpan bold=true>{props.title.clone()}</TextSpan>
             {#if props.header.is_snippet_present()}
                 {@render props.header}
@@ -35,7 +35,7 @@ fn UserTable<T: Clone + 'static>(props: UserTableProps<T>) -> impl IntoNode {
                 <Divider />
                 {@render props.footer}
             {/if}
-        </FlexBox>
+        </View>
     }
 }
 
@@ -51,15 +51,15 @@ struct CardLayoutProps {
 #[component]
 fn CardLayout(props: CardLayoutProps) -> impl IntoNode {
     view! {
-        <FlexBox border=BorderStyle::Double padding=Padding::all(1)>
+        <View border=BorderStyle::Double padding=Padding::all(1)>
             <TextSpan bold=true>{props.title.clone()}</TextSpan>
             <Divider />
-            <FlexBox>{@render props.children}</FlexBox>
+            <View>{@render props.children}</View>
             {#if props.actions.is_snippet_present()}
                 <Divider />
                 {@render props.actions}
             {/if}
-        </FlexBox>
+        </View>
     }
 }
 
@@ -83,10 +83,10 @@ fn test_generic_parameterized_and_optional_snippets() {
             {/snippet}
 
             {#snippet row(u: UserItem)}
-                <FlexBox flex_direction=FlexDirection::Row gap=2>
+                <View flex_direction=FlexDirection::Row gap=2>
                     <TextSpan>{u.name.clone()}</TextSpan>
                     <TextSpan>{u.role.clone()}</TextSpan>
-                </FlexBox>
+                </View>
             {/snippet}
 
             {#snippet footer}
@@ -95,7 +95,7 @@ fn test_generic_parameterized_and_optional_snippets() {
         </UserTable>
     };
 
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn test_generic_snippets_with_omitted_optional_slots() {
         </UserTable>
     };
 
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 #[test]
@@ -131,7 +131,7 @@ fn test_multi_slot_card_layout_with_regular_children_and_named_snippet() {
         </CardLayout>
     };
 
-    assert!(matches!(node, VNode::FlexBox(_)));
+    assert!(matches!(node, VNode::View(_)));
 }
 
 #[test]

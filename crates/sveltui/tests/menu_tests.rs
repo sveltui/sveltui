@@ -178,7 +178,7 @@ fn context_menu_uses_pointer_coordinates_and_keyboard_reanchors_to_trigger() {
 fn menu_bar_has_one_tab_stop_and_coordinates_keyboard_and_hover_switching() {
     let build = || {
         view! {
-            <FlexBox>
+            <View>
                 <MenuBar::Root id=FocusId(90)>
                     <MenuBar::Menu id=FocusId(100) value="file">
                         <MenuBar::Trigger id=FocusId(1)>"File"</MenuBar::Trigger>
@@ -196,7 +196,7 @@ fn menu_bar_has_one_tab_stop_and_coordinates_keyboard_and_hover_switching() {
                     </MenuBar::Menu>
                 </MenuBar::Root>
                 <Button id=FocusId(5)>"After"</Button>
-            </FlexBox>
+            </View>
         }
     };
     let mut manager = FocusManager::new();
@@ -265,14 +265,16 @@ fn explicit_anchor_tracks_layout_and_clamps_after_resize() {
     let (offset, set_offset) = create_signal(3u16);
     let build = || {
         view! {
-            <FlexBox>
-                <FlexBox height={offset.get()} />
-                <FlexBox focus_id=FocusId(9) width=8 height=1>"Anchor"</FlexBox>
+            <View>
+                <View height={offset.get()} />
+                <Pressable focus_id=FocusId(9)>
+                    <View width=8 height=1>"Anchor"</View>
+                </Pressable>
                 <DropdownMenu::Root id=FocusId(100) open=true>
                     <DropdownMenu::Trigger id=FocusId(1)>"Opener"</DropdownMenu::Trigger>
                     <DropdownMenu::Content anchor=FocusId(9) width=12><DropdownMenu::Item id=FocusId(2)>"Item"</DropdownMenu::Item></DropdownMenu::Content>
                 </DropdownMenu::Root>
-            </FlexBox>
+            </View>
         }
     };
     let mut manager = FocusManager::new();
@@ -365,7 +367,7 @@ fn controlled_bar_switch_emits_one_new_value_without_an_intermediate_close() {
 fn generated_ids_and_sibling_menu_state_survive_opening_and_closing() {
     let build = || {
         view! {
-            <FlexBox>
+            <View>
                 <DropdownMenu::Root>
                     <DropdownMenu::Trigger>"First menu"</DropdownMenu::Trigger>
                     <DropdownMenu::Content>
@@ -378,7 +380,7 @@ fn generated_ids_and_sibling_menu_state_survive_opening_and_closing() {
                         <DropdownMenu::Item>"Second action"</DropdownMenu::Item>
                     </DropdownMenu::Content>
                 </DropdownMenu::Root>
-            </FlexBox>
+            </View>
         }
     };
     fn named(manager: &FocusManager, name: &str) -> FocusId {

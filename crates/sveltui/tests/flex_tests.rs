@@ -32,10 +32,10 @@ fn intrinsic_dimensions_follow_direction_with_gap_border_and_padding() {
         (FlexDirection::Column, (6, 9)),
     ] {
         let node = view! {
-            <FlexBox flex_direction=direction gap=2 border=BorderStyle::Single padding=1>
+            <View flex_direction=direction gap=2 border=BorderStyle::Single padding=Padding::all(1)>
                 <TextSpan>"ab"</TextSpan>
                 <TextSpan>"c\nd"</TextSpan>
-            </FlexBox>
+            </View>
         };
         assert_eq!(measure_node(&node, 100, 100), expected);
     }
@@ -46,7 +46,7 @@ fn justification_and_cross_alignment_work_on_both_axes() {
     for direction in [FlexDirection::Row, FlexDirection::Column] {
         for (justify, positions) in [
             (Justify::Start, [0, 3]),
-            (Justify::Center, [2, 5]),
+            (Justify::Center, [3, 6]),
             (Justify::End, [5, 8]),
             (Justify::SpaceBetween, [0, 8]),
         ] {
@@ -55,11 +55,11 @@ fn justification_and_cross_alignment_work_on_both_axes() {
                 let (width, height) = direction.axes(10, 6);
                 let (cw, ch) = direction.axes(2, 2);
                 let node = view! {
-                    <FlexBox flex_direction=direction width=width height=height gap=1
+                    <View flex_direction=direction width=width height=height gap=1
                         justify_content=justify align_items=align>
-                        <FlexBox focus_id={ids[0]} tab_stop=true width=cw height=ch />
-                        <FlexBox focus_id={ids[1]} tab_stop=true width=cw height=ch />
-                    </FlexBox>
+                        <Pressable focus_id={ids[0]} tab_stop=true><View width=cw height=ch /></Pressable>
+                        <Pressable focus_id={ids[1]} tab_stop=true><View width=cw height=ch /></Pressable>
+                    </View>
                 };
                 let (_, hits) = render(&node, 20, 20);
                 for (id, main) in ids.into_iter().zip(positions) {
@@ -82,11 +82,11 @@ fn fill_shares_remaining_space_and_redistributes_capped_allocations() {
         let (max_w_a, max_h_a) = direction.axes(30, u16::MAX);
         let (max_w_b, max_h_b) = direction.axes(60, u16::MAX);
         let node = view! {
-            <FlexBox flex_direction=direction width=width height=height>
-                <FlexBox focus_id={ids[0]} tab_stop=true width=fixed_w height=fixed_h />
-                <FlexBox focus_id={ids[1]} tab_stop=true width=fill_w height=fill_h max_width=max_w_a max_height=max_h_a />
-                <FlexBox focus_id={ids[2]} tab_stop=true width=fill_w height=fill_h max_width=max_w_b max_height=max_h_b />
-            </FlexBox>
+            <View flex_direction=direction width=width height=height>
+                <Pressable focus_id={ids[0]} tab_stop=true><View width=fixed_w height=fixed_h /></Pressable>
+                <Pressable focus_id={ids[1]} tab_stop=true><View width=fill_w height=fill_h max_width=max_w_a max_height=max_h_a /></Pressable>
+                <Pressable focus_id={ids[2]} tab_stop=true><View width=fill_w height=fill_h max_width=max_w_b max_height=max_h_b /></Pressable>
+            </View>
         };
         let (_, hits) = render(&node, width, height);
         for (id, main) in ids.into_iter().zip([20, 30, 50]) {
@@ -101,10 +101,10 @@ fn fill_minimums_are_resolved_before_other_child_maximums() {
     let a = FocusId::new();
     let b = FocusId::new();
     let node = view! {
-        <FlexBox flex_direction=FlexDirection::Row width=100 height=1>
-            <FlexBox width=Size::Fill min_width=90 height=1 focus_id=a tab_stop=true />
-            <FlexBox width=Size::Fill max_width=20 height=1 focus_id=b tab_stop=true />
-        </FlexBox>
+        <View flex_direction=FlexDirection::Row width=100 height=1>
+            <Pressable focus_id=a tab_stop=true><View width=Size::Fill min_width=90 height=1 /></Pressable>
+            <Pressable focus_id=b tab_stop=true><View width=Size::Fill max_width=20 height=1 /></Pressable>
+        </View>
     };
     let (_, hits) = render(&node, 100, 2);
     assert_eq!(rect(&hits, a).width, 90);
@@ -115,14 +115,14 @@ fn fill_minimums_are_resolved_before_other_child_maximums() {
 fn fill_remainders_go_to_earlier_siblings_after_gaps() {
     let ids = [FocusId::new(), FocusId::new(), FocusId::new()];
     let node = view! {
-        <FlexBox flex_direction=FlexDirection::Row width=10 height=1 gap=1>
-            <FlexBox width=Size::Fill height=1 focus_id={ids[0]} tab_stop=true />
-            <FlexBox width=Size::Fill height=1 focus_id={ids[1]} tab_stop=true />
-            <FlexBox width=Size::Fill height=1 focus_id={ids[2]} tab_stop=true />
-        </FlexBox>
+        <View flex_direction=FlexDirection::Row width=10 height=1 gap=1>
+            <Pressable focus_id={ids[0]} tab_stop=true><View width=Size::Fill height=1 /></Pressable>
+            <Pressable focus_id={ids[1]} tab_stop=true><View width=Size::Fill height=1 /></Pressable>
+            <Pressable focus_id={ids[2]} tab_stop=true><View width=Size::Fill height=1 /></Pressable>
+        </View>
     };
     let (_, hits) = render(&node, 10, 2);
-    for (id, (x, w)) in ids.into_iter().zip([(0, 3), (4, 3), (8, 2)]) {
+    for (id, (x, w)) in ids.into_iter().zip([(0, 3), (4, 2), (7, 3)]) {
         assert_eq!(rect(&hits, id), sveltui::layout::Rect::new(x, 0, w, 1));
     }
 }
@@ -133,11 +133,11 @@ fn stretch_respects_explicit_sizes_and_maximums() {
     let b = FocusId::new();
     let c = FocusId::new();
     let node = view! {
-        <FlexBox width=10 height=6 align_items=Align::Stretch>
-            <FlexBox height=1 max_width=6 focus_id=a tab_stop=true><TextSpan>"a"</TextSpan></FlexBox>
-            <FlexBox height=1 width=3 focus_id=b tab_stop=true />
-            <FlexBox height=1 width=Size::Fill max_width=5 focus_id=c tab_stop=true />
-        </FlexBox>
+        <View width=10 height=6 align_items=Align::Stretch>
+            <Pressable focus_id=a tab_stop=true><View height=1 max_width=6><TextSpan>"a"</TextSpan></View></Pressable>
+            <Pressable focus_id=b tab_stop=true><View height=1 width=3 /></Pressable>
+            <Pressable focus_id=c tab_stop=true><View height=1 width=Size::Fill max_width=5 /></Pressable>
+        </View>
     };
     let (_, hits) = render(&node, 20, 10);
     assert_eq!(rect(&hits, a).width, 6);
@@ -150,11 +150,13 @@ fn percentage_and_fill_use_the_constrained_parent_content_box() {
     let parent = FocusId::new();
     let child = FocusId::new();
     let node = view! {
-        <FlexBox width=40 border=BorderStyle::Single padding=1>
-            <FlexBox width=Size::Percent(50.0) border=BorderStyle::Single focus_id=parent tab_stop=true>
-                <FlexBox width=Size::Fill height=1 focus_id=child tab_stop=true />
-            </FlexBox>
-        </FlexBox>
+        <View width=40 border=BorderStyle::Single padding=Padding::all(1)>
+            <Pressable focus_id=parent tab_stop=true>
+                <View width=Size::Percent(50.0) border=BorderStyle::Single>
+                    <Pressable focus_id=child tab_stop=true><View width=Size::Fill height=1 /></Pressable>
+                </View>
+            </Pressable>
+        </View>
     };
     let (_, hits) = render(&node, 100, 20);
     assert_eq!(rect(&hits, parent).width, 18);
@@ -166,14 +168,16 @@ fn percentage_and_fill_use_the_constrained_parent_content_box() {
 fn minimum_wins_conflicting_maximum_and_survives_parent_pressure() {
     let id = FocusId::new();
     let node = view! {
-        <FlexBox width=5 height=2 overflow_x=Overflow::Scroll>
-            <FlexBox width=4 min_width=12 max_width=8 height=1 focus_id=id tab_stop=true><TextSpan>"abcdefghijkl"</TextSpan></FlexBox>
-        </FlexBox>
+        <View width=5 height=2 overflow_x=Overflow::Scroll>
+            <Pressable focus_id=id tab_stop=true>
+                <View width=4 min_width=12 max_width=8 height=1><TextSpan>"abcdefghijkl"</TextSpan></View>
+            </Pressable>
+        </View>
     };
     let (_, hits) = render(&node, 20, 5);
     assert_eq!(
         measure_node(
-            &view! { <FlexBox width=4 min_width=12 max_width=8 height=1 /> },
+            &view! { <View width=4 min_width=12 max_width=8 height=1 /> },
             5,
             2
         )
@@ -190,11 +194,11 @@ fn minimum_wins_conflicting_maximum_and_survives_parent_pressure() {
 fn horizontal_flex_scrolls_without_shrinking_fixed_children() {
     let id = FocusId::new();
     let node = view! {
-        <FlexBox width=10 height=3 flex_direction=FlexDirection::Row
-            overflow_x=Overflow::Scroll scroll_x=6 focus_id=id tab_stop=true>
-            <FlexBox width=8 height=1><TextSpan>"ABCDEFGH"</TextSpan></FlexBox>
-            <FlexBox width=8 height=1><TextSpan>"ijklmnop"</TextSpan></FlexBox>
-        </FlexBox>
+        <View width=10 height=3 flex_direction=FlexDirection::Row
+            overflow_x=Overflow::Scroll scroll_x=6 scroll_id=id>
+            <View width=8 height=1><TextSpan>"ABCDEFGH"</TextSpan></View>
+            <View width=8 height=1><TextSpan>"ijklmnop"</TextSpan></View>
+        </View>
     };
     let (buffer, _) = render(&node, 20, 5);
     let line: String = (0..10).map(|x| buffer.get(x, 0).unwrap().ch).collect();
@@ -207,9 +211,9 @@ fn horizontal_flex_scrolls_without_shrinking_fixed_children() {
 fn vertical_scrollbar_reduces_fill_width_without_causing_horizontal_scroll() {
     let child = FocusId::new();
     let node = view! {
-        <FlexBox width=10 height=3 overflow=Overflow::Scroll>
-            <FlexBox width=Size::Fill height=5 focus_id=child tab_stop=true />
-        </FlexBox>
+        <View width=10 height=3 overflow=Overflow::Scroll>
+            <Pressable focus_id=child tab_stop=true><View width=Size::Fill height=5 /></Pressable>
+        </View>
     };
     let (buffer, hits) = render(&node, 20, 10);
     assert_eq!(rect(&hits, child).width, 9);
@@ -221,9 +225,9 @@ fn vertical_scrollbar_reduces_fill_width_without_causing_horizontal_scroll() {
 fn coupled_scrollbars_and_tiny_viewports_do_not_panic() {
     for (width, height) in [(10, 3), (1, 1), (0, 0)] {
         let node = view! {
-            <FlexBox width=width height=height overflow=Overflow::Scroll>
-                <FlexBox width=10 height=4 />
-            </FlexBox>
+            <View width=width height=height overflow=Overflow::Scroll>
+                <View width=10 height=4 />
+            </View>
         };
         let (buffer, _) = render(&node, width, height);
         if width == 10 {
@@ -238,13 +242,13 @@ fn overlay_trigger_keeps_its_allocated_percentage_size_and_anchor() {
     let trigger = FocusId::new();
     let popup = FocusId::new();
     let node = view! {
-        <FlexBox width=40 height=4 flex_direction=FlexDirection::Row>
-            <FlexBox width=10 height=2 />
+        <View width=40 height=4 flex_direction=FlexDirection::Row>
+            <View width=10 height=2 />
             <Overlay open=true placement=Placement::BottomStart
-                trigger={view! { <FlexBox width=Size::Percent(50.0) height=2 focus_id=trigger tab_stop=true /> }}>
-                <FlexBox width=5 height=1 focus_id=popup tab_stop=true><TextSpan>"popup"</TextSpan></FlexBox>
+                trigger={view! { <Pressable focus_id=trigger tab_stop=true><View width=Size::Percent(50.0) height=2 /></Pressable> }}>
+                <Pressable focus_id=popup tab_stop=true><View width=5 height=1><TextSpan>"popup"</TextSpan></View></Pressable>
             </Overlay>
-        </FlexBox>
+        </View>
     };
     let (_, hits) = render(&node, 80, 24);
     assert_eq!(
@@ -258,12 +262,12 @@ fn overlay_trigger_keeps_its_allocated_percentage_size_and_anchor() {
 fn empty_and_fragment_children_do_not_add_phantom_gaps() {
     let id = FocusId::new();
     let node = view! {
-        <FlexBox flex_direction=FlexDirection::Row gap=2>
+        <View flex_direction=FlexDirection::Row gap=2>
             {None::<VNode>}
             {vec![vec![view! { <TextSpan>"ab"</TextSpan> }]]}
             <Overlay open=false />
-            <FlexBox width=1 height=1 focus_id=id tab_stop=true><TextSpan>"c"</TextSpan></FlexBox>
-        </FlexBox>
+            <Pressable focus_id=id tab_stop=true><View width=1 height=1><TextSpan>"c"</TextSpan></View></Pressable>
+        </View>
     };
     assert_eq!(measure_node(&node, 80, 24), (5, 1));
     let (buffer, hits) = render(&node, 80, 24);
@@ -278,10 +282,12 @@ fn cursor_and_focus_ancestry_follow_nested_row_layout() {
     let (value, set_value) = create_signal(String::from("abc"));
     let build = || {
         view! {
-            <FlexBox flex_direction=FlexDirection::Row width=30 height=5 focus_id=parent tab_stop=true gap=1>
-                <FlexBox width=4 height=3 />
-                <TextInput value=value set_value=set_value width=Size::Fill id=input />
-            </FlexBox>
+            <Pressable focus_id=parent tab_stop=true>
+                <View flex_direction=FlexDirection::Row width=30 height=5 gap=1>
+                    <View width=4 height=3 />
+                    <TextInput value=value set_value=set_value width=Size::Fill id=input />
+                </View>
+            </Pressable>
         }
     };
     let initial = build();
@@ -311,16 +317,17 @@ fn scrolled_hit_targets_match_visible_cells_and_keep_local_click_coordinates() {
     let second = FocusId::new();
     let clicked = Rc::new(Cell::new(None));
     let received = clicked.clone();
-    // on_click_at is a two-argument builder; use it on a JSX-created box.
-    let mut child = view! { <FlexBox width=8 height=1 focus_id=first tab_stop=true><TextSpan>"ABCDEFGH"</TextSpan></FlexBox> };
-    if let VNode::FlexBox(b) = &mut child {
-        b.on_click_at = Some(Rc::new(move |x, y| received.set(Some((x, y)))));
-    }
+    let received_at = received.clone();
+    let child = view! {
+        <Pressable focus_id=first tab_stop=true on_click_at={move |x, y| received_at.set(Some((x, y)))}>
+            <View width=8 height=1><TextSpan>"ABCDEFGH"</TextSpan></View>
+        </Pressable>
+    };
     let node = view! {
-        <FlexBox width=10 height=3 flex_direction=FlexDirection::Row overflow_x=Overflow::Scroll scroll_x=6>
+        <View width=10 height=3 flex_direction=FlexDirection::Row overflow_x=Overflow::Scroll scroll_x=6>
             {child}
-            <FlexBox width=8 height=1 focus_id=second tab_stop=true><TextSpan>"ijklmnop"</TextSpan></FlexBox>
-        </FlexBox>
+            <Pressable focus_id=second tab_stop=true><View width=8 height=1><TextSpan>"ijklmnop"</TextSpan></View></Pressable>
+        </View>
     };
     let (_, hits) = render(&node, 20, 5);
     assert_eq!(rect(&hits, first), sveltui::layout::Rect::new(0, 0, 2, 1));
@@ -376,12 +383,12 @@ fn space_between_handles_empty_singleton_and_excess_content() {
         let children = ids
             .iter()
             .copied()
-            .map(|id| view! { <FlexBox width=6 height=1 focus_id=id tab_stop=true /> })
+            .map(|id| view! { <Pressable focus_id=id tab_stop=true><View width=6 height=1 /></Pressable> })
             .collect::<Vec<_>>();
         let node = view! {
-            <FlexBox width=10 height=1 flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween>
+            <View width=10 height=1 flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween>
                 {children}
-            </FlexBox>
+            </View>
         };
         let (_, hits) = render(&node, 30, 4);
         if count > 0 {
@@ -395,10 +402,10 @@ fn percentage_full_width_is_distinct_from_sharing_remaining_space() {
     let percentage = FocusId::new();
     let fill = FocusId::new();
     let node = view! {
-        <FlexBox width=20 height=1 flex_direction=FlexDirection::Row>
-            <FlexBox width=Size::Percent(100.0) height=1 focus_id=percentage tab_stop=true />
-            <FlexBox width=Size::Fill min_width=3 height=1 focus_id=fill tab_stop=true />
-        </FlexBox>
+        <View flex_direction=FlexDirection::Row width=20 height=1>
+            <Pressable focus_id=percentage tab_stop=true><View width=Size::Percent(100.0) height=1 /></Pressable>
+            <Pressable focus_id=fill tab_stop=true><View width=Size::Fill min_width=3 height=1 /></Pressable>
+        </View>
     };
     let (_, hits) = render(&node, 30, 4);
     assert_eq!(rect(&hits, percentage).width, 20);
@@ -408,9 +415,9 @@ fn percentage_full_width_is_distinct_from_sharing_remaining_space() {
 #[test]
 fn one_overflow_axis_does_not_clip_visible_overflow_on_the_other() {
     let node = view! {
-        <FlexBox width=2 height=1 overflow_y=Overflow::Hidden>
+        <View width=2 height=1 overflow_y=Overflow::Hidden>
             <TextSpan>"ABCDE\nsecond"</TextSpan>
-        </FlexBox>
+        </View>
     };
     let (buffer, _) = render(&node, 10, 5);
     assert_eq!(buffer.get(4, 0).unwrap().ch, 'E');
@@ -423,10 +430,10 @@ fn auto_cross_size_does_not_reserve_scrollbars_for_unsplit_fill_siblings() {
         let (width, height) = direction.axes(Size::Fixed(20), Size::Auto);
         let (child_w, child_h) = direction.axes(Size::Fill, Size::Fixed(6));
         let node = view! {
-            <FlexBox flex_direction=direction width=width height=height overflow=Overflow::Scroll>
-                <FlexBox width=child_w height=child_h />
-                <FlexBox width=child_w height=child_h />
-            </FlexBox>
+            <View flex_direction=direction width=width height=height overflow=Overflow::Scroll>
+                <View width=child_w height=child_h />
+                <View width=child_w height=child_h />
+            </View>
         };
         assert_eq!(measure_node(&node, 80, 80), direction.axes(20, 6));
     }
@@ -525,10 +532,10 @@ fn menu_defaults_blend_borders_and_dim_disabled_custom_children() {
                 <Menu::Content bg=bg opt_border_color=border_override width=20
                     placement={Placement::Anchor { x: 0, y: 0 }}>
                     <Menu::Item disabled=true>
-                        <FlexBox flex_direction=FlexDirection::Row>
+                        <View flex_direction=FlexDirection::Row>
                             <TextSpan fg=Color::White bold=true>"Disabled"</TextSpan>
-                            <FlexBox><TextSpan fg=Color::Red bold=true>"Nested"</TextSpan></FlexBox>
-                        </FlexBox>
+                            <View><TextSpan fg=Color::Red bold=true>"Nested"</TextSpan></View>
+                        </View>
                     </Menu::Item>
                     <Menu::Sub>
                         <Menu::SubTrigger disabled=true>

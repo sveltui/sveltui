@@ -62,13 +62,13 @@ sveltui/
 - Components are instantiated via JSX syntax directly inside `view! { ... }`:
   ```rust
   view! {
-      <FlexBox border=BorderStyle::Single title=" Dialog ">
+      <View border=BorderStyle::Single title=" Dialog ">
           <TextInput value=username set_value=set_username placeholder="User..." />
           <Divider title="Actions" />
           <Button variant=ButtonVariant::Primary on_click={move || submit()}>
               "Submit"
           </Button>
-      </FlexBox>
+      </View>
   }
   ```
 - **Do not** use raw block expressions (`{ Component::new(...).into_node() }`) for components when standard JSX tags (`<Component ... />`) are available.

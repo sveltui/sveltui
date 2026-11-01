@@ -57,7 +57,7 @@ fn Counter () -> impl IntoNode {
     let count = state(0); // uses signals
 
     view! {
-      <FlexBox
+      <View
         height=Size::Fill
         width=Size::Fill
         justify_content=Justify::Center
@@ -77,7 +77,7 @@ fn Counter () -> impl IntoNode {
           "Increment"
         </Button>
 
-      </FlexBox>
+      </View>
     }
   
 }
