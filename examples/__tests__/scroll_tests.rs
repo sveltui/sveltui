@@ -11,12 +11,14 @@ use sveltui::{
 fn ScrollableContent() -> impl IntoNode {
     let id = use_hook(FocusId::new);
     view! {
+        <Pressable focus_id=id tab_stop=true>
         <View width=12 height=4 border=BorderStyle::Single
-            focus_id=id tab_stop=true overflow=Overflow::Scroll>
+            scroll_id=id overflow=Overflow::Scroll>
             {#each (0..12) as line}
                 <TextSpan>{format!("{line:02} abcdefghijklmnopqrstuvwxyz")}</TextSpan>
             {/each}
         </View>
+        </Pressable>
     }
 }
 
@@ -78,4 +80,40 @@ fn scrolling_survives_repainting_the_component() {
     );
     render(&mut manager);
     assert_eq!(get_scroll(id), (6, 3));
+}
+
+#[test]
+fn log_demo_keyboard_and_wheel_share_both_scroll_axes() {
+    let mut manager = FocusManager::new();
+    let render = |manager: &mut FocusManager| {
+        reset_focus_counter();
+        begin_frame();
+        let node = manager.with_context(|| view! { <super::ScrollDemo /> });
+        end_frame();
+        let mut buffer = Buffer::new(80, 40);
+        let mut hits = HitMap::new();
+        render_node_interactive(&node, Rect::new(0, 0, 80, 40), &mut buffer, &mut hits);
+        manager.reconcile(hits.interactions.clone());
+        (buffer, hits)
+    };
+    let (before, hits) = render(&mut manager);
+    let target = hits.targets.iter().find(|t| t.on_scroll.is_some()).unwrap();
+    let id = *manager.tab_order().last().unwrap();
+    manager.focus(id);
+    assert!(
+        manager
+            .dispatch(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE))
+            .handled
+    );
+    assert!(
+        manager
+            .dispatch(KeyEvent::new(KeyCode::Right, KeyModifiers::NONE))
+            .handled
+    );
+    assert_eq!(target.focus_id, Some(id));
+    assert_eq!(get_scroll(id), (2, 1));
+    manager.scroll(target, 3, 2);
+    let (after, _) = render(&mut manager);
+    assert_eq!(get_scroll(id), (5, 3));
+    assert_ne!(before.cells, after.cells);
 }

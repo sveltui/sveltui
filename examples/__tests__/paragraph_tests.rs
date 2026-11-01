@@ -189,3 +189,37 @@ fn limited_paragraph_children_reflow_when_resized() {
     let empty = view! { <Paragraph max_lines=1>"hidden"</Paragraph> };
     assert_eq!(measure_node(&empty, 0, 10), (0, 0));
 }
+
+#[test]
+fn poem_demo_keyboard_and_wheel_share_the_scroll_position() {
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use sveltui::element::{get_scroll, render_node_interactive, reset_focus_counter};
+
+    let mut manager = FocusManager::new();
+    let render = |manager: &mut FocusManager| {
+        reset_focus_counter();
+        begin_frame();
+        let node = manager.with_context(|| view! { <super::ParagraphDemo /> });
+        end_frame();
+        let mut buffer = Buffer::new(80, 24);
+        let mut hits = HitMap::new();
+        render_node_interactive(&node, Rect::new(0, 0, 80, 24), &mut buffer, &mut hits);
+        manager.reconcile(hits.interactions.clone());
+        (buffer, hits)
+    };
+    let (before, hits) = render(&mut manager);
+    let id = manager.tab_order()[0];
+    manager.focus(id);
+    assert!(
+        manager
+            .dispatch(KeyEvent::new(KeyCode::Down, KeyModifiers::NONE))
+            .handled
+    );
+    assert_eq!(get_scroll(id), (0, 1));
+    let target = hits.targets.iter().find(|t| t.on_scroll.is_some()).unwrap();
+    assert_eq!(target.focus_id, Some(id));
+    manager.scroll(target, 0, 3);
+    let (after, _) = render(&mut manager);
+    assert_eq!(get_scroll(id), (0, 4));
+    assert_ne!(before.cells, after.cells);
+}

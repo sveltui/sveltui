@@ -11,7 +11,34 @@ use crossterm::event::{
 };
 use std::io;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::{Duration, Instant};
+
+const MAX_SCROLL_BATCH: usize = 4096;
+
+fn read_event_batch(
+    first: Event,
+    mut next: impl FnMut() -> io::Result<Option<Event>>,
+) -> io::Result<Vec<Event>> {
+    let mut events = vec![first];
+    let started = Instant::now();
+    // Drain a wheel burst without repainting between ticks. Preserve each
+    // event's direction, modifiers and target: summing deltas loses reversals
+    // at a clamped edge. Stop at other input so it can update the view first.
+    while events.len() < MAX_SCROLL_BATCH
+        && started.elapsed() < Duration::from_millis(4)
+        && matches!(events.last(), Some(Event::Mouse(mouse)) if matches!(mouse.kind,
+            MouseEventKind::ScrollUp | MouseEventKind::ScrollDown |
+            MouseEventKind::ScrollLeft | MouseEventKind::ScrollRight))
+    {
+        let Some(event) = next()? else { break };
+        events.push(event);
+    }
+    Ok(events)
+}
+
+#[cfg(test)]
+#[path = "../tests/unit/app_event_tests.rs"]
+mod tests;
 
 pub struct App<V, H = fn(KeyEvent, &mut EventContext) -> EventResult, S = fn(&Path)> {
     view: V,
@@ -102,7 +129,7 @@ where
         // Initial render
         Runtime::set_dirty(true);
 
-        loop {
+        'app: loop {
             // Check for file save/modification events
             if let Some(ref mut w) = watcher
                 && let Some(saved_path) = w.poll_save()
@@ -147,71 +174,80 @@ where
 
             // Poll for terminal events with 16ms timeout (~60 FPS)
             if event::poll(Duration::from_millis(16))? {
-                match event::read()? {
-                    Event::Mouse(mouse) => {
-                        let outcome = match mouse.kind {
-                            MouseEventKind::Moved => {
-                                Some(focus.pointer_move(&hit_map, mouse.column, mouse.row))
+                let events = read_event_batch(event::read()?, || {
+                    if event::poll(Duration::ZERO)? {
+                        event::read().map(Some)
+                    } else {
+                        Ok(None)
+                    }
+                })?;
+                for event in events {
+                    match event {
+                        Event::Mouse(mouse) => {
+                            let outcome = match mouse.kind {
+                                MouseEventKind::Moved => {
+                                    Some(focus.pointer_move(&hit_map, mouse.column, mouse.row))
+                                }
+                                MouseEventKind::Down(MouseButton::Right) => {
+                                    Some(focus.context_menu(&hit_map, mouse.column, mouse.row))
+                                }
+                                MouseEventKind::Down(MouseButton::Left) => {
+                                    Some(focus.pointer_down_at(&hit_map, mouse.column, mouse.row))
+                                }
+                                MouseEventKind::ScrollDown
+                                | MouseEventKind::ScrollUp
+                                | MouseEventKind::ScrollLeft
+                                | MouseEventKind::ScrollRight => {
+                                    let (dx, dy) = match mouse.kind {
+                                        MouseEventKind::ScrollDown
+                                            if mouse.modifiers.contains(KeyModifiers::SHIFT) =>
+                                        {
+                                            (2, 0)
+                                        }
+                                        MouseEventKind::ScrollUp
+                                            if mouse.modifiers.contains(KeyModifiers::SHIFT) =>
+                                        {
+                                            (-2, 0)
+                                        }
+                                        MouseEventKind::ScrollDown => (0, 1),
+                                        MouseEventKind::ScrollUp => (0, -1),
+                                        MouseEventKind::ScrollLeft => (-2, 0),
+                                        _ => (2, 0),
+                                    };
+                                    hit_map
+                                        .scroll_target(mouse.column, mouse.row)
+                                        .map(|target| focus.scroll(target, dx, dy))
+                                }
+                                _ => None,
+                            };
+                            if let Some(outcome) = outcome {
+                                if outcome.exit {
+                                    break 'app;
+                                }
+                                if outcome.changed {
+                                    Runtime::set_dirty(true);
+                                }
                             }
-                            MouseEventKind::Down(MouseButton::Right) => {
-                                Some(focus.context_menu(&hit_map, mouse.column, mouse.row))
-                            }
-                            MouseEventKind::Down(MouseButton::Left) => {
-                                Some(focus.pointer_down_at(&hit_map, mouse.column, mouse.row))
-                            }
-                            MouseEventKind::ScrollDown
-                            | MouseEventKind::ScrollUp
-                            | MouseEventKind::ScrollLeft
-                            | MouseEventKind::ScrollRight => {
-                                let (dx, dy) = match mouse.kind {
-                                    MouseEventKind::ScrollDown
-                                        if mouse.modifiers.contains(KeyModifiers::SHIFT) =>
-                                    {
-                                        (2, 0)
-                                    }
-                                    MouseEventKind::ScrollUp
-                                        if mouse.modifiers.contains(KeyModifiers::SHIFT) =>
-                                    {
-                                        (-2, 0)
-                                    }
-                                    MouseEventKind::ScrollDown => (0, 1),
-                                    MouseEventKind::ScrollUp => (0, -1),
-                                    MouseEventKind::ScrollLeft => (-2, 0),
-                                    _ => (2, 0),
-                                };
-                                hit_map
-                                    .scroll_target(mouse.column, mouse.row)
-                                    .map(|target| focus.scroll(target, dx, dy))
-                            }
-                            _ => None,
-                        };
-                        if let Some(outcome) = outcome {
+                        }
+                        Event::Key(key) => {
+                            let outcome = self.dispatch_key(&mut focus, key);
                             if outcome.exit {
-                                break;
+                                break 'app;
                             }
                             if outcome.changed {
                                 Runtime::set_dirty(true);
                             }
                         }
-                    }
-                    Event::Key(key) => {
-                        let outcome = self.dispatch_key(&mut focus, key);
-                        if outcome.exit {
-                            break;
-                        }
-                        if outcome.changed {
+
+                        Event::Resize(w, h) => {
+                            let (real_w, real_h) = crossterm::terminal::size().unwrap_or((w, h));
+                            term_w = real_w;
+                            term_h = real_h;
+                            terminal.resize(real_w, real_h);
                             Runtime::set_dirty(true);
                         }
+                        _ => {}
                     }
-
-                    Event::Resize(w, h) => {
-                        let (real_w, real_h) = crossterm::terminal::size().unwrap_or((w, h));
-                        term_w = real_w;
-                        term_h = real_h;
-                        terminal.resize(real_w, real_h);
-                        Runtime::set_dirty(true);
-                    }
-                    _ => {}
                 }
             }
         }

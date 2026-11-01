@@ -67,6 +67,7 @@ path = "../../examples/framework_error_boundary.rs"
 [[example]]
 name = "component_paragraph"
 path = "../../examples/component_paragraph.rs"
+test = true
 
 [[example]]
 name = "component_button"
@@ -75,6 +76,7 @@ path = "../../examples/component_button.rs"
 [[example]]
 name = "component_form"
 path = "../../examples/component_form.rs"
+test = true
 
 [[example]]
 name = "component_dialog"
@@ -87,6 +89,7 @@ path = "../../examples/component_dropdown.rs"
 [[example]]
 name = "component_scroll"
 path = "../../examples/component_scroll.rs"
+test = true
 
 [[example]]
 name = "component_layout"

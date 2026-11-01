@@ -63,6 +63,7 @@ fn ScrollDemo() -> impl IntoNode {
                 // Scroll container with custom scrollbars
                 <Pressable focus_id=scroll_id tab_stop=true>
                     <View
+                        scroll_id=scroll_id
                         border=border_style
                         border_color=if focus.is_active() { Color::White } else { Color::DarkGrey }
                         width=62

@@ -3,7 +3,7 @@ use crate::terminal::cell::Cell;
 use crossterm::{
     cursor::{self, MoveTo},
     event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
+    execute, queue,
     style::{
         Attribute, Color, Print, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
     },
@@ -114,11 +114,12 @@ impl Drop for Terminal {
 // Keep terminal output independent of raw-mode setup so the actual emitted
 // commands can be verified alongside the in-memory buffer.
 fn write_buffer_diff(
-    mut stdout: impl Write,
+    stdout: impl Write,
     curr_buffer: &Buffer,
     prev_buffer: &Buffer,
     force_redraw: bool,
 ) -> io::Result<()> {
+    let mut stdout = io::BufWriter::new(stdout);
     let mut current_fg = None;
     let mut current_bg = None;
     let mut current_bold = false;
@@ -131,66 +132,66 @@ fn write_buffer_diff(
             let prev_cell = prev_buffer.get(x, y).copied().unwrap_or(Cell::default());
 
             if force_redraw || curr_cell != prev_cell {
-                execute!(stdout, MoveTo(x, y))?;
+                queue!(stdout, MoveTo(x, y))?;
 
                 if curr_cell.fg != current_fg {
                     match curr_cell.fg {
-                        Some(color) => execute!(stdout, SetForegroundColor(color))?,
-                        None => execute!(stdout, SetForegroundColor(Color::Reset))?,
+                        Some(color) => queue!(stdout, SetForegroundColor(color))?,
+                        None => queue!(stdout, SetForegroundColor(Color::Reset))?,
                     }
                     current_fg = curr_cell.fg;
                 }
 
                 if curr_cell.bg != current_bg {
                     match curr_cell.bg {
-                        Some(color) => execute!(stdout, SetBackgroundColor(color))?,
-                        None => execute!(stdout, SetBackgroundColor(Color::Reset))?,
+                        Some(color) => queue!(stdout, SetBackgroundColor(color))?,
+                        None => queue!(stdout, SetBackgroundColor(Color::Reset))?,
                     }
                     current_bg = curr_cell.bg;
                 }
 
                 if curr_cell.bold != current_bold {
                     if curr_cell.bold {
-                        execute!(stdout, SetAttribute(Attribute::Bold))?;
+                        queue!(stdout, SetAttribute(Attribute::Bold))?;
                     } else {
-                        execute!(stdout, SetAttribute(Attribute::NormalIntensity))?;
+                        queue!(stdout, SetAttribute(Attribute::NormalIntensity))?;
                     }
                     current_bold = curr_cell.bold;
                 }
 
                 if curr_cell.italic != current_italic {
                     if curr_cell.italic {
-                        execute!(stdout, SetAttribute(Attribute::Italic))?;
+                        queue!(stdout, SetAttribute(Attribute::Italic))?;
                     } else {
-                        execute!(stdout, SetAttribute(Attribute::NoItalic))?;
+                        queue!(stdout, SetAttribute(Attribute::NoItalic))?;
                     }
                     current_italic = curr_cell.italic;
                 }
 
                 if curr_cell.underline != current_underline {
                     if curr_cell.underline {
-                        execute!(stdout, SetAttribute(Attribute::Underlined))?;
+                        queue!(stdout, SetAttribute(Attribute::Underlined))?;
                     } else {
-                        execute!(stdout, SetAttribute(Attribute::NoUnderline))?;
+                        queue!(stdout, SetAttribute(Attribute::NoUnderline))?;
                     }
                     current_underline = curr_cell.underline;
                 }
 
-                execute!(stdout, Print(curr_cell.ch))?;
+                queue!(stdout, Print(curr_cell.ch))?;
             }
         }
     }
 
-    execute!(stdout, ResetColor, SetAttribute(Attribute::Reset))?;
+    queue!(stdout, ResetColor, SetAttribute(Attribute::Reset))?;
 
     if let Some((cx, cy)) = curr_buffer.cursor {
         if cx < curr_buffer.width && cy < curr_buffer.height {
-            execute!(stdout, MoveTo(cx, cy), cursor::Show)?;
+            queue!(stdout, MoveTo(cx, cy), cursor::Show)?;
         } else {
-            execute!(stdout, cursor::Hide)?;
+            queue!(stdout, cursor::Hide)?;
         }
     } else {
-        execute!(stdout, cursor::Hide)?;
+        queue!(stdout, cursor::Hide)?;
     }
 
     stdout.flush()?;
@@ -199,34 +200,5 @@ fn write_buffer_diff(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn trailing_menu_spaces_keep_the_highlight_background() {
-        let mut current = Buffer::new(3, 1);
-        current.set_char(0, 0, 'A', Some(Color::Black), Some(Color::White), false);
-        current.set_char(1, 0, ' ', None, Some(Color::White), false);
-        current.set_char(2, 0, ' ', None, Some(Color::White), false);
-        let mut output = Vec::new();
-        write_buffer_diff(&mut output, &current, &Buffer::new(3, 1), true).unwrap();
-        let output = String::from_utf8(output).unwrap();
-
-        // Resetting just the foreground must preserve the row's white
-        // background when the label ends and unstyled padding begins.
-        let padding = format!("{}{} ", MoveTo(1, 0), SetForegroundColor(Color::Reset));
-        assert!(output.contains(&padding), "{output:?}");
-    }
-
-    #[test]
-    fn resetting_background_preserves_the_foreground() {
-        let mut current = Buffer::new(2, 1);
-        current.set_char(0, 0, 'A', Some(Color::White), Some(Color::Black), false);
-        current.set_char(1, 0, 'B', Some(Color::White), None, false);
-        let mut output = Vec::new();
-        write_buffer_diff(&mut output, &current, &Buffer::new(2, 1), true).unwrap();
-        let output = String::from_utf8(output).unwrap();
-        let next = format!("{}{}B", MoveTo(1, 0), SetBackgroundColor(Color::Reset));
-        assert!(output.contains(&next), "{output:?}");
-    }
-}
+#[path = "../../tests/unit/terminal_output_tests.rs"]
+mod tests;
