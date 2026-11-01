@@ -23,8 +23,8 @@ fn AsyncDemo() -> impl IntoNode {
     let endpoint = state(String::from("us-east-1"));
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View
                 width=72
                 border=BorderStyle::Single
                 border_color=Color::DarkGrey
@@ -34,12 +34,12 @@ fn AsyncDemo() -> impl IntoNode {
                 <TextSpan color=Color::White bold=true>"framework_async: {#await} Asynchronous Runes"</TextSpan>
                 <Divider />
 
-                <FlexBox flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
                     <TextSpan color=Color::DarkGrey>"Server Endpoint:"</TextSpan>
                     <TextInput value=endpoint placeholder="Region (try 'fail' to test catch)..." />
-                </FlexBox>
+                </View>
 
-                <FlexBox flex_direction=FlexDirection::Row gap=1>
+                <View flex_direction=FlexDirection::Row gap=1>
                     <Button on_click={move || endpoint.set(String::from("eu-west-1"))}>
                         "EU West"
                     </Button>
@@ -49,11 +49,11 @@ fn AsyncDemo() -> impl IntoNode {
                     <Button on_click={move || endpoint.set(String::from("fail-region"))}>
                         "Simulate Error"
                     </Button>
-                </FlexBox>
+                </View>
 
                 <Divider />
 
-                <FlexBox border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) min_height=4>
+                <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) min_height=4>
                     {#await fetch_server_stats(endpoint.get())}
                         <TextSpan color=Color::DarkGrey>"[Pending] Contacting cluster API..."</TextSpan>
                     {:then stats}
@@ -61,9 +61,9 @@ fn AsyncDemo() -> impl IntoNode {
                     {:catch error}
                         <TextSpan color=Color::White>{format!("[Error] {error}")}</TextSpan>
                     {/await}
-                </FlexBox>
-            </FlexBox>
-        </FlexBox>
+                </View>
+            </View>
+        </View>
     }
 }
 

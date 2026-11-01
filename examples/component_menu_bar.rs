@@ -5,7 +5,7 @@ use sveltui_components::{Button, ButtonProps, MenuBar};
 fn MenuBarDemo() -> impl IntoNode {
     let selected = state(String::from("No action yet"));
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill padding=1 gap=1>
+        <View width=Size::Fill height=Size::Fill padding=1 gap=1>
             <MenuBar::Root>
                 <MenuBar::Menu value="file">
                     <MenuBar::Trigger>"File"</MenuBar::Trigger>
@@ -39,7 +39,7 @@ fn MenuBarDemo() -> impl IntoNode {
             <TextSpan>"Hover switches open menus. Escape closes; Tab exits."</TextSpan>
             <Button>"After menu bar"</Button>
             <TextSpan>{selected.get()}</TextSpan>
-        </FlexBox>
+        </View>
     }
 }
 

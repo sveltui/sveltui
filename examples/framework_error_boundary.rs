@@ -13,10 +13,10 @@ fn FlakyWidget(props: FlakyWidgetProps) -> impl IntoNode {
     }
 
     view! {
-        <FlexBox border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
+        <View border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
             <TextSpan color=Color::White bold=true>"Child Widget: Running Healthy"</TextSpan>
             <TextSpan color=Color::DarkGrey>"Calculations proceeding normally. Click 'Trigger Panic' below to test isolation."</TextSpan>
-        </FlexBox>
+        </View>
     }
 }
 
@@ -25,8 +25,8 @@ fn ErrorBoundaryDemo() -> impl IntoNode {
     let should_crash = state(false);
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View
                 width=72
                 border=BorderStyle::Double
                 border_color=Color::DarkGrey
@@ -36,7 +36,7 @@ fn ErrorBoundaryDemo() -> impl IntoNode {
                 <TextSpan color=Color::White bold=true>"framework_error_boundary: Crash Isolation & Recovery"</TextSpan>
                 <Divider />
 
-                <FlexBox flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
                     <Button
                         on_click={move || should_crash.set(true)}
                     >
@@ -47,14 +47,14 @@ fn ErrorBoundaryDemo() -> impl IntoNode {
                     >
                         "Recover Normal State"
                     </Button>
-                </FlexBox>
+                </View>
 
-                <FlexBox height=1 />
+                <View height=1 />
 
                 // Error boundary isolates panics without crashing the entire terminal app
                 <ErrorBoundary>
                     {#snippet fallback(error)}
-                        <FlexBox
+                        <View
                             border=BorderStyle::Double
                             border_color=Color::White
                             padding=Padding::all(1)
@@ -63,13 +63,13 @@ fn ErrorBoundaryDemo() -> impl IntoNode {
                             <TextSpan color=Color::White bold=true>"[ErrorBoundary Caught Failure]"</TextSpan>
                             <TextSpan color=Color::DarkGrey>{format!("Panic payload: {error}")}</TextSpan>
                             <TextSpan color=Color::DarkGrey>"Outer application remains fully interactive. Click 'Recover' above."</TextSpan>
-                        </FlexBox>
+                        </View>
                     {/snippet}
 
                     <FlakyWidget should_crash=should_crash />
                 </ErrorBoundary>
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

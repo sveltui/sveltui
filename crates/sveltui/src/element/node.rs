@@ -5,13 +5,14 @@ use crate::element::interaction::{
 };
 use crate::element::snippet::Snippet;
 use crate::layout::{
-    Align, BorderStyle, FlexDirection, Justify, Overflow, Padding, Placement, ScrollbarStyle,
-    ScrollbarVisibility, Size,
+    Align, BorderStyle, FlexDirection, Justify, Margin, Overflow, Padding, Placement,
+    ScrollbarStyle, ScrollbarVisibility, Size,
 };
 use crossterm::event::KeyEvent;
 use crossterm::style::Color;
 use std::fmt;
 use std::rc::Rc;
+use taffy::style::{AlignItems, AlignSelf, FlexWrap, JustifyContent};
 
 /// A single-line flex container with border-box sizing in terminal cells.
 ///
@@ -30,7 +31,7 @@ use std::rc::Rc;
 /// measurement of an Auto parent, dependent percentages/Fill use content sizes
 /// until the parent has a definite size. Wrapping and weighted grow/shrink are
 /// not currently supported.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct FlexBoxElement {
     pub border: BorderStyle,
     pub border_color: Option<Color>,
@@ -63,6 +64,44 @@ pub struct FlexBoxElement {
     pub cursor_offset: Option<(u16, u16)>,
     pub focus_scope: Option<FocusScope>,
     pub children: Vec<VNode>,
+}
+
+impl Default for FlexBoxElement {
+    fn default() -> Self {
+        Self {
+            border: BorderStyle::default(),
+            border_color: None,
+            title: None,
+            flex_direction: FlexDirection::Column,
+            gap: 0,
+            align_items: Align::default(),
+            justify_content: Justify::default(),
+            width: Size::default(),
+            height: Size::default(),
+            min_width: None,
+            max_width: None,
+            min_height: None,
+            max_height: None,
+            overflow_x: Overflow::default(),
+            overflow_y: Overflow::default(),
+            scroll_x: None,
+            scroll_y: None,
+            scrollbar_visibility: ScrollbarVisibility::default(),
+            scrollbar_style: ScrollbarStyle::default(),
+            padding: Padding::default(),
+            bg: None,
+            fg: None,
+            on_click: None,
+            on_click_at: None,
+            focus_id: None,
+            on_key: None,
+            interaction: None,
+            on_scroll: None,
+            cursor_offset: None,
+            focus_scope: None,
+            children: Vec::new(),
+        }
+    }
 }
 
 impl fmt::Debug for FlexBoxElement {
@@ -636,6 +675,8 @@ impl OverlayElement {
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
 pub enum VNode {
+    View(Box<ViewElement>),
+    Pressable(Box<PressableElement>),
     FlexBox(FlexBoxElement),
     Text(TextElement),
     Overlay(OverlayElement),
@@ -650,6 +691,18 @@ pub trait IntoNode {
 impl IntoNode for VNode {
     fn into_node(self) -> VNode {
         self
+    }
+}
+
+impl IntoNode for ViewElement {
+    fn into_node(self) -> VNode {
+        VNode::View(Box::new(self))
+    }
+}
+
+impl IntoNode for PressableElement {
+    fn into_node(self) -> VNode {
+        VNode::Pressable(Box::new(self))
     }
 }
 
@@ -1035,6 +1088,795 @@ pub fn FlexBox(props: FlexBoxProps) -> FlexBoxElement {
         el = el.focus_scope(scope);
     }
     el
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct VisualData {
+    pub background_color: Option<Color>,
+    pub foreground_color: Option<Color>,
+    pub border: BorderStyle,
+    pub border_color: Option<Color>,
+    pub title: Option<String>,
+    pub cursor_offset: Option<(u16, u16)>,
+}
+
+#[derive(Clone, Default)]
+pub struct ScrollData {
+    pub id: Option<FocusId>,
+    pub scroll_x: u16,
+    pub scroll_y: u16,
+    pub scrollbar_visibility: ScrollbarVisibility,
+    pub scrollbar_style: ScrollbarStyle,
+    pub on_scroll: Option<Rc<dyn Fn(i16, i16)>>,
+}
+
+impl fmt::Debug for ScrollData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ScrollData")
+            .field("id", &self.id)
+            .field("scroll_x", &self.scroll_x)
+            .field("scroll_y", &self.scroll_y)
+            .field("scrollbar_visibility", &self.scrollbar_visibility)
+            .field("scrollbar_style", &self.scrollbar_style)
+            .finish()
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ViewElement {
+    pub width: Size,
+    pub height: Size,
+    pub min_width: Option<Size>,
+    pub max_width: Option<Size>,
+    pub min_height: Option<Size>,
+    pub max_height: Option<Size>,
+    pub margin: Margin,
+    pub padding: Padding,
+    pub gap: u16,
+    pub flex_direction: FlexDirection,
+    pub align_items: Option<AlignItems>,
+    pub justify_content: Option<JustifyContent>,
+    pub align_self: Option<AlignSelf>,
+    pub flex_grow: f32,
+    pub flex_shrink: f32,
+    pub flex_wrap: FlexWrap,
+    pub overflow_x: Overflow,
+    pub overflow_y: Overflow,
+    pub scroll: Option<Box<ScrollData>>,
+    pub visual: Option<Box<VisualData>>,
+    pub children: Vec<VNode>,
+}
+
+impl Default for ViewElement {
+    fn default() -> Self {
+        Self {
+            width: Size::default(),
+            height: Size::default(),
+            min_width: None,
+            max_width: None,
+            min_height: None,
+            max_height: None,
+            margin: Margin::default(),
+            padding: Padding::default(),
+            gap: 0,
+            flex_direction: FlexDirection::Column,
+            align_items: None,
+            justify_content: None,
+            align_self: None,
+            flex_grow: 0.0,
+            flex_shrink: 0.0,
+            flex_wrap: FlexWrap::NoWrap,
+            overflow_x: Overflow::Visible,
+            overflow_y: Overflow::Visible,
+            scroll: None,
+            visual: None,
+            children: Vec::new(),
+        }
+    }
+}
+
+impl ViewElement {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn visual_mut(&mut self) -> &mut VisualData {
+        self.visual.get_or_insert_with(|| Box::new(VisualData::default())).as_mut()
+    }
+
+    pub fn scroll_mut(&mut self) -> &mut ScrollData {
+        self.scroll.get_or_insert_with(|| Box::new(ScrollData::default())).as_mut()
+    }
+
+    pub fn flex_direction(mut self, dir: FlexDirection) -> Self {
+        self.flex_direction = dir;
+        self
+    }
+
+    pub fn width(mut self, w: impl Into<Size>) -> Self {
+        self.width = w.into();
+        self
+    }
+
+    pub fn height(mut self, h: impl Into<Size>) -> Self {
+        self.height = h.into();
+        self
+    }
+
+    pub fn padding(mut self, p: impl Into<Padding>) -> Self {
+        self.padding = p.into();
+        self
+    }
+
+    pub fn margin(mut self, m: impl Into<Margin>) -> Self {
+        self.margin = m.into();
+        self
+    }
+
+    pub fn align_items(mut self, align: impl Into<AlignItems>) -> Self {
+        self.align_items = Some(align.into());
+        self
+    }
+
+    pub fn justify_content(mut self, justify: impl Into<JustifyContent>) -> Self {
+        self.justify_content = Some(justify.into());
+        self
+    }
+
+    pub fn background_color(mut self, color: Color) -> Self {
+        self.visual_mut().background_color = Some(color);
+        self
+    }
+
+    pub fn foreground_color(mut self, color: Color) -> Self {
+        self.visual_mut().foreground_color = Some(color);
+        self
+    }
+
+    pub fn overflow_x(mut self, o: Overflow) -> Self {
+        self.overflow_x = o;
+        self
+    }
+
+    pub fn overflow_y(mut self, o: Overflow) -> Self {
+        self.overflow_y = o;
+        self
+    }
+
+    pub fn overflow(mut self, o: Overflow) -> Self {
+        self.overflow_x = o;
+        self.overflow_y = o;
+        self
+    }
+
+    pub fn scroll_id(mut self, id: FocusId) -> Self {
+        self.scroll_mut().id = Some(id);
+        self
+    }
+
+    pub fn focus_id(mut self, id: FocusId) -> Self {
+        self.scroll_mut().id = Some(id);
+        self
+    }
+
+    pub fn child(mut self, child: impl IntoNode) -> Self {
+        match child.into_node() {
+            VNode::Fragment(items) => self.children.extend(items),
+            VNode::Empty => {}
+            other => self.children.push(other),
+        }
+        self
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl IntoNode>) -> Self {
+        for c in children {
+            match c.into_node() {
+                VNode::Fragment(items) => self.children.extend(items),
+                VNode::Empty => {}
+                other => self.children.push(other),
+            }
+        }
+        self
+    }
+}
+
+#[derive(Clone)]
+pub struct ViewProps {
+    pub width: Size,
+    pub height: Size,
+    pub min_width: Option<Size>,
+    pub max_width: Option<Size>,
+    pub min_height: Option<Size>,
+    pub max_height: Option<Size>,
+    pub margin: Margin,
+    pub padding: Padding,
+    pub gap: u16,
+    pub flex_direction: FlexDirection,
+    pub align_items: Option<AlignItems>,
+    pub justify_content: Option<JustifyContent>,
+    pub align_self: Option<AlignSelf>,
+    pub flex_grow: f32,
+    pub flex_shrink: f32,
+    pub flex_wrap: FlexWrap,
+    pub overflow_x: Overflow,
+    pub overflow_y: Overflow,
+    pub scroll: Option<Box<ScrollData>>,
+    pub visual: Option<Box<VisualData>>,
+    pub children: Vec<VNode>,
+}
+
+impl Default for ViewProps {
+    fn default() -> Self {
+        Self {
+            width: Size::default(),
+            height: Size::default(),
+            min_width: None,
+            max_width: None,
+            min_height: None,
+            max_height: None,
+            margin: Margin::default(),
+            padding: Padding::default(),
+            gap: 0,
+            flex_direction: FlexDirection::Column,
+            align_items: None,
+            justify_content: None,
+            align_self: None,
+            flex_grow: 0.0,
+            flex_shrink: 0.0,
+            flex_wrap: FlexWrap::NoWrap,
+            overflow_x: Overflow::Visible,
+            overflow_y: Overflow::Visible,
+            scroll: None,
+            visual: None,
+            children: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct ViewPropsBuilder {
+    props: ViewProps,
+}
+
+impl ViewProps {
+    pub fn builder() -> ViewPropsBuilder {
+        ViewPropsBuilder::default()
+    }
+}
+
+impl ViewPropsBuilder {
+    pub fn width(mut self, width: impl Into<Size>) -> Self {
+        self.props.width = width.into();
+        self
+    }
+
+    pub fn height(mut self, height: impl Into<Size>) -> Self {
+        self.props.height = height.into();
+        self
+    }
+
+    pub fn min_width(mut self, min_width: impl Into<Size>) -> Self {
+        self.props.min_width = Some(min_width.into());
+        self
+    }
+
+    pub fn opt_min_width(mut self, min_width: Option<Size>) -> Self {
+        self.props.min_width = min_width;
+        self
+    }
+
+    pub fn max_width(mut self, max_width: impl Into<Size>) -> Self {
+        self.props.max_width = Some(max_width.into());
+        self
+    }
+
+    pub fn opt_max_width(mut self, max_width: Option<Size>) -> Self {
+        self.props.max_width = max_width;
+        self
+    }
+
+    pub fn min_height(mut self, min_height: impl Into<Size>) -> Self {
+        self.props.min_height = Some(min_height.into());
+        self
+    }
+
+    pub fn opt_min_height(mut self, min_height: Option<Size>) -> Self {
+        self.props.min_height = min_height;
+        self
+    }
+
+    pub fn max_height(mut self, max_height: impl Into<Size>) -> Self {
+        self.props.max_height = Some(max_height.into());
+        self
+    }
+
+    pub fn opt_max_height(mut self, max_height: Option<Size>) -> Self {
+        self.props.max_height = max_height;
+        self
+    }
+
+    pub fn margin(mut self, margin: impl Into<Margin>) -> Self {
+        self.props.margin = margin.into();
+        self
+    }
+
+    pub fn padding(mut self, padding: impl Into<Padding>) -> Self {
+        self.props.padding = padding.into();
+        self
+    }
+
+    pub fn gap(mut self, gap: u16) -> Self {
+        self.props.gap = gap;
+        self
+    }
+
+    pub fn flex_direction(mut self, dir: FlexDirection) -> Self {
+        self.props.flex_direction = dir;
+        self
+    }
+
+    pub fn align_items(mut self, align: impl Into<AlignItems>) -> Self {
+        self.props.align_items = Some(align.into());
+        self
+    }
+
+    pub fn opt_align_items(mut self, align: Option<AlignItems>) -> Self {
+        self.props.align_items = align;
+        self
+    }
+
+    pub fn justify_content(mut self, justify: impl Into<JustifyContent>) -> Self {
+        self.props.justify_content = Some(justify.into());
+        self
+    }
+
+    pub fn opt_justify_content(mut self, justify: Option<JustifyContent>) -> Self {
+        self.props.justify_content = justify;
+        self
+    }
+
+    pub fn align_self(mut self, align: impl Into<AlignSelf>) -> Self {
+        self.props.align_self = Some(align.into());
+        self
+    }
+
+    pub fn opt_align_self(mut self, align: Option<AlignSelf>) -> Self {
+        self.props.align_self = align;
+        self
+    }
+
+    pub fn flex_grow(mut self, grow: f32) -> Self {
+        self.props.flex_grow = grow;
+        self
+    }
+
+    pub fn flex_shrink(mut self, shrink: f32) -> Self {
+        self.props.flex_shrink = shrink;
+        self
+    }
+
+    pub fn flex_wrap(mut self, wrap: FlexWrap) -> Self {
+        self.props.flex_wrap = wrap;
+        self
+    }
+
+    pub fn overflow_x(mut self, overflow: Overflow) -> Self {
+        self.props.overflow_x = overflow;
+        self
+    }
+
+    pub fn overflow_y(mut self, overflow: Overflow) -> Self {
+        self.props.overflow_y = overflow;
+        self
+    }
+
+    pub fn overflow(mut self, overflow: Overflow) -> Self {
+        self.props.overflow_x = overflow;
+        self.props.overflow_y = overflow;
+        self
+    }
+
+    fn visual_mut(&mut self) -> &mut VisualData {
+        self.props
+            .visual
+            .get_or_insert_with(|| Box::new(VisualData::default()))
+            .as_mut()
+    }
+
+    fn scroll_mut(&mut self) -> &mut ScrollData {
+        self.props
+            .scroll
+            .get_or_insert_with(|| Box::new(ScrollData::default()))
+            .as_mut()
+    }
+
+    pub fn scroll_x(mut self, x: u16) -> Self {
+        self.scroll_mut().scroll_x = x;
+        self
+    }
+
+    pub fn scroll_y(mut self, y: u16) -> Self {
+        self.scroll_mut().scroll_y = y;
+        self
+    }
+
+    pub fn scroll_id(mut self, id: FocusId) -> Self {
+        self.scroll_mut().id = Some(id);
+        self
+    }
+
+    pub fn focus_id(mut self, id: FocusId) -> Self {
+        self.scroll_mut().id = Some(id);
+        self
+    }
+
+    pub fn scrollbar_visibility(mut self, vis: ScrollbarVisibility) -> Self {
+        self.scroll_mut().scrollbar_visibility = vis;
+        self
+    }
+
+    pub fn scrollbar_style(mut self, style: ScrollbarStyle) -> Self {
+        self.scroll_mut().scrollbar_style = style;
+        self
+    }
+
+    pub fn on_scroll(mut self, handler: impl IntoScrollHandler) -> Self {
+        self.scroll_mut().on_scroll = Some(handler.into_scroll_handler());
+        self
+    }
+
+    pub fn background_color(mut self, color: Color) -> Self {
+        self.visual_mut().background_color = Some(color);
+        self
+    }
+
+    pub fn opt_background_color(mut self, color: Option<Color>) -> Self {
+        self.visual_mut().background_color = color;
+        self
+    }
+
+    pub fn foreground_color(mut self, color: Color) -> Self {
+        self.visual_mut().foreground_color = Some(color);
+        self
+    }
+
+    pub fn opt_foreground_color(mut self, color: Option<Color>) -> Self {
+        self.visual_mut().foreground_color = color;
+        self
+    }
+
+    pub fn bg(self, color: Color) -> Self {
+        self.background_color(color)
+    }
+
+    pub fn opt_bg(self, color: Option<Color>) -> Self {
+        self.opt_background_color(color)
+    }
+
+    pub fn fg(self, color: Color) -> Self {
+        self.foreground_color(color)
+    }
+
+    pub fn opt_fg(self, color: Option<Color>) -> Self {
+        self.opt_foreground_color(color)
+    }
+
+    pub fn border(mut self, border: BorderStyle) -> Self {
+        self.visual_mut().border = border;
+        self
+    }
+
+    pub fn border_color(mut self, color: Color) -> Self {
+        self.visual_mut().border_color = Some(color);
+        self
+    }
+
+    pub fn opt_border_color(mut self, color: Option<Color>) -> Self {
+        self.visual_mut().border_color = color;
+        self
+    }
+
+    pub fn title(mut self, title: impl Into<String>) -> Self {
+        self.visual_mut().title = Some(title.into());
+        self
+    }
+
+    pub fn opt_title(mut self, title: Option<String>) -> Self {
+        self.visual_mut().title = title;
+        self
+    }
+
+    pub fn cursor_offset(mut self, offset: (u16, u16)) -> Self {
+        self.visual_mut().cursor_offset = Some(offset);
+        self
+    }
+
+    pub fn opt_cursor_offset(mut self, offset: Option<(u16, u16)>) -> Self {
+        self.visual_mut().cursor_offset = offset;
+        self
+    }
+
+    pub fn slot_children(mut self, node: impl IntoNode) -> Self {
+        match node.into_node() {
+            VNode::Fragment(items) => self.props.children.extend(items),
+            VNode::Empty => {}
+            other => self.props.children.push(other),
+        }
+        self
+    }
+
+    pub fn child(self, node: impl IntoNode) -> Self {
+        self.slot_children(node)
+    }
+
+    pub fn children(mut self, children: impl IntoIterator<Item = impl IntoNode>) -> Self {
+        for c in children {
+            match c.into_node() {
+                VNode::Fragment(items) => self.props.children.extend(items),
+                VNode::Empty => {}
+                other => self.props.children.push(other),
+            }
+        }
+        self
+    }
+
+    pub fn build(self) -> ViewProps {
+        self.props
+    }
+}
+
+#[allow(non_snake_case)]
+pub fn View(props: ViewProps) -> ViewElement {
+    ViewElement {
+        width: props.width,
+        height: props.height,
+        min_width: props.min_width,
+        max_width: props.max_width,
+        min_height: props.min_height,
+        max_height: props.max_height,
+        margin: props.margin,
+        padding: props.padding,
+        gap: props.gap,
+        flex_direction: props.flex_direction,
+        align_items: props.align_items,
+        justify_content: props.justify_content,
+        align_self: props.align_self,
+        flex_grow: props.flex_grow,
+        flex_shrink: props.flex_shrink,
+        flex_wrap: props.flex_wrap,
+        overflow_x: props.overflow_x,
+        overflow_y: props.overflow_y,
+        scroll: props.scroll,
+        visual: props.visual,
+        children: props.children,
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct PressableElement {
+    pub focus_id: Option<FocusId>,
+    pub focus_group: Option<FocusGroup>,
+    pub tab_stop: bool,
+    pub disabled: bool,
+    pub activation: Activation,
+    pub semantics: Option<Semantics>,
+    pub on_click: Option<Rc<dyn Fn()>>,
+    pub on_click_at: Option<Rc<dyn Fn(u16, u16)>>,
+    pub on_key: Option<KeyHandler>,
+    pub children: Vec<VNode>,
+}
+
+impl fmt::Debug for PressableElement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PressableElement")
+            .field("focus_id", &self.focus_id)
+            .field("tab_stop", &self.tab_stop)
+            .field("disabled", &self.disabled)
+            .field("activation", &self.activation)
+            .field("has_click", &self.on_click.is_some())
+            .field("children", &self.children)
+            .finish()
+    }
+}
+
+impl PressableElement {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn focus_id(mut self, id: impl Into<FocusId>) -> Self {
+        self.focus_id = Some(id.into());
+        self
+    }
+
+    pub fn focus_group(mut self, group: FocusGroup) -> Self {
+        self.focus_group = Some(group);
+        self
+    }
+
+    pub fn opt_focus_group(mut self, group: Option<FocusGroup>) -> Self {
+        self.focus_group = group;
+        self
+    }
+
+    pub fn tab_stop(mut self, value: bool) -> Self {
+        self.tab_stop = value;
+        self
+    }
+
+    pub fn disabled(mut self, value: bool) -> Self {
+        self.disabled = value;
+        self
+    }
+
+    pub fn activation(mut self, value: Activation) -> Self {
+        self.activation = value;
+        self
+    }
+
+    pub fn semantics(mut self, semantics: Semantics) -> Self {
+        self.semantics = Some(semantics);
+        self
+    }
+
+    pub fn on_click(mut self, handler: impl IntoClickHandler) -> Self {
+        self.on_click = Some(handler.into_click_handler());
+        self
+    }
+
+    pub fn on_click_at(mut self, handler: impl IntoClickHandlerAt) -> Self {
+        self.on_click_at = Some(handler.into_click_handler_at());
+        self
+    }
+
+    pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
+        self.on_key = Some(handler.into_key_handler());
+        self
+    }
+
+    pub fn child(mut self, child: impl IntoNode) -> Self {
+        match child.into_node() {
+            VNode::Fragment(items) => self.children.extend(items),
+            VNode::Empty => {}
+            other => self.children.push(other),
+        }
+        self
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct PressableProps {
+    pub focus_id: Option<FocusId>,
+    pub focus_group: Option<FocusGroup>,
+    pub tab_stop: bool,
+    pub disabled: bool,
+    pub activation: Activation,
+    pub semantics: Option<Semantics>,
+    pub on_click: Option<Rc<dyn Fn()>>,
+    pub on_click_at: Option<Rc<dyn Fn(u16, u16)>>,
+    pub on_key: Option<KeyHandler>,
+    pub children: Vec<VNode>,
+}
+
+#[derive(Clone, Default)]
+pub struct PressablePropsBuilder {
+    props: PressableProps,
+}
+
+impl PressableProps {
+    pub fn builder() -> PressablePropsBuilder {
+        PressablePropsBuilder::default()
+    }
+}
+
+impl PressablePropsBuilder {
+    pub fn focus_id(mut self, id: impl Into<FocusId>) -> Self {
+        self.props.focus_id = Some(id.into());
+        self
+    }
+
+    pub fn opt_focus_id(mut self, id: Option<FocusId>) -> Self {
+        self.props.focus_id = id;
+        self
+    }
+
+    pub fn focus_group(mut self, group: FocusGroup) -> Self {
+        self.props.focus_group = Some(group);
+        self
+    }
+
+    pub fn opt_focus_group(mut self, group: Option<FocusGroup>) -> Self {
+        self.props.focus_group = group;
+        self
+    }
+
+    pub fn tab_stop(mut self, value: bool) -> Self {
+        self.props.tab_stop = value;
+        self
+    }
+
+    pub fn disabled(mut self, value: bool) -> Self {
+        self.props.disabled = value;
+        self
+    }
+
+    pub fn activation(mut self, value: Activation) -> Self {
+        self.props.activation = value;
+        self
+    }
+
+    pub fn semantics(mut self, semantics: Semantics) -> Self {
+        self.props.semantics = Some(semantics);
+        self
+    }
+
+    pub fn opt_semantics(mut self, semantics: Option<Semantics>) -> Self {
+        self.props.semantics = semantics;
+        self
+    }
+
+    pub fn on_click(mut self, handler: impl IntoClickHandler) -> Self {
+        self.props.on_click = Some(handler.into_click_handler());
+        self
+    }
+
+    pub fn opt_on_click(mut self, handler: Option<Rc<dyn Fn()>>) -> Self {
+        self.props.on_click = handler;
+        self
+    }
+
+    pub fn on_click_at(mut self, handler: impl IntoClickHandlerAt) -> Self {
+        self.props.on_click_at = Some(handler.into_click_handler_at());
+        self
+    }
+
+    pub fn opt_on_click_at(mut self, handler: Option<Rc<dyn Fn(u16, u16)>>) -> Self {
+        self.props.on_click_at = handler;
+        self
+    }
+
+    pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
+        self.props.on_key = Some(handler.into_key_handler());
+        self
+    }
+
+    pub fn opt_on_key(mut self, handler: Option<KeyHandler>) -> Self {
+        self.props.on_key = handler;
+        self
+    }
+
+    pub fn slot_children(mut self, node: impl IntoNode) -> Self {
+        match node.into_node() {
+            VNode::Fragment(items) => self.props.children.extend(items),
+            VNode::Empty => {}
+            other => self.props.children.push(other),
+        }
+        self
+    }
+
+    pub fn child(self, node: impl IntoNode) -> Self {
+        self.slot_children(node)
+    }
+
+    pub fn build(self) -> PressableProps {
+        self.props
+    }
+}
+
+#[allow(non_snake_case)]
+pub fn Pressable(props: PressableProps) -> PressableElement {
+    PressableElement {
+        focus_id: props.focus_id,
+        focus_group: props.focus_group,
+        tab_stop: props.tab_stop,
+        disabled: props.disabled,
+        activation: props.activation,
+        semantics: props.semantics,
+        on_click: props.on_click,
+        on_click_at: props.on_click_at,
+        on_key: props.on_key,
+        children: props.children,
+    }
 }
 
 #[derive(Clone, Default)]

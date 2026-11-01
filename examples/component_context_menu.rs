@@ -5,7 +5,7 @@ use sveltui_components::ContextMenu;
 fn ContextMenuDemo() -> impl IntoNode {
     let selected = state(String::from("No action yet"));
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill padding=2 gap=1>
+        <View width=Size::Fill height=Size::Fill padding=2 gap=1>
             <TextSpan>"Right-click the area below, or focus it and press Shift+F10."</TextSpan>
             <ContextMenu::Root>
                 <ContextMenu::Trigger>"Document actions"</ContextMenu::Trigger>
@@ -29,7 +29,7 @@ fn ContextMenuDemo() -> impl IntoNode {
                 </ContextMenu::Content>
             </ContextMenu::Root>
             <TextSpan>{selected.get()}</TextSpan>
-        </FlexBox>
+        </View>
     }
 }
 

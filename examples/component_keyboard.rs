@@ -52,43 +52,43 @@ struct KeyboardInspectorProps {
 #[component]
 fn KeyboardInspector(props: KeyboardInspectorProps) -> impl IntoNode {
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View
                 width=68
                 border=BorderStyle::Double
                 border_color=Color::DarkGrey
                 padding=Padding::all(1)
                 gap=1
             >
-                <FlexBox flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
                     <TextSpan color=Color::White bold=true>"component_keyboard: Key & Modifier Inspector"</TextSpan>
                     <TextSpan color=Color::DarkGrey>{format!("Events: {}", props.event_count.get())}</TextSpan>
-                </FlexBox>
+                </View>
                 <Divider />
 
                 <TextSpan color=Color::DarkGrey>"Press any key combination to analyze code and active modifiers:"</TextSpan>
-                <FlexBox height=1 />
+                <View height=1 />
 
-                <FlexBox border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
+                <View border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
                     <TextSpan color=Color::White bold=true>{format!("Key Code:  {}", props.last_key.get())}</TextSpan>
                     <TextSpan color=Color::DarkGrey>{format!("Modifiers: {}", props.last_mods.get())}</TextSpan>
-                </FlexBox>
+                </View>
 
-                <FlexBox height=1 />
+                <View height=1 />
                 <TextSpan color=Color::DarkGrey>"Recent Key History (last 5):"</TextSpan>
 
-                <FlexBox border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) min_height=6>
+                <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) min_height=6>
                     {#each props.history.get() as item}
                         <TextSpan color=Color::White>{item}</TextSpan>
                     {:else}
                         <TextSpan color=Color::DarkGrey>"No keyboard input captured yet. Press keys!"</TextSpan>
                     {/each}
-                </FlexBox>
+                </View>
 
                 <Divider />
                 <TextSpan color=Color::DarkGrey>"Press 'Ctrl+C' or 'Esc' to exit the application."</TextSpan>
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

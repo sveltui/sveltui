@@ -65,12 +65,16 @@ pub use element::{
     ContextProvider, ContextProviderProps, ErrorBoundary, ErrorBoundaryProps, FlexBox,
     FlexBoxElement, FlexBoxProps, FocusHandle, FocusId, FocusState, HitMap, IntoClickHandler,
     IntoClickHandlerAt, IntoKeyHandler, IntoNode, IntoPropOption, IntoScrollHandler,
-    OptionSnippetExt, Overlay, OverlayElement, OverlayProps, Paragraph, ParagraphProps, Snippet,
-    TextElement, TextSpan, TextSpanProps, VNode, is_focused, is_layer_open, use_focus,
+    OptionSnippetExt, Overlay, OverlayElement, OverlayProps, Paragraph, ParagraphProps, Pressable,
+    PressableElement, PressableProps, Snippet, TextElement, TextSpan, TextSpanProps, VNode, View,
+    ViewElement, ViewProps, is_focused, is_layer_open, use_focus,
 };
 pub use layout::{
-    Align, BorderStyle, FlexDirection, Justify, Overflow, Padding, Placement, ScrollbarChars,
-    ScrollbarStyle, ScrollbarVisibility, Size,
+    Align, BorderStyle, FlexDirection, FlexDirectionExt, Justify, Margin, Overflow, OverflowExt,
+    Padding, Placement, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility, Size,
+};
+pub use layout::{
+    AlignContent, AlignItems, AlignSelf, Display, FlexWrap, JustifyContent, Point, Position,
 };
 pub use reactive::{
     AsyncState, BlockingFuture, ComponentScope, Derived, ReadSignal, Runtime, State, TaskHandle,
@@ -90,11 +94,13 @@ pub mod prelude {
         FlexBoxElement, FlexBoxProps, FocusHandle, FocusId, FocusState, HitMap, IntoClickHandler,
         IntoClickHandlerAt, IntoKeyHandler, IntoNode, IntoPropOption, IntoScrollHandler,
         OptionSnippetExt, Overlay, OverlayElement, OverlayProps, Paragraph, ParagraphProps,
-        Snippet, TextElement, TextSpan, TextSpanProps, VNode, is_focused, is_layer_open, use_focus,
+        Pressable, PressableElement, PressableProps, Snippet, TextElement, TextSpan,
+        TextSpanProps, VNode, View, ViewElement, ViewProps, is_focused, is_layer_open, use_focus,
     };
     pub use crate::layout::{
-        Align, BorderStyle, FlexDirection, Justify, Overflow, Padding, Placement, ScrollbarChars,
-        ScrollbarStyle, ScrollbarVisibility, Size,
+        Align, AlignContent, AlignItems, AlignSelf, BorderStyle, Display, FlexDirection,
+        FlexDirectionExt, FlexWrap, Justify, JustifyContent, Margin, Overflow, OverflowExt, Padding,
+        Placement, Point, Position, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility, Size,
     };
     pub use crate::reactive::{
         AsyncState, BlockingFuture, ComponentScope, Derived, ReadSignal, State, TaskHandle,

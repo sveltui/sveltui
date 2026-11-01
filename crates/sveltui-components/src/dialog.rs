@@ -64,7 +64,7 @@ pub fn Dialog(props: DialogProps) -> impl IntoNode {
             opt_on_key=props.on_key
             semantics=semantics
         >
-            <FlexBox
+            <View
                 border=props.border
                 border_color=props.border_color
                 width=props.width
@@ -75,7 +75,7 @@ pub fn Dialog(props: DialogProps) -> impl IntoNode {
                 {#if props.children.is_some()}
                     {@render props.children}
                 {/if}
-            </FlexBox>
+            </View>
         </Overlay>
     }
 }

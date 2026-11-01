@@ -359,6 +359,44 @@ impl InteractionTree {
                         ancestry.pop();
                     }
                 }
+                VNode::View(v) => {
+                    for child in &v.children {
+                        visit(child, parent, ancestry, tree);
+                    }
+                }
+                VNode::Pressable(p) => {
+                    let id = p.focus_id.unwrap_or_else(crate::element::focus::next_render_focus_id);
+                    let registered = p.tab_stop || p.on_click.is_some() || p.on_key.is_some() || p.semantics.is_some();
+                    if registered {
+                        tree.push(InteractionNode {
+                            id,
+                            parent,
+                            ancestors: ancestry.clone(),
+                            interaction: Interaction {
+                                focusability: if p.tab_stop {
+                                    Focusability::TabStop
+                                } else if p.disabled {
+                                    Focusability::None
+                                } else {
+                                    Focusability::Programmatic
+                                },
+                                disabled: p.disabled,
+                                activation: p.activation,
+                                semantics: p.semantics.clone().unwrap_or_default(),
+                                group: p.focus_group.clone(),
+                                ..Interaction::default()
+                            },
+                            on_key: p.on_key.clone(),
+                            on_activate: p.on_click.clone(),
+                            on_scroll: None,
+                        });
+                    }
+                    ancestry.push(id);
+                    for child in &p.children {
+                        visit(child, if registered { Some(id) } else { parent }, ancestry, tree);
+                    }
+                    ancestry.pop();
+                }
                 VNode::Overlay(o) => {
                     if let Some(trigger) = &o.trigger {
                         visit(trigger, parent, ancestry, tree);
@@ -502,6 +540,11 @@ fn first_focus(node: &VNode) -> Option<FocusId> {
                     .is_some_and(|i| i.focusability != Focusability::None)
             })
             .or_else(|| b.children.iter().find_map(first_focus)),
+        VNode::Pressable(p) => p
+            .focus_id
+            .filter(|_| p.tab_stop)
+            .or_else(|| p.children.iter().find_map(first_focus)),
+        VNode::View(v) => v.children.iter().find_map(first_focus),
         VNode::Fragment(items) => items.iter().find_map(first_focus),
         VNode::Overlay(o) => o.trigger.as_deref().and_then(first_focus),
         _ => None,

@@ -1,17 +1,13 @@
 use crossterm::style::Color;
+pub use taffy::style::Overflow;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub enum Overflow {
-    #[default]
-    Visible,
-    Hidden,
-    Scroll,
-    Auto,
+pub trait OverflowExt {
+    fn is_scrollable(self) -> bool;
 }
 
-impl Overflow {
-    pub fn is_scrollable(self) -> bool {
-        matches!(self, Self::Scroll | Self::Auto)
+impl OverflowExt for Overflow {
+    fn is_scrollable(self) -> bool {
+        matches!(self, Self::Scroll)
     }
 }
 

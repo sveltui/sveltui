@@ -255,6 +255,54 @@ impl IntoPropOption<crate::layout::Padding> for crate::layout::Padding {
     }
 }
 
+impl IntoPropOption<crate::layout::Margin> for u16 {
+    fn into_prop_option(self) -> Option<crate::layout::Margin> {
+        Some(crate::layout::Margin::all(self))
+    }
+}
+
+impl IntoPropOption<crate::layout::Margin> for i32 {
+    fn into_prop_option(self) -> Option<crate::layout::Margin> {
+        Some(crate::layout::Margin::all(self as u16))
+    }
+}
+
+impl IntoPropOption<crate::layout::Margin> for crate::layout::Margin {
+    fn into_prop_option(self) -> Option<crate::layout::Margin> {
+        Some(self)
+    }
+}
+
+impl IntoPropOption<taffy::style::AlignItems> for taffy::style::AlignItems {
+    fn into_prop_option(self) -> Option<taffy::style::AlignItems> {
+        Some(self)
+    }
+}
+
+impl IntoPropOption<taffy::style::JustifyContent> for taffy::style::JustifyContent {
+    fn into_prop_option(self) -> Option<taffy::style::JustifyContent> {
+        Some(self)
+    }
+}
+
+impl IntoPropOption<taffy::style::FlexDirection> for taffy::style::FlexDirection {
+    fn into_prop_option(self) -> Option<taffy::style::FlexDirection> {
+        Some(self)
+    }
+}
+
+impl IntoPropOption<taffy::style::FlexWrap> for taffy::style::FlexWrap {
+    fn into_prop_option(self) -> Option<taffy::style::FlexWrap> {
+        Some(self)
+    }
+}
+
+impl IntoPropOption<taffy::style::Overflow> for taffy::style::Overflow {
+    fn into_prop_option(self) -> Option<taffy::style::Overflow> {
+        Some(self)
+    }
+}
+
 impl IntoPropOption<bool> for bool {
     fn into_prop_option(self) -> Option<bool> {
         Some(self)
@@ -315,5 +363,17 @@ impl IntoPropOption<Option<String>> for Option<String> {
 impl IntoPropOption<crate::layout::Placement> for crate::layout::Placement {
     fn into_prop_option(self) -> Option<crate::layout::Placement> {
         Some(self)
+    }
+}
+
+impl IntoPropOption<taffy::style::AlignItems> for crate::layout::Align {
+    fn into_prop_option(self) -> Option<taffy::style::AlignItems> {
+        Some(self.into())
+    }
+}
+
+impl IntoPropOption<taffy::style::JustifyContent> for crate::layout::Justify {
+    fn into_prop_option(self) -> Option<taffy::style::JustifyContent> {
+        Some(self.into())
     }
 }

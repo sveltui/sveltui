@@ -5,15 +5,56 @@ pub enum Size {
     Fixed(u16),
     Percent(f32),
     Fill,
+    Fr(u16),
 }
 
 impl Size {
+    pub const fn auto() -> Self {
+        Size::Auto
+    }
+
+    pub const fn fixed(v: u16) -> Self {
+        Size::Fixed(v)
+    }
+
+    pub const fn percent(p: f32) -> Self {
+        Size::Percent(p)
+    }
+
+    pub const fn fill() -> Self {
+        Size::Fill
+    }
+
+    pub const fn fr(units: u16) -> Self {
+        Size::Fr(units)
+    }
+
     pub fn resolve(&self, parent: u16, content: u16) -> u16 {
         match self {
             Size::Fixed(w) => *w,
             Size::Percent(p) => ((parent as f32 * p / 100.0).round() as u16).min(parent),
-            Size::Fill => parent,
+            Size::Fill | Size::Fr(_) => parent,
             Size::Auto => content,
+        }
+    }
+
+    pub fn to_taffy_dimension(&self) -> taffy::style::Dimension {
+        match self {
+            Size::Auto => taffy::style::Dimension::Auto,
+            Size::Fixed(px) => taffy::style::Dimension::Length(*px as f32),
+            Size::Percent(p) => taffy::style::Dimension::Percent(*p / 100.0),
+            Size::Fill => taffy::style::Dimension::Percent(1.0),
+            Size::Fr(_) => taffy::style::Dimension::Auto,
+        }
+    }
+
+    pub fn to_taffy_min_max(&self) -> taffy::style::LengthPercentageAuto {
+        match self {
+            Size::Auto => taffy::style::LengthPercentageAuto::Auto,
+            Size::Fixed(px) => taffy::style::LengthPercentageAuto::Length(*px as f32),
+            Size::Percent(p) => taffy::style::LengthPercentageAuto::Percent(*p / 100.0),
+            Size::Fill => taffy::style::LengthPercentageAuto::Percent(1.0),
+            Size::Fr(_) => taffy::style::LengthPercentageAuto::Auto,
         }
     }
 }

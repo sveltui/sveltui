@@ -15,27 +15,29 @@ fn ParagraphDemo() -> impl IntoNode {
     let scroll_id = use_hook(FocusId::new);
     let poem = THE_RAVEN.join("\n\n");
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill
+        <View width=Size::Fill height=Size::Fill
             align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox width=Size::Fill max_width=68 height=Size::Fill max_height=40
-                focus_id=scroll_id tab_stop=true border=BorderStyle::Single
-                border_color=Color::DarkGrey padding=Padding::all(1) gap=1
-                overflow_y=Overflow::Auto>
-                <TextSpan color=Color::White bold=true>"The Raven"</TextSpan>
-                <TextSpan color=Color::DarkGrey>"Edgar Allan Poe"</TextSpan>
-                <Divider />
+            <Pressable focus_id=scroll_id tab_stop=true>
+                <View width=Size::Fill max_width=68 height=Size::Fill max_height=40
+                    border=BorderStyle::Single
+                    border_color=Color::DarkGrey padding=Padding::all(1) gap=1
+                    overflow_y=Overflow::Scroll>
+                    <TextSpan color=Color::White bold=true>"The Raven"</TextSpan>
+                    <TextSpan color=Color::DarkGrey>"Edgar Allan Poe"</TextSpan>
+                    <Divider />
 
-                <Paragraph fg=Color::DarkGrey max_lines=2>
-                    {poem.clone()}
-                </Paragraph>
+                    <Paragraph fg=Color::DarkGrey max_lines=2>
+                        {poem.clone()}
+                    </Paragraph>
 
-                <Divider title="Full poem" />
-                <Paragraph fg=Color::White content=poem />
+                    <Divider title="Full poem" />
+                    <Paragraph fg=Color::White content=poem />
 
-                <Divider />
-                <Paragraph fg=Color::DarkGrey>"Tab: Focus | Up / Down / Wheel: Scroll | Q / Esc: Quit"</Paragraph>
-            </FlexBox>
-        </FlexBox>
+                    <Divider />
+                    <Paragraph fg=Color::DarkGrey>"Tab: Focus | Up / Down / Wheel: Scroll | Q / Esc: Quit"</Paragraph>
+                </View>
+            </Pressable>
+        </View>
     }
 }
 

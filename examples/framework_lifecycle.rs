@@ -33,7 +33,7 @@ fn ActiveSession(props: ActiveSessionProps) -> impl IntoNode {
     });
 
     view! {
-        <FlexBox border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) gap=1>
+        <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) gap=1>
             <TextSpan color=Color::White bold=true>"Active Session Component"</TextSpan>
             <Divider />
             <TextSpan color=Color::DarkGrey>"Recent Lifecycle Activity:"</TextSpan>
@@ -42,7 +42,7 @@ fn ActiveSession(props: ActiveSessionProps) -> impl IntoNode {
             {:else}
                 <TextSpan color=Color::DarkGrey>"No events recorded yet"</TextSpan>
             {/each}
-        </FlexBox>
+        </View>
     }
 }
 
@@ -58,8 +58,8 @@ fn LifecycleDemo() -> impl IntoNode {
     });
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View
                 width=68
                 border=BorderStyle::Double
                 border_color=Color::DarkGrey
@@ -69,7 +69,7 @@ fn LifecycleDemo() -> impl IntoNode {
                 <TextSpan color=Color::White bold=true>"framework_lifecycle: on_mount, on_destroy & effect"</TextSpan>
                 <Divider />
 
-                <FlexBox flex_direction=FlexDirection::Row gap=1>
+                <View flex_direction=FlexDirection::Row gap=1>
                     <Button
                         on_click={move || session_id.update(|id| *id += 1)}
                     >
@@ -80,24 +80,24 @@ fn LifecycleDemo() -> impl IntoNode {
                     >
                         {if session_visible.get() { "Unmount Component" } else { "Mount Component" }}
                     </Button>
-                </FlexBox>
+                </View>
 
-                <FlexBox height=1 />
+                <View height=1 />
 
                 {#if session_visible.get()}
                     <ActiveSession session_id=session_id />
                 {:else}
-                    <FlexBox
+                    <View
                         border=BorderStyle::Single
                         border_color=Color::DarkGrey
                         padding=Padding::all(2)
                         align_items=Align::Center
                     >
                         <TextSpan color=Color::DarkGrey>"Component unmounted. Cleanups executed."</TextSpan>
-                    </FlexBox>
+                    </View>
                 {/if}
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

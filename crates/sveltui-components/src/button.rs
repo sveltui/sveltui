@@ -46,14 +46,7 @@ pub fn Button(props: ButtonProps) -> impl IntoNode {
     let on_click = props.on_click.filter(|_| !props.disabled);
 
     view! {
-        <FlexBox
-            border=border_style
-            opt_border_color=border_color
-            padding=props.padding
-            width=props.width
-            height=props.height
-            align_items=Align::Center
-            justify_content=Justify::Center
+        <Pressable
             focus_id=id
             tab_stop=true
             disabled=props.disabled
@@ -61,11 +54,21 @@ pub fn Button(props: ButtonProps) -> impl IntoNode {
             semantics=Semantics::new(Role::Button, "")
             opt_on_click=on_click
         >
-            {#if props.children.is_some()}
-                {@render props.children}
-            {:else if let Some(label) = &props.label}
-                <TextSpan fg=text_color bold=is_active>{label.clone()}</TextSpan>
-            {/if}
-        </FlexBox>
+            <View
+                border=border_style
+                opt_border_color=border_color
+                padding=props.padding
+                width=props.width
+                height=props.height
+                align_items=AlignItems::Center
+                justify_content=JustifyContent::Center
+            >
+                {#if props.children.is_some()}
+                    {@render props.children}
+                {:else if let Some(label) = &props.label}
+                    <TextSpan fg=text_color bold=is_active>{label.clone()}</TextSpan>
+                {/if}
+            </View>
+        </Pressable>
     }
 }

@@ -19,15 +19,15 @@ struct CardGridProps {
 #[component]
 fn CardGrid(props: CardGridProps) -> impl IntoNode {
     view! {
-        <FlexBox border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) gap=1>
+        <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1) gap=1>
             <TextSpan color=Color::White bold=true>{props.title.clone()}</TextSpan>
             <Divider />
-            <FlexBox flex_direction=FlexDirection::Row gap=2>
+            <View flex_direction=FlexDirection::Row gap=2>
                 {#each props.items as item}
                     {@render props.card(item)}
                 {/each}
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 
@@ -52,11 +52,11 @@ fn SnippetsDemo() -> impl IntoNode {
     ];
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox width=74 gap=1>
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View width=74 gap=1>
                 <CardGrid title="Featured Projects" items=projects>
                     {#snippet card(project: ProjectItem)}
-                        <FlexBox
+                        <View
                             width=22
                             border=BorderStyle::Double
                             border_color=Color::DarkGrey
@@ -66,11 +66,11 @@ fn SnippetsDemo() -> impl IntoNode {
                             <TextSpan color=Color::White bold=true>{project.name.clone()}</TextSpan>
                             <TextSpan color=Color::DarkGrey>{format!("Stars: *{}", project.stars)}</TextSpan>
                             <Badge bg=Color::Green fg=Color::DarkGreen>{project.language.clone()}</Badge>
-                        </FlexBox>
+                        </View>
                     {/snippet}
                 </CardGrid>
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

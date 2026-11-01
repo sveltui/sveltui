@@ -207,7 +207,7 @@ fn horizontal_flex_scrolls_without_shrinking_fixed_children() {
 fn vertical_scrollbar_reduces_fill_width_without_causing_horizontal_scroll() {
     let child = FocusId::new();
     let node = view! {
-        <FlexBox width=10 height=3 overflow=Overflow::Auto>
+        <FlexBox width=10 height=3 overflow=Overflow::Scroll>
             <FlexBox width=Size::Fill height=5 focus_id=child tab_stop=true />
         </FlexBox>
     };
@@ -221,7 +221,7 @@ fn vertical_scrollbar_reduces_fill_width_without_causing_horizontal_scroll() {
 fn coupled_scrollbars_and_tiny_viewports_do_not_panic() {
     for (width, height) in [(10, 3), (1, 1), (0, 0)] {
         let node = view! {
-            <FlexBox width=width height=height overflow=Overflow::Auto>
+            <FlexBox width=width height=height overflow=Overflow::Scroll>
                 <FlexBox width=10 height=4 />
             </FlexBox>
         };
@@ -423,7 +423,7 @@ fn auto_cross_size_does_not_reserve_scrollbars_for_unsplit_fill_siblings() {
         let (width, height) = direction.axes(Size::Fixed(20), Size::Auto);
         let (child_w, child_h) = direction.axes(Size::Fill, Size::Fixed(6));
         let node = view! {
-            <FlexBox flex_direction=direction width=width height=height overflow=Overflow::Auto>
+            <FlexBox flex_direction=direction width=width height=height overflow=Overflow::Scroll>
                 <FlexBox width=child_w height=child_h />
                 <FlexBox width=child_w height=child_h />
             </FlexBox>

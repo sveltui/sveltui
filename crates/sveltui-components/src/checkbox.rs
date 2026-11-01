@@ -95,25 +95,28 @@ pub fn Checkbox(props: CheckboxProps) -> impl IntoNode {
     let box_display = format!("{}{}", box_prefix, box_glyph);
 
     view! {
-        <FlexBox
-            border=BorderStyle::None
-            padding=Padding::zero()
-            justify_content=Justify::Center
-            align_items=Align::Start
+        <Pressable
             focus_id=id
             tab_stop=true
             disabled=props.disabled
             activation=Activation::Toggle
             semantics=Semantics::new(Role::Checkbox, label_str.clone()).checked(is_checked)
             opt_on_click=on_click
-            flex_direction=FlexDirection::Row
         >
-            <TextSpan fg=text_color bold=focused>{box_display}</TextSpan>
-            {#if props.children.is_some()}
-                {@render props.children}
-            {:else if !label_str.is_empty()}
-                <TextSpan fg=text_color bold=focused>{format!(" {}", label_str)}</TextSpan>
-            {/if}
-        </FlexBox>
+            <View
+                border=BorderStyle::None
+                padding=Padding::zero()
+                justify_content=JustifyContent::Center
+                align_items=AlignItems::FlexStart
+                flex_direction=FlexDirection::Row
+            >
+                <TextSpan fg=text_color bold=focused>{box_display}</TextSpan>
+                {#if props.children.is_some()}
+                    {@render props.children}
+                {:else if !label_str.is_empty()}
+                    <TextSpan fg=text_color bold=focused>{format!(" {}", label_str)}</TextSpan>
+                {/if}
+            </View>
+        </Pressable>
     }
 }

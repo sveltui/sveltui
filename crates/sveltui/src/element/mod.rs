@@ -13,6 +13,7 @@ pub mod render;
 pub mod scroll;
 pub mod snippet;
 mod text;
+pub mod taffy_bridge;
 pub mod text_buffer;
 
 pub use boundary::{ErrorBoundary, ErrorBoundaryProps, ErrorBoundaryPropsBuilder};
@@ -27,7 +28,8 @@ pub use node::{
     FlexBox, FlexBoxElement, FlexBoxProps, FlexBoxPropsBuilder, IntoClickHandler,
     IntoClickHandlerAt, IntoKeyHandler, IntoNode, IntoScrollHandler, Overlay, OverlayElement,
     OverlayProps, OverlayPropsBuilder, Paragraph, ParagraphProps, ParagraphPropsBuilder,
-    TextElement, TextSpan, TextSpanProps, TextSpanPropsBuilder, VNode,
+    Pressable, PressableElement, PressableProps, PressablePropsBuilder, TextElement, TextSpan,
+    TextSpanProps, TextSpanPropsBuilder, VNode, View, ViewElement, ViewProps, ViewPropsBuilder,
 };
 pub use provider::{ContextProvider, ContextProviderProps, ContextProviderPropsBuilder};
 pub use render::{render_node, render_node_interactive, render_node_offset};
