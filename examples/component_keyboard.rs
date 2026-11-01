@@ -52,7 +52,7 @@ struct KeyboardInspectorProps {
 #[component]
 fn KeyboardInspector(props: KeyboardInspectorProps) -> impl IntoNode {
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=68
                 border=BorderStyle::Double
@@ -60,7 +60,7 @@ fn KeyboardInspector(props: KeyboardInspectorProps) -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row justify_content=JustifyContent::SpaceBetween align_items=AlignItems::Center>
                     <TextSpan foreground_color=Color::White bold=true>"component_keyboard: Key & Modifier Inspector"</TextSpan>
                     <TextSpan foreground_color=Color::DarkGrey>{format!("Events: {}", props.event_count.get())}</TextSpan>
                 </View>

@@ -1,6 +1,6 @@
 use crate::element::node::{TextElement, VNode, ViewElement};
+use crate::layout::BorderStyle;
 use crate::layout::geometry::Rect;
-use crate::layout::{BorderStyle, Size};
 use taffy::prelude::*;
 
 #[derive(Clone, Debug, Default)]
@@ -18,10 +18,7 @@ pub struct TextMeasureData {
     pub max_lines: Option<usize>,
 }
 
-pub fn view_to_taffy_style(
-    view: &ViewElement,
-    parent_direction: Option<FlexDirection>,
-) -> taffy::style::Style {
+pub fn view_to_taffy_style(view: &ViewElement) -> taffy::style::Style {
     let border_inset = if view
         .visual
         .as_ref()
@@ -32,79 +29,27 @@ pub fn view_to_taffy_style(
         0.0
     };
 
-    let mut grow = view.flex_grow;
-    let mut shrink = view.flex_shrink;
-    let mut width_dim = view.width.to_taffy_dimension();
-    let mut height_dim = view.height.to_taffy_dimension();
-    let mut align_self = view.align_self;
-
-    if let Some(dir) = parent_direction {
-        match dir {
-            FlexDirection::Row | FlexDirection::RowReverse => {
-                if view.width == Size::Fill {
-                    if grow == 0.0 {
-                        grow = 1.0;
-                    }
-                    if shrink == 0.0 {
-                        shrink = 1.0;
-                    }
-                    width_dim = Dimension::Length(0.0);
-                }
-                if view.height == Size::Fill {
-                    if align_self.is_none() {
-                        align_self = Some(AlignSelf::Stretch);
-                    }
-                    height_dim = Dimension::Auto;
-                }
-            }
-            FlexDirection::Column | FlexDirection::ColumnReverse => {
-                if view.height == Size::Fill {
-                    if grow == 0.0 {
-                        grow = 1.0;
-                    }
-                    if shrink == 0.0 {
-                        shrink = 1.0;
-                    }
-                    height_dim = Dimension::Length(0.0);
-                }
-                if view.width == Size::Fill {
-                    if align_self.is_none() {
-                        align_self = Some(AlignSelf::Stretch);
-                    }
-                    width_dim = Dimension::Auto;
-                }
-            }
-        }
-    }
-
     taffy::style::Style {
         display: Display::Flex,
         flex_direction: view.flex_direction,
         align_items: view.align_items.or(Some(AlignItems::Stretch)),
         justify_content: view.justify_content,
-        align_self,
-        flex_grow: grow,
-        flex_shrink: shrink,
+        align_self: view.align_self,
+        flex_grow: view.flex_grow,
+        flex_shrink: view.flex_shrink,
+        flex_basis: view.flex_basis,
         flex_wrap: view.flex_wrap,
         size: taffy::geometry::Size {
-            width: width_dim,
-            height: height_dim,
+            width: view.width,
+            height: view.height,
         },
         min_size: taffy::geometry::Size {
-            width: view
-                .min_width
-                .map_or(Dimension::Auto, |s| s.to_taffy_dimension()),
-            height: view
-                .min_height
-                .map_or(Dimension::Auto, |s| s.to_taffy_dimension()),
+            width: view.min_width.unwrap_or(Dimension::Auto),
+            height: view.min_height.unwrap_or(Dimension::Auto),
         },
         max_size: taffy::geometry::Size {
-            width: view
-                .max_width
-                .map_or(Dimension::Auto, |s| s.to_taffy_dimension()),
-            height: view
-                .max_height
-                .map_or(Dimension::Auto, |s| s.to_taffy_dimension()),
+            width: view.max_width.unwrap_or(Dimension::Auto),
+            height: view.max_height.unwrap_or(Dimension::Auto),
         },
         gap: taffy::geometry::Size {
             width: LengthPercentage::Length(view.gap as f32),
@@ -134,8 +79,8 @@ pub fn view_to_taffy_style(
         },
         scrollbar_width: if (view.overflow_y == taffy::style::Overflow::Scroll
             || view.overflow_x == taffy::style::Overflow::Scroll)
-            && (view.width != Size::Auto || view.max_width.is_some())
-            && (view.height != Size::Auto || view.max_height.is_some())
+            && (view.width != Dimension::Auto || view.max_width.is_some())
+            && (view.height != Dimension::Auto || view.max_height.is_some())
             && view
                 .scroll
                 .as_ref()
@@ -174,15 +119,25 @@ impl LayoutEngine {
         available_h: u16,
     ) -> ComputedLayoutNode {
         self.tree.clear();
-        let taffy_root = self.build_node(root, None);
+        let taffy_root = self.build_node(root);
 
         let available = taffy::geometry::Size {
             width: AvailableSpace::Definite(available_w as f32),
             height: AvailableSpace::Definite(available_h as f32),
         };
 
+        self.compute_taffy_layout(taffy_root, available);
+
+        self.extract_node_layout(taffy_root, root)
+    }
+
+    fn compute_taffy_layout(
+        &mut self,
+        root: NodeId,
+        available: taffy::geometry::Size<AvailableSpace>,
+    ) {
         let _ = self.tree.compute_layout_with_measure(
-            taffy_root,
+            root,
             available,
             |known_dimensions, available_space, _node_id, context, _style| {
                 if let Some(ctx) = context {
@@ -211,19 +166,16 @@ impl LayoutEngine {
                 }
             },
         );
-
-        self.extract_node_layout(taffy_root, root)
     }
 
-    fn build_node(&mut self, node: &VNode, parent_direction: Option<FlexDirection>) -> NodeId {
+    fn build_node(&mut self, node: &VNode) -> NodeId {
         match node {
             VNode::View(view) => {
-                let style = view_to_taffy_style(view, parent_direction);
-                let dir = view.flex_direction;
+                let style = view_to_taffy_style(view);
                 let child_ids: Vec<NodeId> = view
                     .children
                     .iter()
-                    .map(|c| self.build_node(c, Some(dir)))
+                    .map(|child| self.build_node(child))
                     .collect();
                 self.tree
                     .new_with_children(style, &child_ids)
@@ -231,7 +183,7 @@ impl LayoutEngine {
             }
             VNode::Pressable(pressable) => {
                 if pressable.children.len() == 1 {
-                    self.build_node(&pressable.children[0], parent_direction)
+                    self.build_node(&pressable.children[0])
                 } else if pressable.children.is_empty() {
                     self.tree.new_leaf(Style::default()).unwrap()
                 } else {
@@ -247,7 +199,7 @@ impl LayoutEngine {
                     let child_ids: Vec<NodeId> = pressable
                         .children
                         .iter()
-                        .map(|c| self.build_node(c, Some(FlexDirection::Column)))
+                        .map(|c| self.build_node(c))
                         .collect();
                     self.tree
                         .new_with_children(style, &child_ids)
@@ -301,7 +253,7 @@ impl LayoutEngine {
             }
             VNode::Overlay(overlay) => {
                 if let Some(trigger) = &overlay.trigger {
-                    self.build_node(trigger, parent_direction)
+                    self.build_node(trigger)
                 } else {
                     self.tree
                         .new_leaf(Style {
@@ -329,12 +281,8 @@ impl LayoutEngine {
                         },
                         ..Default::default()
                     };
-                    let child_ids: Vec<NodeId> = children
-                        .iter()
-                        .map(|c| {
-                            self.build_node(c, parent_direction.or(Some(FlexDirection::Column)))
-                        })
-                        .collect();
+                    let child_ids: Vec<NodeId> =
+                        children.iter().map(|c| self.build_node(c)).collect();
                     self.tree
                         .new_with_children(style, &child_ids)
                         .unwrap_or_else(|_| self.tree.new_leaf(Style::default()).unwrap())

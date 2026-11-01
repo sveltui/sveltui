@@ -53,10 +53,10 @@ fn FormDemo() -> impl IntoNode {
 
     view! {
         <View
-            width=Size::Fill
-            height=Size::Fill
-            align_items=Align::Center
-            justify_content=Justify::Center
+            width=Dimension::Percent(1.0)
+            height=Dimension::Percent(1.0)
+            align_items=AlignItems::Center
+            justify_content=JustifyContent::Center
         >
             <View
                 border=BorderStyle::Single

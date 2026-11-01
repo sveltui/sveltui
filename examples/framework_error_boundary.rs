@@ -25,7 +25,7 @@ fn ErrorBoundaryDemo() -> impl IntoNode {
     let should_crash = state(false);
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=72
                 border=BorderStyle::Double
@@ -36,7 +36,7 @@ fn ErrorBoundaryDemo() -> impl IntoNode {
                 <TextSpan foreground_color=Color::White bold=true>"framework_error_boundary: Crash Isolation & Recovery"</TextSpan>
                 <Divider />
 
-                <View flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=1 align_items=AlignItems::Center>
                     <Button
                         on_click={move || should_crash.set(true)}
                     >

@@ -1,4 +1,4 @@
-use sveltui::layout::{BorderStyle, Placement, Rect, Size, clamp_dimension, compute_popover_rect};
+use sveltui::layout::{BorderStyle, Placement, Rect, compute_popover_rect};
 
 #[test]
 fn test_rect_inner() {
@@ -30,25 +30,6 @@ fn test_rect_intersect() {
 
     let c = Rect::new(20, 20, 5, 5);
     assert_eq!(a.intersect(&c), None);
-}
-
-#[test]
-fn test_clamp_dimension() {
-    // Val=10, min=15, max=25 => 15
-    assert_eq!(
-        clamp_dimension(10, Some(Size::Fixed(15)), Some(Size::Fixed(25)), 100),
-        15
-    );
-    // Val=30, min=15, max=25 => 25
-    assert_eq!(
-        clamp_dimension(30, Some(Size::Fixed(15)), Some(Size::Fixed(25)), 100),
-        25
-    );
-    // Val=20, min=15, max=25 => 20
-    assert_eq!(
-        clamp_dimension(20, Some(Size::Fixed(15)), Some(Size::Fixed(25)), 100),
-        20
-    );
 }
 
 #[test]

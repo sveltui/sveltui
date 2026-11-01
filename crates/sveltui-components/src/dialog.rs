@@ -18,10 +18,10 @@ pub struct DialogProps {
     pub border: BorderStyle,
     #[prop(default = Color::White)]
     pub border_color: Color,
-    #[prop(default = Size::Fixed(50))]
-    pub width: Size,
-    #[prop(default = Size::Auto)]
-    pub height: Size,
+    #[prop(default = Dimension::Length(50.0))]
+    pub width: Dimension,
+    #[prop(default = Dimension::Auto)]
+    pub height: Dimension,
     #[prop(default = Padding::all(1))]
     pub padding: Padding,
     #[prop(optional)]

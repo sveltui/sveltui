@@ -29,7 +29,7 @@ fn ScrollDemo() -> impl IntoNode {
         .collect::<Vec<_>>();
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=68
                 border=BorderStyle::Single
@@ -44,7 +44,7 @@ fn ScrollDemo() -> impl IntoNode {
                     "Mouse Wheel / Trackpad / Shift+Wheel or Arrow Keys scroll both axes seamlessly."
                 </TextSpan>
 
-                <View flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=1 align_items=AlignItems::Center>
                     <Button
                         on_click={move || lines_count.update(|c| *c += 5)}
                     >

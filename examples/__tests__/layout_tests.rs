@@ -6,6 +6,24 @@ use sveltui::{
 };
 
 #[test]
+fn actual_layout_demo_centers_its_capped_frame_after_resizing() {
+    use sveltui::element::taffy_bridge::LayoutEngine;
+
+    for (width, height) in [(160, 80), (80, 24), (200, 60), (160, 80)] {
+        reset_focus_counter();
+        begin_frame();
+        let node = view! { <LayoutDemo /> };
+        end_frame();
+        let layout = LayoutEngine::new().compute_layout(&node, width, height);
+        let frame = layout.children[0].rect;
+        assert_eq!(frame.width, width.min(100));
+        assert_eq!(frame.height, height.min(50));
+        assert_eq!(frame.x, (width - frame.width) / 2);
+        assert_eq!(frame.y, (height - frame.height) / 2);
+    }
+}
+
+#[test]
 fn actual_layout_footer_renders_white_foreground_on_white_background_after_resizing() {
     let mut manager = FocusManager::new();
     let footer = "Tab: Switch controls | Space/Enter: Click | Q/Esc: Quit";
@@ -16,7 +34,7 @@ fn actual_layout_footer_renders_white_foreground_on_white_background_after_resiz
                 begin_frame();
                 let node = manager.with_context(|| {
                     view! {
-                        <View width=Size::Fill height=Size::Fill
+                        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0)
                             foreground_color=Color::White background_color=Color::White>
                             <LayoutDemo />
                         </View>

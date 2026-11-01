@@ -16,7 +16,7 @@ fn InteractiveShowcase() -> impl IntoNode {
     };
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=72
                 border=BorderStyle::Double
@@ -24,14 +24,14 @@ fn InteractiveShowcase() -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row justify_content=JustifyContent::SpaceBetween align_items=AlignItems::Center>
                     <TextSpan foreground_color=Color::White bold=true>"component_interactive: Full Widgets Dashboard"</TextSpan>
                     <Badge label=status_tag.get() />
                 </View>
                 <Divider />
 
                 <TextSpan foreground_color=Color::DarkGrey>"Progress Bar Component:"</TextSpan>
-                <View flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=2 align_items=AlignItems::Center>
                     <View width=48>
                         <ProgressBar ratio={progress.get() / 100.0} />
                     </View>
@@ -44,7 +44,7 @@ fn InteractiveShowcase() -> impl IntoNode {
                 <Divider />
 
                 <TextSpan foreground_color=Color::DarkGrey>"Form & Input Controls:"</TextSpan>
-                <View flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=2 align_items=AlignItems::Center>
                     <TextSpan foreground_color=Color::DarkGrey>"User:"</TextSpan>
                     <TextInput value=username placeholder="Enter username..." width=32 />
                 </View>
@@ -56,7 +56,7 @@ fn InteractiveShowcase() -> impl IntoNode {
 
                 <Divider />
 
-                <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row justify_content=JustifyContent::SpaceBetween align_items=AlignItems::Center>
                     <TextSpan foreground_color=Color::DarkGrey>"Tab: Navigate | Space/Enter: Toggle | Esc: Quit"</TextSpan>
                     <Button
                         on_click={move || status_tag.set(String::from("v0.2.0-rc"))}

@@ -14,7 +14,7 @@ fn ConditionalsDemo() -> impl IntoNode {
     let show_details = state(true);
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=64
                 border=BorderStyle::Single
@@ -25,7 +25,7 @@ fn ConditionalsDemo() -> impl IntoNode {
                 <TextSpan foreground_color=Color::White bold=true>"framework_conditionals: {#if} Branches"</TextSpan>
                 <Divider />
 
-                <View flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=1 align_items=AlignItems::Center>
                     <TextSpan foreground_color=Color::DarkGrey>"Switch Role:"</TextSpan>
                     <Button
                         on_click={move || role.set(AuthRole::LoggedOut)}

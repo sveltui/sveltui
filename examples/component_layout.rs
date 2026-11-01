@@ -11,11 +11,11 @@ fn LayoutDemo() -> impl IntoNode {
     let gap = state(2u16);
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
-                width=Size::Fill
+                width=Dimension::Percent(1.0)
                 max_width=100
-                height=Size::Fill
+                height=Dimension::Percent(1.0)
                 max_height=50
                 border=BorderStyle::Single
                 border_color=Color::DarkGrey
@@ -43,31 +43,37 @@ fn LayoutDemo() -> impl IntoNode {
 
                 // Interactive Flex Container
                 <View
-                    width=Size::Fill
-                    height=Size::Fill
+                    flex_grow=1.0
+                    flex_basis=0
                     flex_direction=direction.get()
                     gap=gap.get()
                     overflow=Overflow::Scroll
                 >
                     <View
-                        width=Size::Fill
-                        height=Size::Fill
+                        flex_grow=1.0
+                        flex_basis=0
+                        align_self=AlignSelf::Stretch
+                        min_width=0
                         min_height=6
                         background_color=Color::Red
                     >
                     </View>
 
                     <View
-                        width=Size::Fill
-                        height=Size::Fill
+                        flex_grow=1.0
+                        flex_basis=0
+                        align_self=AlignSelf::Stretch
+                        min_width=0
                         min_height=6
                         background_color=Color::Green
                     >
                     </View>
 
                     <View
-                        width=Size::Fill
-                        height=Size::Fill
+                        flex_grow=1.0
+                        flex_basis=0
+                        align_self=AlignSelf::Stretch
+                        min_width=0
                         min_height=6
                         background_color=Color::Blue
                     >
@@ -75,7 +81,7 @@ fn LayoutDemo() -> impl IntoNode {
                 </View>
 
                 <Divider />
-                <View justify_content=Justify::Center align_items=AlignItems::Center>
+                <View justify_content=JustifyContent::Center align_items=AlignItems::Center>
                     <TextSpan>"Tab: Switch controls | Space/Enter: Click | Q/Esc: Quit"</TextSpan>
                 </View>
             </View>

@@ -16,12 +16,16 @@ fn direct_text_nodes_follow_parent_alignment_and_justification_on_both_axes() {
     for paragraph in [false, true] {
         for direction in [FlexDirection::Row, FlexDirection::Column] {
             for (justify, positions) in [
-                (Justify::Start, [0, 3]),
-                (Justify::Center, [3, 6]),
-                (Justify::End, [5, 8]),
-                (Justify::SpaceBetween, [0, 8]),
+                (JustifyContent::FlexStart, [0, 3]),
+                (JustifyContent::Center, [3, 6]),
+                (JustifyContent::FlexEnd, [5, 8]),
+                (JustifyContent::SpaceBetween, [0, 8]),
             ] {
-                for (align, cross) in [(Align::Start, 0), (Align::Center, 2), (Align::End, 4)] {
+                for (align, cross) in [
+                    (AlignItems::FlexStart, 0),
+                    (AlignItems::Center, 2),
+                    (AlignItems::FlexEnd, 4),
+                ] {
                     let (width, height) = direction.axes(10, 6);
                     let node = view! {
                         <View width=width height=height flex_direction=direction gap=1
@@ -64,7 +68,7 @@ fn direct_text_nodes_stretch_in_the_parent_cross_axis() {
         for direction in [FlexDirection::Row, FlexDirection::Column] {
             let (width, height) = direction.axes(10, 6);
             let node = view! {
-                <View width=width height=height flex_direction=direction align_items=Align::Stretch>
+                <View width=width height=height flex_direction=direction align_items=AlignItems::Stretch>
                     {#if paragraph}<Paragraph>"ab\ncd"</Paragraph>
                     {:else}<TextSpan>"ab\ncd"</TextSpan>{/if}
                 </View>
@@ -79,7 +83,7 @@ fn direct_text_nodes_stretch_in_the_parent_cross_axis() {
 #[test]
 fn centered_text_remains_aligned_after_resizing() {
     let node = view! {
-        <View width=Size::Fill height=3 align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=3 align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <TextSpan>"Span"</TextSpan>
             <Paragraph>"Text"</Paragraph>
         </View>
@@ -102,7 +106,7 @@ fn centered_text_remains_aligned_after_resizing() {
 #[test]
 fn stretched_paragraph_reflows_and_keeps_the_next_sibling_below_it() {
     let node = view! {
-        <View width=12 align_items=Align::Stretch>
+        <View width=12 align_items=AlignItems::Stretch>
             <Paragraph>"one two three four five six"</Paragraph>
             <TextSpan>"!"</TextSpan>
         </View>

@@ -32,7 +32,7 @@ fn span_and_paragraph_inherit_parent_foreground_through_plain_views() {
 fn centered_layout_footer_inherits_the_stated_foreground() {
     let node = view! {
         <View width=40>
-            <View justify_content=Justify::Center align_items=AlignItems::Center
+            <View justify_content=JustifyContent::Center align_items=AlignItems::Center
                 background_color=Color::Red foreground_color=Color::Blue>
                 <TextSpan>"Tab: Switch controls"</TextSpan>
             </View>
@@ -109,7 +109,7 @@ fn explicit_text_colors_override_inherited_colors_and_none_preserves_inheritance
 
 #[test]
 fn overlay_text_inherits_the_foreground_where_it_is_declared() {
-    for height in [Size::Auto, Size::Fixed(5)] {
+    for height in [Dimension::Auto, Dimension::Length(5.0)] {
         let node = view! {
             <View width=30 height=height foreground_color=Color::Blue>
                 <Overlay open=true backdrop=false placement={Placement::Anchor { x: 0, y: 0 }}>

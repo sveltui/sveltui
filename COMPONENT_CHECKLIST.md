@@ -21,7 +21,7 @@ Sveltui follows a declarative, reactive architecture built on top of `crossterm`
 ### Interaction & Theming Foundations
 - **Focus & Keyboard Navigation**: Managed via [`FocusId`](./crates/sveltui/src/element/focus.rs), [`use_focus`](./crates/sveltui/src/element/focus.rs), explicit `tab_stop=true`, and [`FocusGroup`](./crates/sveltui/src/element/interaction.rs) roving tabindex.
 - **Overlay & Layer System**: Managed via [`DismissLayer`](./crates/sveltui/src/element/interaction.rs), modal focus containment/trapping, opener restoration, backdrop hit testing, and outside-click dismiss chains.
-- **Conservative Base-UI Aesthetic**: Monochromatic palette (`Color::White`, `Color::DarkGrey`), border styles (`BorderStyle::Single` unfocused, `BorderStyle::Double` focused/active), zero noisy default backgrounds, and full layout composability (`Padding`, `Size`, `FlexDirection`).
+- **Conservative Base-UI Aesthetic**: Monochromatic palette (`Color::White`, `Color::DarkGrey`), border styles (`BorderStyle::Single` unfocused, `BorderStyle::Double` focused/active), zero noisy default backgrounds, and full layout composability (`Padding`, `Dimension`, `FlexDirection`).
 
 ---
 

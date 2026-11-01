@@ -6,7 +6,7 @@ fn ButtonShowcase() -> impl IntoNode {
     let count = state(0);
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=AlignItems::Center justify_content=JustifyContent::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 border=BorderStyle::Double
                 border_color=Color::DarkGrey
@@ -16,7 +16,7 @@ fn ButtonShowcase() -> impl IntoNode {
                 <Divider />
                 <Button
                     on_click={move || count.update( |val| *val += 1)}
-                    width=Size::Fill
+                    width=Dimension::Percent(1.0)
                 >
                     "Click Me"
                 </Button>

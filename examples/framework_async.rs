@@ -23,7 +23,7 @@ fn AsyncDemo() -> impl IntoNode {
     let endpoint = state(String::from("us-east-1"));
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=72
                 border=BorderStyle::Single
@@ -34,7 +34,7 @@ fn AsyncDemo() -> impl IntoNode {
                 <TextSpan foreground_color=Color::White bold=true>"framework_async: {#await} Asynchronous Runes"</TextSpan>
                 <Divider />
 
-                <View flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=2 align_items=AlignItems::Center>
                     <TextSpan foreground_color=Color::DarkGrey>"Server Endpoint:"</TextSpan>
                     <TextInput value=endpoint placeholder="Region (try 'fail' to test catch)..." />
                 </View>

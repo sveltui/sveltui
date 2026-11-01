@@ -11,7 +11,7 @@ fn DialogDemo() -> impl IntoNode {
     let is_pop = popover_open.get();
 
     view! {
-        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+        <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
             <View
                 width=68
                 border=BorderStyle::Double
@@ -80,7 +80,7 @@ fn DialogDemo() -> impl IntoNode {
                         <TextSpan foreground_color=Color::White>"Proceed with irreversible cluster deployment?"</TextSpan>
                         <TextSpan foreground_color=Color::DarkGrey>"This will overwrite current staging replicas."</TextSpan>
                         <View height=1 />
-                        <View flex_direction=FlexDirection::Row gap=1 justify_content=Justify::End>
+                        <View flex_direction=FlexDirection::Row gap=1 justify_content=JustifyContent::FlexEnd>
                             <Button
                                 on_click={move || {
                                     action_log.set(String::from("Deployment cancelled."));

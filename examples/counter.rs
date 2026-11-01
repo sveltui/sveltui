@@ -17,8 +17,8 @@ fn CounterApp() -> impl IntoNode {
 
     view! {
         <View
-            height=Size::Fill
-            width=Size::Fill
+            height=Dimension::Percent(1.0)
+            width=Dimension::Percent(1.0)
             align_items=AlignItems::Center
             justify_content=JustifyContent::Center
         >

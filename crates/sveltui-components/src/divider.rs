@@ -7,12 +7,18 @@ pub struct DividerProps {
     pub title: Option<String>,
     #[prop(optional)]
     pub color: Option<Color>,
-    #[prop(default = Size::Fill)]
-    pub width: Size,
+    #[prop(default = Dimension::Auto)]
+    pub width: Dimension,
+    #[prop(default = 0.0)]
+    pub flex_grow: f32,
+    #[prop(default = 0.0)]
+    pub flex_shrink: f32,
+    #[prop(default = Dimension::Auto)]
+    pub flex_basis: Dimension,
     #[prop(optional)]
-    pub min_width: Option<Size>,
+    pub min_width: Option<Dimension>,
     #[prop(optional)]
-    pub max_width: Option<Size>,
+    pub max_width: Option<Dimension>,
     #[snippet(optional)]
     pub children: Option<Snippet>,
 }
@@ -33,6 +39,9 @@ pub fn Divider(props: DividerProps) -> impl IntoNode {
                 border=BorderStyle::None
                 padding=Padding::zero()
                 width=props.width
+                flex_grow=props.flex_grow
+                flex_shrink=props.flex_shrink
+                flex_basis=props.flex_basis
                 height=1
                 overflow=Overflow::Hidden
                 align_items=AlignItems::Stretch
