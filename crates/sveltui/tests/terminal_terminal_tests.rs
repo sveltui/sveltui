@@ -1,5 +1,5 @@
 use sveltui::layout::{BorderStyle, Rect};
-use sveltui::terminal::Buffer;
+use sveltui::terminal::{Buffer, CursorStyle};
 
 #[test]
 fn test_buffer_set_string() {
@@ -55,14 +55,23 @@ fn test_buffer_draw_border() {
 fn test_buffer_cursor() {
     let mut buf = Buffer::new(10, 5);
     assert_eq!(buf.cursor(), None);
+    assert_eq!(buf.cursor_style(), None);
 
-    buf.set_cursor(4, 2);
+    buf.set_cursor_with_style(4, 2, CursorStyle::Block);
     assert_eq!(buf.cursor(), Some((4, 2)));
+    assert_eq!(buf.cursor_style(), Some(CursorStyle::Block));
+
+    buf.set_cursor_style(CursorStyle::Line);
+    assert_eq!(buf.cursor_style(), Some(CursorStyle::Line));
 
     buf.clear_cursor();
     assert_eq!(buf.cursor(), None);
+    assert_eq!(buf.cursor_style(), None);
 
-    buf.set_cursor(7, 3);
+    buf.set_cursor_with_style(7, 3, CursorStyle::Underline);
+    assert_eq!(buf.cursor(), Some((7, 3)));
+    assert_eq!(buf.cursor_style(), Some(CursorStyle::Underline));
     buf.clear();
     assert_eq!(buf.cursor(), None);
+    assert_eq!(buf.cursor_style(), None);
 }

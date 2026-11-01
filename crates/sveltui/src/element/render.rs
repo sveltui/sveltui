@@ -526,6 +526,9 @@ fn render_node_offset_internal(
                         && screen_cy < ctx.buffer.height as i32
                     {
                         ctx.buffer.set_cursor(screen_cx as u16, screen_cy as u16);
+                        if let Some(style) = vis.cursor_style {
+                            ctx.buffer.set_cursor_style(style);
+                        }
                     }
                 }
             }
@@ -592,6 +595,7 @@ fn render_node_offset_internal(
                 };
 
                 if is_scrollable && let Some(id) = scroll_fid {
+                    crate::element::scroll::set_viewport(id, (viewport_w, viewport_h));
                     let on_scroll: Rc<dyn Fn(i16, i16)> = Rc::new(move |mut dx, dy| {
                         if is_scroll_x && !is_scroll_y && dx == 0 && dy != 0 {
                             dx = dy * 2;

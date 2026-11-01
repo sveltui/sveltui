@@ -14,6 +14,7 @@ pub use highlight::{
     DEFAULT_THEME, HighlightedSpan, clip_spans, find_syntax, find_theme, highlight_text,
     syntax_set, syntect_color_to_crossterm, theme_set,
 };
+pub use sveltui::terminal::CursorStyle;
 
 pub mod prelude {
     pub use crate::binding::CodeBinding;
@@ -23,4 +24,5 @@ pub mod prelude {
     pub use crate::code_editor::{CodeEditor, CodeEditorProps};
     pub use crate::code_preview::{CodePreview, CodePreviewProps};
     pub use crate::highlight::HighlightedSpan;
+    pub use sveltui::terminal::CursorStyle;
 }

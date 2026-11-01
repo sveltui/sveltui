@@ -1,5 +1,6 @@
 use crate::layout::{BorderChars, Rect};
 use crate::terminal::cell::Cell;
+use crate::terminal::cursor::CursorStyle;
 use crossterm::style::Color;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -8,6 +9,7 @@ pub struct Buffer {
     pub height: u16,
     pub cells: Vec<Cell>,
     pub cursor: Option<(u16, u16)>,
+    pub cursor_style: Option<CursorStyle>,
     clip_stack: Vec<Rect>,
 }
 
@@ -19,6 +21,7 @@ impl Buffer {
             height,
             cells: vec![Cell::default(); size],
             cursor: None,
+            cursor_style: None,
             clip_stack: Vec::new(),
         }
     }
@@ -29,6 +32,7 @@ impl Buffer {
         let size = (width as usize) * (height as usize);
         self.cells = vec![Cell::default(); size];
         self.cursor = None;
+        self.cursor_style = None;
         self.clip_stack.clear();
     }
 
@@ -37,6 +41,7 @@ impl Buffer {
             *cell = Cell::default();
         }
         self.cursor = None;
+        self.cursor_style = None;
         self.clip_stack.clear();
     }
 
@@ -44,8 +49,22 @@ impl Buffer {
         self.cursor = Some((x, y));
     }
 
+    pub fn set_cursor_style(&mut self, style: CursorStyle) {
+        self.cursor_style = Some(style);
+    }
+
+    pub fn set_cursor_with_style(&mut self, x: u16, y: u16, style: CursorStyle) {
+        self.cursor = Some((x, y));
+        self.cursor_style = Some(style);
+    }
+
+    pub fn cursor_style(&self) -> Option<CursorStyle> {
+        self.cursor_style
+    }
+
     pub fn clear_cursor(&mut self) {
         self.cursor = None;
+        self.cursor_style = None;
     }
 
     pub fn cursor(&self) -> Option<(u16, u16)> {

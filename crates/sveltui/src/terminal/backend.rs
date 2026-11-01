@@ -95,6 +95,7 @@ impl Terminal {
                 stdout,
                 ResetColor,
                 SetAttribute(Attribute::Reset),
+                cursor::SetCursorStyle::DefaultUserShape,
                 cursor::Show,
                 DisableMouseCapture,
                 LeaveAlternateScreen
@@ -186,6 +187,9 @@ fn write_buffer_diff(
 
     if let Some((cx, cy)) = curr_buffer.cursor {
         if cx < curr_buffer.width && cy < curr_buffer.height {
+            if let Some(style) = curr_buffer.cursor_style {
+                queue!(stdout, style.to_crossterm())?;
+            }
             queue!(stdout, MoveTo(cx, cy), cursor::Show)?;
         } else {
             queue!(stdout, cursor::Hide)?;
