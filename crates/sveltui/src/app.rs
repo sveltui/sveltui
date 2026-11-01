@@ -191,7 +191,8 @@ where
                                 MouseEventKind::Down(MouseButton::Right) => {
                                     Some(focus.context_menu(&hit_map, mouse.column, mouse.row))
                                 }
-                                MouseEventKind::Down(MouseButton::Left) => {
+                                MouseEventKind::Down(MouseButton::Left)
+                                | MouseEventKind::Drag(MouseButton::Left) => {
                                     Some(focus.pointer_down_at(&hit_map, mouse.column, mouse.row))
                                 }
                                 MouseEventKind::ScrollDown
