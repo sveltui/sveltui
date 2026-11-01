@@ -596,6 +596,7 @@ fn render_node_offset_internal(
 
                 if is_scrollable && let Some(id) = scroll_fid {
                     crate::element::scroll::set_viewport(id, (viewport_w, viewport_h));
+                    let custom_on_scroll = v.scroll.as_ref().and_then(|s| s.on_scroll.clone());
                     let on_scroll: Rc<dyn Fn(i16, i16)> = Rc::new(move |mut dx, dy| {
                         if is_scroll_x && !is_scroll_y && dx == 0 && dy != 0 {
                             dx = dy * 2;
@@ -604,19 +605,39 @@ fn render_node_offset_internal(
                         let nx = (cx as i32 + dx as i32).max(0).min(max_scroll_x as i32) as u16;
                         let ny = (cy as i32 + dy as i32).max(0).min(max_scroll_y as i32) as u16;
                         crate::element::scroll::set_scroll(id, (nx, ny));
+                        if let Some(custom) = &custom_on_scroll {
+                            custom(dx, dy);
+                        }
                     });
 
-                    let target = HitTarget {
-                        rect: Rect::new(x.max(0) as u16, y.max(0) as u16, width, height),
-                        layer: ctx.layer,
-                        dismiss: None,
-                        on_click: None,
-                        on_click_at: None,
-                        focus_id: Some(id),
-                        on_key: None,
-                        on_scroll: Some(on_scroll),
+                    let clipped_rect = Rect::new(x.max(0) as u16, y.max(0) as u16, width, height)
+                        .intersect(&ctx.buffer.active_clip())
+                        .unwrap_or(Rect::new(0, 0, 0, 0));
+
+                    let merged = if let Some(last) = ctx.hit_map.targets.last_mut() {
+                        if last.focus_id == Some(id) && last.rect == clipped_rect {
+                            last.on_scroll = Some(on_scroll.clone());
+                            true
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
                     };
-                    register_target(ctx, x, y, target);
+
+                    if !merged {
+                        let target = HitTarget {
+                            rect: Rect::new(x.max(0) as u16, y.max(0) as u16, width, height),
+                            layer: ctx.layer,
+                            dismiss: None,
+                            on_click: None,
+                            on_click_at: None,
+                            focus_id: Some(id),
+                            on_key: None,
+                            on_scroll: Some(on_scroll),
+                        };
+                        register_target(ctx, x, y, target);
+                    }
 
                     ctx.scrolls.push(ScrollRegion {
                         id,

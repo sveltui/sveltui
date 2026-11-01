@@ -76,6 +76,12 @@ impl TestTerminal {
         self.manager.pointer_down_at(&self.hits, x, y);
     }
 
+    pub fn scroll(&mut self, x: u16, y: u16, dx: i16, dy: i16) {
+        if let Some(target) = self.hits.scroll_target(x, y) {
+            self.manager.scroll(target, dx, dy);
+        }
+    }
+
     pub fn focused_id(&self) -> Option<FocusId> {
         self.manager.focused()
     }
@@ -550,5 +556,88 @@ fn test_code_editor_cursor_style_choice_block_and_line() {
         term.cursor_style(),
         Some(CursorStyle::Underline),
         "Buffer should reflect Underline cursor style when toggled"
+    );
+}
+
+#[test]
+fn test_code_editor_mouse_scrolling_and_cursor_movement() {
+    let mut term = TestTerminal::new(80, 20);
+    let editor_id = FocusId::new();
+    let lines = (1..=30)
+        .map(|i| format!("fn item_{}() {{ println!(\"item {}\"); }}", i, i))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let (code, set_code) = create_signal(lines);
+
+    let build = move || {
+        view! {
+            <CodeEditor
+                id=editor_id
+                value=code
+                set_value=set_code
+                language="rs"
+                width=Dimension::Percent(1.0)
+                height=Dimension::Percent(1.0)
+                show_line_numbers=true
+                autofocus=true
+            />
+        }
+    };
+
+    term.draw(&build);
+
+    // Initial state: cursor is on line 1, row 1
+    assert_eq!(term.cursor().map(|c| c.1), Some(1));
+
+    // 1. Move cursor with mouse click
+    // Click at screen column 15, row 5 (corresponds to line 5)
+    term.click_at(15, 5);
+    term.draw(&build);
+    assert_eq!(
+        term.cursor().map(|c| c.1),
+        Some(5),
+        "Mouse click at row 5 must move cursor to row 5"
+    );
+
+    // 2. Mouse wheel scroll down via container (dy = 4)
+    term.scroll(15, 5, 0, 4);
+    term.draw(&build);
+
+    // Verify container scroll offset updated
+    let scroll_pos = get_scroll(editor_id);
+    assert_eq!(
+        scroll_pos.1, 4,
+        "Container scroll must be 4 after mouse wheel scroll down"
+    );
+
+    // First line on screen should now be line 5
+    let top_line = term.line(1);
+    assert!(
+        top_line.contains("5 │"),
+        "Top line should be line 5 after scrolling 4 lines down, got: {:?}",
+        top_line
+    );
+
+    // 3. Move cursor with mouse click while container is scrolled
+    // Click at row 3 (which now displays line 7 because scroll_y is 4: row 3 + scroll 4 = line 7)
+    term.click_at(15, 3);
+    term.draw(&build);
+    assert_eq!(
+        term.cursor().map(|c| c.1),
+        Some(3),
+        "Cursor should be positioned at row 3 where clicked"
+    );
+
+    // 4. Mouse wheel scroll back up via container (dy = -4)
+    term.scroll(15, 5, 0, -4);
+    term.draw(&build);
+    assert_eq!(
+        get_scroll(editor_id).1,
+        0,
+        "Container scroll should return to 0"
+    );
+    assert!(
+        term.line(1).contains("1 │"),
+        "Top line should be line 1 again"
     );
 }

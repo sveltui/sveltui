@@ -95,7 +95,7 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
         0
     };
 
-    let (rendered_vw, rendered_vh) = get_viewport(id).unwrap_or_else(|| {
+    let (_rendered_vw, rendered_vh) = get_viewport(id).unwrap_or_else(|| {
         let (term_w, term_h) = crossterm::terminal::size().unwrap_or((80, 24));
         let default_h = match props.height {
             Dimension::Length(h) => (h.round() as u16).saturating_sub(2),
@@ -109,13 +109,8 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
     });
 
     let visible_height = (rendered_vh as usize).max(1);
-    let visible_width = ((rendered_vw as usize).saturating_sub(gutter_width)).max(1);
 
-    let (is_empty, full_content) = with_code_buffer_mut(id, |buf| {
-        buf.update_viewport(visible_width, visible_height);
-        set_scroll(id, (buf.scroll_col as u16, buf.scroll_row as u16));
-        (buf.is_empty(), buf.content())
-    });
+    let (is_empty, full_content) = with_code_buffer(id, |buf| (buf.is_empty(), buf.content()));
 
     let all_line_spans = highlight_text(
         &full_content,
@@ -193,31 +188,8 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
         let click_col =
             (rel_x as i32 + scroll_x as i32 - (2 + gutter_width as i32)).max(0) as usize;
         let click_row = (rel_y as i32 + scroll_y as i32 - 1).max(0) as usize;
-        let (vw, vh) = get_viewport(id).unwrap_or_else(|| {
-            let (term_w, term_h) = crossterm::terminal::size().unwrap_or((80, 24));
-            (
-                term_w.saturating_sub(4 + gutter_width as u16).max(1),
-                term_h.saturating_sub(2).max(1),
-            )
-        });
-        let cur_visible_w = ((vw as usize).saturating_sub(gutter_width)).max(1);
-        let cur_visible_h = (vh as usize).max(1);
         with_code_buffer_mut(id, |buf| {
             buf.set_cursor_pos(click_row, click_col);
-            buf.update_viewport(cur_visible_w, cur_visible_h);
-            set_scroll(id, (buf.scroll_col as u16, buf.scroll_row as u16));
-        });
-    });
-
-    let on_scroll: Rc<dyn Fn(i16, i16)> = Rc::new(move |_dx: i16, dy: i16| {
-        with_code_buffer_mut(id, |buf| {
-            if dy > 0 {
-                let max_row = buf.line_count().saturating_sub(1);
-                buf.scroll_row = (buf.scroll_row + dy as usize).min(max_row);
-            } else if dy < 0 {
-                buf.scroll_row = buf.scroll_row.saturating_sub((-dy) as usize);
-            }
-            set_scroll(id, (buf.scroll_col as u16, buf.scroll_row as u16));
         });
     });
 
@@ -237,13 +209,22 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
         let cur_visible_h = (vh as usize).max(1);
 
         with_code_buffer_mut(id, |buf| {
-            let (sx, sy) = get_scroll(id);
-            buf.scroll_row = sy as usize;
-            buf.scroll_col = sx as usize;
-
             let modified = buf.handle_key(&key);
-            buf.update_viewport(cur_visible_w, cur_visible_h);
-            set_scroll(id, (buf.scroll_col as u16, buf.scroll_row as u16));
+            let (mut sx, mut sy) = get_scroll(id);
+
+            if (buf.cursor_row as u16) < sy {
+                sy = buf.cursor_row as u16;
+            } else if buf.cursor_row >= (sy as usize) + cur_visible_h {
+                sy = (buf.cursor_row.saturating_sub(cur_visible_h) + 1) as u16;
+            }
+
+            if (buf.cursor_col as u16) < sx {
+                sx = buf.cursor_col as u16;
+            } else if buf.cursor_col >= (sx as usize) + cur_visible_w {
+                sx = (buf.cursor_col.saturating_sub(cur_visible_w) + 1) as u16;
+            }
+
+            set_scroll(id, (sx, sy));
 
             if modified {
                 let text = buf.content();
@@ -309,7 +290,6 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
                 overflow_x=Overflow::Scroll
                 overflow_y=Overflow::Scroll
                 scroll_id=id
-                on_scroll=on_scroll
                 opt_title=props.title
                 opt_cursor_offset=cursor_offset
                 opt_cursor_style=cursor_style
