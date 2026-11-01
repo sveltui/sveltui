@@ -8,6 +8,7 @@ use crate::layout::{
     BorderStyle, Dimension, FlexDirection, IntoDimension, Margin, Overflow, Padding, Placement,
     ScrollbarStyle, ScrollbarVisibility,
 };
+use crate::terminal::CursorStyle;
 use crossterm::event::KeyEvent;
 use crossterm::style::Color;
 use std::fmt;
@@ -359,6 +360,7 @@ pub struct VisualData {
     pub border_color: Option<Color>,
     pub title: Option<String>,
     pub cursor_offset: Option<(u16, u16)>,
+    pub cursor_style: Option<CursorStyle>,
 }
 
 #[derive(Clone, Default)]
@@ -574,6 +576,16 @@ impl ViewElement {
 
     pub fn opt_cursor_offset(mut self, co: Option<(u16, u16)>) -> Self {
         self.visual_mut().cursor_offset = co;
+        self
+    }
+
+    pub fn cursor_style(mut self, cs: CursorStyle) -> Self {
+        self.visual_mut().cursor_style = Some(cs);
+        self
+    }
+
+    pub fn opt_cursor_style(mut self, cs: Option<CursorStyle>) -> Self {
+        self.visual_mut().cursor_style = cs;
         self
     }
 
@@ -996,6 +1008,16 @@ impl ViewPropsBuilder {
 
     pub fn opt_cursor_offset(mut self, offset: Option<(u16, u16)>) -> Self {
         self.visual_mut().cursor_offset = offset;
+        self
+    }
+
+    pub fn cursor_style(mut self, style: CursorStyle) -> Self {
+        self.visual_mut().cursor_style = Some(style);
+        self
+    }
+
+    pub fn opt_cursor_style(mut self, style: Option<CursorStyle>) -> Self {
+        self.visual_mut().cursor_style = style;
         self
     }
 

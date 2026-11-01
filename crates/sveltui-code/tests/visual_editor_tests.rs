@@ -92,6 +92,10 @@ impl TestTerminal {
         self.buffer.cursor()
     }
 
+    pub fn cursor_style(&self) -> Option<CursorStyle> {
+        self.buffer.cursor_style()
+    }
+
     pub fn cell_fg(&self, x: u16, y: u16) -> Option<Color> {
         self.buffer.get(x, y).and_then(|c| c.fg)
     }
@@ -435,5 +439,116 @@ fn test_code_preview_focus_and_keyboard_scroll() {
         term.focused_id(),
         Some(editor_id),
         "Tab should cycle focus back to editor"
+    );
+}
+
+#[test]
+fn test_code_editor_cursor_goes_beyond_20_lines() {
+    // 40 rows high terminal
+    let mut term = TestTerminal::new(80, 40);
+    let lines = (1..=30)
+        .map(|i| format!("println!(\"Line {}\");", i))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let (code, set_code) = create_signal(lines);
+
+    let build = move || {
+        view! {
+            <CodeEditor
+                value=code
+                set_value=set_code
+                language="rs"
+                width=Dimension::Percent(1.0)
+                height=Dimension::Percent(1.0)
+                show_line_numbers=true
+                autofocus=true
+            />
+        }
+    };
+
+    term.draw(&build);
+
+    // Initial cursor: begins at line 1 (screen y = 1 inside border)
+    let initial_cursor = term.cursor().expect("Cursor should be present");
+    assert_eq!(
+        initial_cursor.1, 1,
+        "Cursor row should be at row 1 on initial load"
+    );
+
+    // Move down 25 times (well beyond line 20)
+    for _ in 0..25 {
+        term.send_key(KeyCode::Down, KeyModifiers::NONE);
+    }
+    term.draw(&build);
+    let moved_cursor = term.cursor().expect("Cursor should be valid");
+    assert_eq!(
+        moved_cursor.1, 26,
+        "Cursor must be at row 26 (line 26), well beyond line 20"
+    );
+
+    // Move down 5 more times (to line 30)
+    for _ in 0..5 {
+        term.send_key(KeyCode::Down, KeyModifiers::NONE);
+    }
+    term.draw(&build);
+    let line30_cursor = term.cursor().expect("Cursor should be valid");
+    assert_eq!(
+        line30_cursor.1, 30,
+        "Cursor must be at row 30 (line 30), well beyond line 20"
+    );
+
+    // Press Enter to insert lines beyond line 30
+    for _ in 0..5 {
+        term.send_key(KeyCode::Enter, KeyModifiers::NONE);
+    }
+    term.draw(&build);
+    let after_enter_cursor = term.cursor().expect("Cursor should follow Enter");
+    assert_eq!(
+        after_enter_cursor.1, 35,
+        "Cursor must advance past line 30 to row 35"
+    );
+}
+
+#[test]
+fn test_code_editor_cursor_style_choice_block_and_line() {
+    let mut term = TestTerminal::new(60, 20);
+    let (style, set_style) = create_signal(CursorStyle::Line);
+
+    let build = move || {
+        view! {
+            <CodeEditor
+                language="rs"
+                width=50
+                height=15
+                cursor_style=style.get()
+                autofocus=true
+            />
+        }
+    };
+
+    // Draw with Line cursor
+    term.draw(&build);
+    assert_eq!(
+        term.cursor_style(),
+        Some(CursorStyle::Line),
+        "Buffer should have Line cursor style"
+    );
+
+    // Switch to Block cursor
+    set_style.set(CursorStyle::Block);
+    term.draw(&build);
+    assert_eq!(
+        term.cursor_style(),
+        Some(CursorStyle::Block),
+        "Buffer should reflect Block cursor style when toggled"
+    );
+
+    // Switch to Underline cursor
+    set_style.set(CursorStyle::Underline);
+    term.draw(&build);
+    assert_eq!(
+        term.cursor_style(),
+        Some(CursorStyle::Underline),
+        "Buffer should reflect Underline cursor style when toggled"
     );
 }

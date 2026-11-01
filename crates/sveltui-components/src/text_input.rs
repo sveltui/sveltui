@@ -74,6 +74,8 @@ pub struct TextInputProps {
     pub title: Option<String>,
     #[prop(optional)]
     pub on_submit: Option<Rc<dyn Fn(String)>>,
+    #[prop(default = CursorStyle::Line)]
+    pub cursor_style: CursorStyle,
 }
 
 #[component]
@@ -181,6 +183,11 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
     });
 
     let cursor_offset = if focused { Some((cursor_col, 0)) } else { None };
+    let cursor_style = if focused {
+        Some(props.cursor_style)
+    } else {
+        None
+    };
     let title_str = props
         .title
         .clone()
@@ -203,6 +210,7 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
                 align_items=AlignItems::FlexStart
                 opt_title=props.title
                 opt_cursor_offset=cursor_offset
+                opt_cursor_style=cursor_style
             >
                 <TextSpan foreground_color=text_color bold=focused>{display_text}</TextSpan>
             </View>

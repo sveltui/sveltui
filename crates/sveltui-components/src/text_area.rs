@@ -26,6 +26,8 @@ pub struct TextAreaProps {
     pub title: Option<String>,
     #[prop(default = false)]
     pub show_line_numbers: bool,
+    #[prop(default = CursorStyle::Line)]
+    pub cursor_style: CursorStyle,
 }
 
 #[component]
@@ -152,6 +154,11 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
     } else {
         None
     };
+    let cursor_style = if focused {
+        Some(props.cursor_style)
+    } else {
+        None
+    };
     let title_str = props
         .title
         .clone()
@@ -176,6 +183,7 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
                 on_scroll=on_scroll
                 opt_title=props.title
                 opt_cursor_offset=cursor_offset
+                opt_cursor_style=cursor_style
             >
                 {#if is_empty}
                     {#if show_line_numbers}

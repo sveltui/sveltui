@@ -5,7 +5,7 @@ use sveltui::element::{
     render_node_interactive, reset_focus_counter, use_focus,
 };
 use sveltui::layout::{BorderStyle, Overflow, Rect};
-use sveltui::terminal::Buffer;
+use sveltui::terminal::{Buffer, CursorStyle};
 
 #[test]
 fn test_measure_text() {
@@ -297,7 +297,7 @@ fn test_nested_scroll_box_scroll() {
 #[test]
 fn test_render_node_cursor_offset() {
     let input_id = FocusId::new();
-    let tree = |cursor: Option<(u16, u16)>| {
+    let tree = |cursor: Option<(u16, u16)>, style: Option<CursorStyle>| {
         PressableElement::new()
             .focus_id(input_id)
             .tab_stop(true)
@@ -307,7 +307,8 @@ fn test_render_node_cursor_offset() {
                     .padding(1)
                     .width(20)
                     .height(3)
-                    .opt_cursor_offset(cursor),
+                    .opt_cursor_offset(cursor)
+                    .opt_cursor_style(style),
             )
             .into_node()
     };
@@ -316,17 +317,18 @@ fn test_render_node_cursor_offset() {
     let mut buffer = Buffer::new(30, 10);
     let mut hit_map = HitMap::new();
     render_node_interactive(
-        &tree(None),
+        &tree(None, None),
         Rect::new(5, 2, 20, 3),
         &mut buffer,
         &mut hit_map,
     );
     assert_eq!(buffer.cursor(), None);
+    assert_eq!(buffer.cursor_style(), None);
 
     // When focused: cursor should be positioned at inner_x + 3, inner_y + 0
     // Rect(5, 2, 20, 3) with border(1) and padding(1) -> inner_x = 5 + 1 + 1 = 7, inner_y = 2 + 1 + 1 = 4
     let mut manager = FocusManager::new();
-    manager.reconcile(InteractionTree::from_node(&tree(None)));
+    manager.reconcile(InteractionTree::from_node(&tree(None, None)));
     manager.focus(input_id);
     let mut buffer2 = Buffer::new(30, 10);
     let mut hit_map2 = HitMap::new();
@@ -336,14 +338,20 @@ fn test_render_node_cursor_offset() {
         } else {
             None
         };
+        let style = if is_focused(input_id) {
+            Some(CursorStyle::Block)
+        } else {
+            None
+        };
         render_node_interactive(
-            &tree(cursor),
+            &tree(cursor, style),
             Rect::new(5, 2, 20, 3),
             &mut buffer2,
             &mut hit_map2,
         )
     });
     assert_eq!(buffer2.cursor(), Some((7 + 3, 4)));
+    assert_eq!(buffer2.cursor_style(), Some(CursorStyle::Block));
 }
 
 #[test]

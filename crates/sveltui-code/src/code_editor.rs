@@ -6,7 +6,7 @@ use crossterm::style::Color;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use sveltui::element::scroll::{get_scroll, set_scroll};
+use sveltui::element::scroll::{get_scroll, get_viewport, set_scroll};
 use sveltui::layout::Dimension;
 use sveltui::prelude::*;
 
@@ -40,6 +40,8 @@ pub struct CodeEditorProps {
     pub tab_size: usize,
     #[prop(default = true)]
     pub autofocus: bool,
+    #[prop(default = CursorStyle::Line)]
+    pub cursor_style: CursorStyle,
 }
 
 #[component]
@@ -93,19 +95,25 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
         0
     };
 
-    let visible_height = match props.height {
-        Dimension::Length(h) => ((h.round() as u16).saturating_sub(2)).max(1) as usize,
-        _ => 20,
-    };
-    let visible_width = match props.width {
-        Dimension::Length(w) => {
-            ((w.round() as u16).saturating_sub(4 + gutter_width as u16)).max(1) as usize
-        }
-        _ => 60,
-    };
+    let (rendered_vw, rendered_vh) = get_viewport(id).unwrap_or_else(|| {
+        let (term_w, term_h) = crossterm::terminal::size().unwrap_or((80, 24));
+        let default_h = match props.height {
+            Dimension::Length(h) => (h.round() as u16).saturating_sub(2),
+            _ => term_h.saturating_sub(2),
+        };
+        let default_w = match props.width {
+            Dimension::Length(w) => (w.round() as u16).saturating_sub(4 + gutter_width as u16),
+            _ => term_w.saturating_sub(4 + gutter_width as u16),
+        };
+        (default_w.max(1), default_h.max(1))
+    });
+
+    let visible_height = (rendered_vh as usize).max(1);
+    let visible_width = ((rendered_vw as usize).saturating_sub(gutter_width)).max(1);
 
     let (is_empty, full_content) = with_code_buffer_mut(id, |buf| {
         buf.update_viewport(visible_width, visible_height);
+        set_scroll(id, (buf.scroll_col as u16, buf.scroll_row as u16));
         (buf.is_empty(), buf.content())
     });
 
@@ -185,9 +193,18 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
         let click_col =
             (rel_x as i32 + scroll_x as i32 - (2 + gutter_width as i32)).max(0) as usize;
         let click_row = (rel_y as i32 + scroll_y as i32 - 1).max(0) as usize;
+        let (vw, vh) = get_viewport(id).unwrap_or_else(|| {
+            let (term_w, term_h) = crossterm::terminal::size().unwrap_or((80, 24));
+            (
+                term_w.saturating_sub(4 + gutter_width as u16).max(1),
+                term_h.saturating_sub(2).max(1),
+            )
+        });
+        let cur_visible_w = ((vw as usize).saturating_sub(gutter_width)).max(1);
+        let cur_visible_h = (vh as usize).max(1);
         with_code_buffer_mut(id, |buf| {
             buf.set_cursor_pos(click_row, click_col);
-            buf.update_viewport(visible_width, visible_height);
+            buf.update_viewport(cur_visible_w, cur_visible_h);
             set_scroll(id, (buf.scroll_col as u16, buf.scroll_row as u16));
         });
     });
@@ -209,13 +226,23 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
             return EventResult::Ignored;
         }
 
+        let (vw, vh) = get_viewport(id).unwrap_or_else(|| {
+            let (term_w, term_h) = crossterm::terminal::size().unwrap_or((80, 24));
+            (
+                term_w.saturating_sub(4 + gutter_width as u16).max(1),
+                term_h.saturating_sub(2).max(1),
+            )
+        });
+        let cur_visible_w = ((vw as usize).saturating_sub(gutter_width)).max(1);
+        let cur_visible_h = (vh as usize).max(1);
+
         with_code_buffer_mut(id, |buf| {
             let (sx, sy) = get_scroll(id);
             buf.scroll_row = sy as usize;
             buf.scroll_col = sx as usize;
 
             let modified = buf.handle_key(&key);
-            buf.update_viewport(visible_width, visible_height);
+            buf.update_viewport(cur_visible_w, cur_visible_h);
             set_scroll(id, (buf.scroll_col as u16, buf.scroll_row as u16));
 
             if modified {
@@ -234,8 +261,15 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
     let rel_row = (cur_row as i32) - (scroll_y as i32);
     let rel_col = (gutter_width as i32 + cur_col as i32) - (scroll_x as i32);
 
-    let cursor_offset = if focused && rel_row >= 0 && rel_col >= 0 {
-        Some((rel_col as u16, rel_row as u16))
+    let cursor_offset =
+        if focused && rel_row >= 0 && rel_col >= 0 && (rel_row as usize) < visible_height {
+            Some((rel_col as u16, rel_row as u16))
+        } else {
+            None
+        };
+
+    let cursor_style = if focused {
+        Some(props.cursor_style)
     } else {
         None
     };
@@ -278,6 +312,7 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
                 on_scroll=on_scroll
                 opt_title=props.title
                 opt_cursor_offset=cursor_offset
+                opt_cursor_style=cursor_style
             >
                 {#each rendered_line_nodes as line_node}
                     {line_node}

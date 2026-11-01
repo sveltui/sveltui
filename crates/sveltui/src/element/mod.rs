@@ -32,6 +32,6 @@ pub use node::{
 };
 pub use provider::{ContextProvider, ContextProviderProps, ContextProviderPropsBuilder};
 pub use render::{render_node, render_node_interactive, render_node_offset};
-pub use scroll::{get_scroll, set_scroll};
+pub use scroll::{get_scroll, get_viewport, set_scroll, set_viewport};
 pub use snippet::{IntoPropOption, OptionSnippetExt, Props, Snippet};
 pub use text_buffer::{TextBuffer, get_buffer, set_buffer, with_buffer, with_buffer_mut};
