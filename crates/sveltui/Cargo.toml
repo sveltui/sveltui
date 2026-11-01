@@ -19,7 +19,7 @@ notify = "6.1"
 taffy.workspace = true
 
 [dev-dependencies]
-sveltui-components = { workspace = true }
+sveltui-components = { path = "../sveltui-components" }
 criterion.workspace = true
 
 [[bench]]
