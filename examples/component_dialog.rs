@@ -11,24 +11,23 @@ fn DialogDemo() -> impl IntoNode {
     let is_pop = popover_open.get();
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View
                 width=68
                 border=BorderStyle::Double
                 border_color=Color::DarkGrey
                 padding=Padding::all(1)
-                gap=1
             >
-                <TextSpan color=Color::White bold=true>"component_dialog: Modals, Popovers & Scoped Traps"</TextSpan>
+                <Paragraph color=Color::White bold=true>"component_dialog: Modals, Popovers & Scoped Traps"</Paragraph>
                 <Divider />
 
                 <TextSpan color=Color::DarkGrey>
                     "Dialogs contain keyboard navigation until dismissed with Escape or Action buttons."
                 </TextSpan>
 
-                <FlexBox height=1 />
+                <View height=1 />
 
-                <FlexBox flex_direction=FlexDirection::Row gap=2>
+                <View flex_direction=FlexDirection::Row gap=2>
                     <Button
                         on_click={move || dialog_open.set(true)}
                     >
@@ -45,7 +44,7 @@ fn DialogDemo() -> impl IntoNode {
                                 "Anchored Info Popover"
                             </Button>
                         {/snippet}
-                        <FlexBox border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
+                        <View border=BorderStyle::Single border_color=Color::White padding=Padding::all(1) gap=1>
                             <TextSpan color=Color::White bold=true>"Popover Details"</TextSpan>
                             <TextSpan color=Color::DarkGrey>"Anchored to trigger element."</TextSpan>
                             <Button
@@ -56,17 +55,17 @@ fn DialogDemo() -> impl IntoNode {
                             >
                                 "Dismiss Popover"
                             </Button>
-                        </FlexBox>
+                        </View>
                     </Popover>
-                </FlexBox>
+                </View>
 
-                <FlexBox height=1 />
+                <View height=1 />
                 <Divider />
 
-                <FlexBox border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
+                <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
                     <TextSpan color=Color::White>{format!("Status: {}", action_log.get())}</TextSpan>
                     <TextSpan color=Color::DarkGrey>"Escape: Dismiss top-layer | Tab: Navigate inside trap"</TextSpan>
-                </FlexBox>
+                </View>
 
                 // Modal Dialog Overlay
                 <Dialog
@@ -77,11 +76,11 @@ fn DialogDemo() -> impl IntoNode {
                     width=48
                     on_close={move || dialog_open.set(false)}
                 >
-                    <FlexBox padding=Padding::all(1) gap=1>
+                    <View padding=Padding::all(1) gap=1>
                         <TextSpan color=Color::White>"Proceed with irreversible cluster deployment?"</TextSpan>
                         <TextSpan color=Color::DarkGrey>"This will overwrite current staging replicas."</TextSpan>
-                        <FlexBox height=1 />
-                        <FlexBox flex_direction=FlexDirection::Row gap=1 justify_content=Justify::End>
+                        <View height=1 />
+                        <View flex_direction=FlexDirection::Row gap=1 justify_content=Justify::End>
                             <Button
                                 on_click={move || {
                                     action_log.set(String::from("Deployment cancelled."));
@@ -98,11 +97,11 @@ fn DialogDemo() -> impl IntoNode {
                             >
                                 "Deploy Now"
                             </Button>
-                        </FlexBox>
-                    </FlexBox>
+                        </View>
+                    </View>
                 </Dialog>
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

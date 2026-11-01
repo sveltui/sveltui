@@ -2,7 +2,9 @@ use crate::element::measure::{
     Bounds, child_box, children, in_flow, limits, measure, resolve_main_sizes,
 };
 use crate::element::node::{FlexBoxElement, VNode};
-use crate::layout::{Align, Rect, ScrollbarVisibility, Size, place_flex_children};
+use crate::layout::{
+    Align, FlexDirectionExt, OverflowExt, Rect, ScrollbarVisibility, Size, place_flex_children,
+};
 
 pub(crate) struct ChildLayout<'a> {
     pub node: &'a VNode,

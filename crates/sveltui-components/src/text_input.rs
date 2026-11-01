@@ -187,22 +187,25 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
         .unwrap_or_else(|| props.placeholder.clone());
 
     view! {
-        <FlexBox
-            border=border_style
-            border_color=border_color
-            padding=Padding::symmetric(1, 0)
-            width=props.width
-            justify_content=Justify::Center
-            align_items=Align::Start
+        <Pressable
             focus_id=id
             tab_stop=true
             semantics=Semantics::new(Role::Textbox, title_str)
             on_click_at=on_click_at
             on_key=on_key
-            opt_title=props.title
-            opt_cursor_offset=cursor_offset
         >
-            <TextSpan fg=text_color bold=focused>{display_text}</TextSpan>
-        </FlexBox>
+            <View
+                border=border_style
+                border_color=border_color
+                padding=Padding::symmetric(1, 0)
+                width=props.width
+                justify_content=JustifyContent::Center
+                align_items=AlignItems::FlexStart
+                opt_title=props.title
+                opt_cursor_offset=cursor_offset
+            >
+                <TextSpan fg=text_color bold=focused>{display_text}</TextSpan>
+            </View>
+        </Pressable>
     }
 }

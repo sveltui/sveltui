@@ -16,9 +16,15 @@ readme = "../../README.md"
 sveltui-macros.workspace = true
 crossterm.workspace = true
 notify = "6.1"
+taffy.workspace = true
 
 [dev-dependencies]
 sveltui-components = { path = "../sveltui-components" }
+criterion.workspace = true
+
+[[bench]]
+name = "layout_benchmarks"
+harness = false
 
 [[example]]
 name = "hello_world"

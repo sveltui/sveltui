@@ -127,12 +127,15 @@ pub fn BarRoot(props: BarRootProps) -> VNode {
         disabled_focusable: false,
         ..FocusGroup::menu()
     };
-    FlexBoxElement::new()
+    PressableElement::new()
         .focus_id(identity(props.id))
         .focus_group(group)
         .semantics(Semantics::new(Role::MenuBar, ""))
-        .flex_direction(FlexDirection::Row)
-        .child(children)
+        .child(
+            ViewElement::new()
+                .flex_direction(FlexDirection::Row)
+                .child(children),
+        )
         .into_node()
 }
 
@@ -179,8 +182,13 @@ fn style_text(node: &mut VNode, fg: Color, bold: bool, disabled: bool) {
             }
             t.bold = !disabled && (t.bold || bold);
         }
-        VNode::FlexBox(b) => {
-            for child in &mut b.children {
+        VNode::View(v) => {
+            for child in &mut v.children {
+                style_text(child, fg, bold, disabled);
+            }
+        }
+        VNode::Pressable(p) => {
+            for child in &mut p.children {
                 style_text(child, fg, bold, disabled);
             }
         }
@@ -196,7 +204,8 @@ fn style_text(node: &mut VNode, fg: Color, bold: bool, disabled: bool) {
 fn text(node: &VNode) -> String {
     match node {
         VNode::Text(t) => t.content.clone(),
-        VNode::FlexBox(b) => b.children.iter().map(text).collect::<Vec<_>>().join(""),
+        VNode::View(v) => v.children.iter().map(text).collect::<Vec<_>>().join(""),
+        VNode::Pressable(p) => p.children.iter().map(text).collect::<Vec<_>>().join(""),
         VNode::Fragment(items) => items.iter().map(text).collect::<Vec<_>>().join(""),
         _ => String::new(),
     }
@@ -293,31 +302,32 @@ pub fn Trigger(props: TriggerProps) -> VNode {
             EventResult::Ignored
         }
     });
-    let mut row = FlexBoxElement::new()
-        .focus_id(id)
-        .semantics(interaction.semantics.clone())
-        .fg(fg)
-        .on_key(move |key, ctx| on_key(key, ctx))
-        .padding(Padding::symmetric(1, 0))
-        .child(children);
-    row.interaction = Some(Box::new(interaction));
-    row.bg = bg;
-    if kind == MenuTriggerKind::Submenu {
-        row.width = Size::Fill;
-        row.flex_direction = FlexDirection::Row;
-        row.padding = Padding::zero();
-        let children = std::mem::take(&mut row.children);
-        row.children.push(
-            FlexBoxElement::new()
-                .width(Size::Fill)
-                .overflow(Overflow::Hidden)
-                .padding(Padding::only(0, 0, 0, 1))
-                .children(children)
-                .into_node(),
-        );
-        row.children.push(TextElement::new("› ").fg(fg).into_node());
-    }
-    row.into_node()
+    let inner_view = if kind == MenuTriggerKind::Submenu {
+        let mut v = ViewElement::new();
+        v.width = Size::Fill;
+        v.flex_direction = FlexDirection::Row;
+        v.visual_mut().background_color = bg;
+        v.visual_mut().foreground_color = Some(fg);
+        let mut sub = ViewElement::new();
+        sub.width = Size::Fill;
+        sub.overflow_x = Overflow::Hidden;
+        sub.padding = Padding::only(0, 0, 0, 1);
+        sub = sub.child(children);
+        v.child(sub)
+            .child(TextElement::new("› ").fg(fg))
+    } else {
+        let mut v = ViewElement::new();
+        v.visual_mut().background_color = bg;
+        v.visual_mut().foreground_color = Some(fg);
+        v.padding = Padding::symmetric(1, 0);
+        v.child(children)
+    };
+
+    let mut pressable = PressableElement::new();
+    pressable.focus_id = Some(id);
+    pressable.semantics = Some(interaction.semantics);
+    pressable.on_key = Some(Rc::new(move |key, ctx| on_key(key, ctx)));
+    pressable.child(inner_view).into_node()
 }
 pub use Trigger as SubTrigger;
 pub type SubTriggerProps = TriggerProps;
@@ -348,7 +358,7 @@ pub struct ContentProps {
 
 #[component]
 pub fn Content(props: ContentProps) -> VNode {
-    let scroll_id = identity(None);
+    let _scroll_id = identity(None);
     let menu = use_context::<MenuContext>().expect("Menu content requires a menu root");
     let placement = if menu.kind == MenuTriggerKind::Context {
         sveltui::element::layer_anchor(menu.id).map(|(x, y)| Placement::Anchor { x, y })
@@ -389,10 +399,10 @@ pub fn Content(props: ContentProps) -> VNode {
     overlay.on_key = props.on_key;
     if menu.open {
         overlay = overlay.child(view! {
-            <FlexBox focus_id=scroll_id width=props.width border=props.border border_color={props.border_color.unwrap_or(props.bg)}
-                bg=props.bg padding=props.padding overflow=Overflow::Scroll>
+            <View width=props.width border=props.border border_color={props.border_color.unwrap_or(props.bg)}
+                background_color=props.bg padding=props.padding overflow=Overflow::Scroll>
                 {@render props.children}
-            </FlexBox>
+            </View>
         });
     }
     overlay.into_node()
@@ -452,17 +462,19 @@ pub fn Item(props: ItemProps) -> VNode {
             EventResult::Ignored
         }
     });
-    let mut row = FlexBoxElement::new()
-        .focus_id(id)
-        .width(Size::Fill)
-        .height(Size::Fixed(1))
-        .fg(fg)
-        .padding(Padding::symmetric(1, 0))
-        .on_key(move |key, ctx| on_key(key, ctx))
-        .child(children);
-    row.interaction = Some(Box::new(interaction));
-    row.bg = active.then_some(props.focus_bg.unwrap_or(Color::White));
-    row.into_node()
+    let mut v = ViewElement::new();
+    v.width = Size::Fill;
+    v.height = Size::fixed(1);
+    v.visual_mut().foreground_color = Some(fg);
+    v.visual_mut().background_color = active.then_some(props.focus_bg.unwrap_or(Color::White));
+    v.padding = Padding::symmetric(1, 0);
+    v = v.child(children);
+
+    let mut pressable = PressableElement::new();
+    pressable.focus_id = Some(id);
+    pressable.semantics = Some(interaction.semantics);
+    pressable.on_key = Some(on_key);
+    pressable.child(v).into_node()
 }
 
 #[derive(Props)]
@@ -474,10 +486,10 @@ pub struct GroupProps {
 pub fn Group(props: GroupProps) -> VNode {
     fn heading(node: &VNode) -> Option<String> {
         match node {
-            VNode::FlexBox(b)
-                if b.interaction
+            VNode::Pressable(p)
+                if p.semantics
                     .as_ref()
-                    .is_some_and(|i| i.semantics.role == Role::Heading) =>
+                    .is_some_and(|s| s.role == Role::Heading) =>
             {
                 Some(text(node))
             }
@@ -487,7 +499,7 @@ pub fn Group(props: GroupProps) -> VNode {
     }
     let children = props.children.render(());
     let semantics = Semantics::new(Role::Group, heading(&children).unwrap_or_default());
-    view! { <FlexBox focus_id={identity(None)} width=Size::Fill semantics=semantics>{children}</FlexBox> }
+    view! { <Pressable focus_id={identity(None)} semantics=semantics><View width=Size::Fill>{children}</View></Pressable> }
 }
 pub type GroupHeadingProps = GroupProps;
 #[component]
@@ -495,11 +507,11 @@ pub fn GroupHeading(props: GroupHeadingProps) -> VNode {
     let mut children = props.children.render(());
     let semantics = Semantics::new(Role::Heading, text(&children));
     style_text(&mut children, Color::DarkGrey, false, false);
-    view! { <FlexBox focus_id={identity(None)} semantics=semantics padding={Padding::symmetric(1, 0)}>{children}</FlexBox> }
+    view! { <Pressable focus_id={identity(None)} semantics=semantics><View padding={Padding::symmetric(1, 0)}>{children}</View></Pressable> }
 }
 #[derive(Props)]
 pub struct SeparatorProps {}
 #[component]
 pub fn Separator(_props: SeparatorProps) -> VNode {
-    view! { <FlexBox focus_id={identity(None)} semantics={Semantics::new(Role::Separator, "")}><Paragraph fg=Color::DarkGrey fill='─'>""</Paragraph></FlexBox> }
+    view! { <Pressable focus_id={identity(None)} semantics={Semantics::new(Role::Separator, "")}><Paragraph fg=Color::DarkGrey fill='─'>""</Paragraph></Pressable> }
 }

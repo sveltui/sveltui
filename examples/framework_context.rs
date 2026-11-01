@@ -17,13 +17,13 @@ fn DeepThemedWidget() -> impl IntoNode {
     });
 
     view! {
-        <FlexBox border=theme.border_style border_color=theme.primary_color padding=Padding::all(1) gap=1>
-            <FlexBox flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween>
+        <View border=theme.border_style border_color=theme.primary_color padding=Padding::all(1) gap=1>
+            <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween>
                 <TextSpan color=theme.primary_color bold=true>"Themed Consumer Box"</TextSpan>
                 <Badge label=theme.badge_label />
-            </FlexBox>
+            </View>
             <TextSpan color=Color::DarkGrey>"Reads theme values injected by ancestor <ContextProvider value=...>"</TextSpan>
-        </FlexBox>
+        </View>
     }
 }
 
@@ -49,8 +49,8 @@ fn ContextDemo() -> impl IntoNode {
 
     view! {
         <ContextProvider value=current_theme.get()>
-            <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-                <FlexBox
+            <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+                <View
                     width=66
                     border=BorderStyle::Single
                     border_color=Color::DarkGrey
@@ -60,9 +60,9 @@ fn ContextDemo() -> impl IntoNode {
                     <TextSpan color=Color::White bold=true>"framework_context: Context API with <ContextProvider>"</TextSpan>
                     <Divider />
 
-                    <FlexBox flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
+                    <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
                         <Switch checked=high_contrast label="Enable High-Contrast Theme" />
-                    </FlexBox>
+                    </View>
 
                     <Divider />
 
@@ -74,14 +74,14 @@ fn ContextDemo() -> impl IntoNode {
                         border_style: BorderStyle::Double,
                         badge_label: "Local Override",
                     }>
-                        <FlexBox padding=Padding::symmetric(0, 1)>
+                        <View padding=Padding::symmetric(0, 1)>
                             <TextSpan color=Color::DarkGrey>"Below is an isolated sub-tree with an overridden Theme Provider:"</TextSpan>
-                            <FlexBox height=1 />
+                            <View height=1 />
                             <DeepThemedWidget />
-                        </FlexBox>
+                        </View>
                     </ContextProvider>
-                </FlexBox>
-            </FlexBox>
+                </View>
+            </View>
         </ContextProvider>
     }
 }

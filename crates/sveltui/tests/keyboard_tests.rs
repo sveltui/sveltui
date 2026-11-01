@@ -189,11 +189,11 @@ fn offscreen_focus_is_registered_and_revealed_by_its_scroll_owner() {
     let last = FocusId(100003);
     let build = || {
         view! {
-            <FlexBox width=20 height=4 overflow_y=Overflow::Auto focus_id=scroll>
+            <View width=20 height=4 overflow_y=Overflow::Scroll scroll_id=scroll>
                 <Button id=FocusId(100001)>"First"</Button>
                 <Button id=FocusId(100002)>"Second"</Button>
                 <Button id=last>"Last"</Button>
-            </FlexBox>
+            </View>
         }
     };
     let mut manager = FocusManager::new();

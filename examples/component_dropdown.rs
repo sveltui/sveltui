@@ -16,8 +16,8 @@ fn DropdownDemo() -> impl IntoNode {
     };
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View
                 width=68
                 border=BorderStyle::Single
                 border_color=Color::DarkGrey
@@ -31,9 +31,9 @@ fn DropdownDemo() -> impl IntoNode {
                     "Use ↑/↓ to navigate menu items, → to open submenu, ← to go back, Enter to select."
                 </TextSpan>
 
-                <FlexBox height=1 />
+                <View height=1 />
 
-                <FlexBox flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=2 align_items=Align::Center>
                     <DropdownMenu::Root open=is_open on_open_change={move |next| menu_open.set(next)}>
                         <DropdownMenu::Trigger>
                             "File Menu ▾"
@@ -59,17 +59,17 @@ fn DropdownDemo() -> impl IntoNode {
                             <DropdownMenu::Item on_select={select("Settings")}>"Settings"</DropdownMenu::Item>
                         </DropdownMenu::Content>
                     </DropdownMenu::Root>
-                </FlexBox>
+                </View>
 
-                <FlexBox height=1 />
+                <View height=1 />
                 <Divider />
 
-                <FlexBox border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
+                <View border=BorderStyle::Single border_color=Color::DarkGrey padding=Padding::all(1)>
                     <TextSpan color=Color::White>{format!("Selected Option: {}", selected_action.get())}</TextSpan>
                     <TextSpan color=Color::DarkGrey>"Esc / Tab: Close dropdown | Arrow keys: Navigate items"</TextSpan>
-                </FlexBox>
-            </FlexBox>
-        </FlexBox>
+                </View>
+            </View>
+        </View>
     }
 }
 

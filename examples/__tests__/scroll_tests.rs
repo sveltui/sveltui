@@ -11,12 +11,12 @@ use sveltui::{
 fn ScrollableContent() -> impl IntoNode {
     let id = use_hook(FocusId::new);
     view! {
-        <FlexBox width=12 height=4 border=BorderStyle::Single
+        <View width=12 height=4 border=BorderStyle::Single
             focus_id=id tab_stop=true overflow=Overflow::Scroll>
             {#each (0..12) as line}
                 <TextSpan>{format!("{line:02} abcdefghijklmnopqrstuvwxyz")}</TextSpan>
             {/each}
-        </FlexBox>
+        </View>
     }
 }
 

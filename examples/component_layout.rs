@@ -7,8 +7,8 @@ fn LayoutDemo() -> impl IntoNode {
     let gap = state(2u16);
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View
                 width=76
                 height=Size::Fill
                 max_height=30
@@ -17,13 +17,13 @@ fn LayoutDemo() -> impl IntoNode {
                 padding=Padding::all(1)
                 gap=1
             >
-                <FlexBox flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row justify_content=Justify::SpaceBetween align_items=Align::Center>
                     <TextSpan color=Color::White bold=true>"component_layout: Flexbox Engine"</TextSpan>
                     <TextSpan color=Color::DarkGrey>{format!("Axis: {:?}", direction.get())}</TextSpan>
-                </FlexBox>
+                </View>
                 <Divider />
 
-                <FlexBox flex_direction=FlexDirection::Row gap=1>
+                <View flex_direction=FlexDirection::Row gap=1>
                     <Button
                         on_click={move || direction.set(FlexDirection::Row)}
                     >
@@ -39,12 +39,12 @@ fn LayoutDemo() -> impl IntoNode {
                     >
                         {format!("Cycle Gap ({})", gap.get())}
                     </Button>
-                </FlexBox>
+                </View>
 
-                <FlexBox height=1 />
+                <View height=1 />
 
                 // Interactive Flex Container
-                <FlexBox
+                <View
                     width=Size::Fill
                     height=Size::Fill
                     flex_direction=direction.get()
@@ -52,9 +52,9 @@ fn LayoutDemo() -> impl IntoNode {
                     border=BorderStyle::Single
                     border_color=Color::DarkGrey
                     padding=Padding::all(1)
-                    overflow=Overflow::Auto
+                    overflow=Overflow::Scroll
                 >
-                    <FlexBox
+                    <View
                         width=Size::Fill
                         height=Size::Fill
                         min_width=16
@@ -65,9 +65,9 @@ fn LayoutDemo() -> impl IntoNode {
                     >
                         <TextSpan color=Color::White bold=true>"Child A"</TextSpan>
                         <TextSpan color=Color::DarkGrey>"Flexible share"</TextSpan>
-                    </FlexBox>
+                    </View>
 
-                    <FlexBox
+                    <View
                         width=Size::Fill
                         height=Size::Fill
                         min_width=16
@@ -78,9 +78,9 @@ fn LayoutDemo() -> impl IntoNode {
                     >
                         <TextSpan color=Color::White bold=true>"Child B"</TextSpan>
                         <TextSpan color=Color::DarkGrey>"Shares space"</TextSpan>
-                    </FlexBox>
+                    </View>
 
-                    <FlexBox
+                    <View
                         width=Size::Fill
                         height=Size::Fill
                         min_width=16
@@ -91,13 +91,13 @@ fn LayoutDemo() -> impl IntoNode {
                     >
                         <TextSpan color=Color::White bold=true>"Child C"</TextSpan>
                         <TextSpan color=Color::DarkGrey>"Even flex split"</TextSpan>
-                    </FlexBox>
-                </FlexBox>
+                    </View>
+                </View>
 
                 <Divider />
                 <TextSpan color=Color::DarkGrey>"Tab: Switch controls | Space/Enter: Click | Q/Esc: Quit"</TextSpan>
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

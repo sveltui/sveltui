@@ -28,22 +28,23 @@ pub fn Divider(props: DividerProps) -> impl IntoNode {
     };
 
     view! {
-        <FlexBox
-            semantics=Semantics::new(Role::Separator, title)
-            border=BorderStyle::None
-            padding=Padding::zero()
-            width=props.width
-            height=1
-            overflow=Overflow::Hidden
-            align_items=Align::Stretch
-            opt_min_width=props.min_width
-            opt_max_width=props.max_width
-        >
-            {#if props.children.is_some()}
-                {@render props.children}
-            {:else}
-                <Paragraph fill='─' fg=color>{text}</Paragraph>
-            {/if}
-        </FlexBox>
+        <Pressable semantics=Semantics::new(Role::Separator, title)>
+            <View
+                border=BorderStyle::None
+                padding=Padding::zero()
+                width=props.width
+                height=1
+                overflow=Overflow::Hidden
+                align_items=AlignItems::Stretch
+                opt_min_width=props.min_width
+                opt_max_width=props.max_width
+            >
+                {#if props.children.is_some()}
+                    {@render props.children}
+                {:else}
+                    <Paragraph fill='─' fg=color>{text}</Paragraph>
+                {/if}
+            </View>
+        </Pressable>
     }
 }

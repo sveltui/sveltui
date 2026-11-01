@@ -156,38 +156,41 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
         .unwrap_or_else(|| props.placeholder.clone());
 
     view! {
-        <FlexBox
-            border=border_style
-            border_color=border_color
-            padding=Padding::symmetric(1, 0)
-            width=props.width
-            height=props.height
-            align_items=Align::Start
-            justify_content=Justify::Start
+        <Pressable
             focus_id=id
             tab_stop=true
             semantics=Semantics::new(Role::Textbox, title_str)
             on_click_at=on_click_at
-            on_scroll=on_scroll
             on_key=on_key
-            opt_title=props.title
-            opt_cursor_offset=cursor_offset
         >
-            {#if is_empty}
-                {#if show_line_numbers}
-                    <TextSpan fg=Color::DarkGrey>{format!("{:>width$}  {}", 1, props.placeholder, width = digits)}</TextSpan>
-                {:else}
-                    <TextSpan fg=Color::DarkGrey>{props.placeholder.clone()}</TextSpan>
-                {/if}
-            {:else}
-                {#each lines.iter().enumerate() as (idx, line_text)}
+            <View
+                border=border_style
+                border_color=border_color
+                padding=Padding::symmetric(1, 0)
+                width=props.width
+                height=props.height
+                align_items=AlignItems::FlexStart
+                justify_content=JustifyContent::FlexStart
+                on_scroll=on_scroll
+                opt_title=props.title
+                opt_cursor_offset=cursor_offset
+            >
+                {#if is_empty}
                     {#if show_line_numbers}
-                        <TextSpan fg=Color::White>{format!("{:>width$}  {}", scroll_row + idx + 1, line_text, width = digits)}</TextSpan>
+                        <TextSpan fg=Color::DarkGrey>{format!("{:>width$}  {}", 1, props.placeholder, width = digits)}</TextSpan>
                     {:else}
-                        <TextSpan fg=Color::White>{line_text.clone()}</TextSpan>
+                        <TextSpan fg=Color::DarkGrey>{props.placeholder.clone()}</TextSpan>
                     {/if}
-                {/each}
-            {/if}
-        </FlexBox>
+                {:else}
+                    {#each lines.iter().enumerate() as (idx, line_text)}
+                        {#if show_line_numbers}
+                            <TextSpan fg=Color::White>{format!("{:>width$}  {}", scroll_row + idx + 1, line_text, width = digits)}</TextSpan>
+                        {:else}
+                            <TextSpan fg=Color::White>{line_text.clone()}</TextSpan>
+                        {/if}
+                    {/each}
+                {/if}
+            </View>
+        </Pressable>
     }
 }

@@ -5,6 +5,7 @@ use crate::element::measure::decoration;
 use crate::element::measure::measure_node;
 use crate::element::node::{OverlayElement, VNode};
 use crate::element::scroll::{get_scroll, set_scroll};
+use crate::element::taffy_bridge::ComputedLayoutNode;
 use crate::layout::{BorderStyle, Overflow, Rect, compute_popover_rect};
 use crate::terminal::Buffer;
 use crossterm::style::Color;
@@ -16,6 +17,8 @@ struct RenderContext<'a> {
     layer: Option<crate::element::FocusId>,
     scrolls: Vec<ScrollRegion>,
     overlays: &'a mut Vec<(OverlayElement, Option<Rect>)>,
+    active_fg: Option<Color>,
+    active_bg: Option<Color>,
 }
 
 // Intersect signed layout coordinates before converting to terminal cells.
@@ -75,8 +78,10 @@ pub fn render_node_interactive(
             layer: None,
             scrolls: Vec::new(),
             overlays: &mut overlays,
+            active_fg: None,
+            active_bg: None,
         };
-        render_node_offset_internal(node, rect.x as i32, rect.y as i32, width, height, &mut ctx);
+        render_node_offset_internal(node, None, rect.x as i32, rect.y as i32, width, height, &mut ctx);
     }
 
     while !overlays.is_empty() {
@@ -107,8 +112,10 @@ pub fn render_node_offset(
             layer: None,
             scrolls: Vec::new(),
             overlays: &mut overlays,
+            active_fg: None,
+            active_bg: None,
         };
-        render_node_offset_internal(node, x, y, width, height, &mut ctx);
+        render_node_offset_internal(node, None, x, y, width, height, &mut ctx);
     }
 
     let screen_rect = Rect::new(0, 0, buffer.width, buffer.height);
@@ -197,9 +204,12 @@ fn render_single_overlay(
             layer: Some(overlay.id),
             scrolls: Vec::new(),
             overlays,
+            active_fg: None,
+            active_bg: None,
         };
         render_node_offset_internal(
             &content,
+            None,
             popover_rect.x as i32,
             popover_rect.y as i32,
             popover_rect.width,
@@ -211,6 +221,7 @@ fn render_single_overlay(
 
 fn render_node_offset_internal(
     node: &VNode,
+    layout: Option<&ComputedLayoutNode>,
     x: i32,
     y: i32,
     width: u16,
@@ -231,10 +242,38 @@ fn render_node_offset_internal(
             },
         );
     }
+    if let VNode::Pressable(p) = node
+        && let Some(id) = p.focus_id
+    {
+        ctx.hit_map.layouts.insert(
+            id,
+            LayoutTarget {
+                x,
+                y,
+                width,
+                height,
+                scrolls: ctx.scrolls.clone(),
+            },
+        );
+    }
+    if let VNode::View(v) = node
+        && let Some(id) = v.scroll.as_ref().and_then(|s| s.id)
+    {
+        ctx.hit_map.layouts.insert(
+            id,
+            LayoutTarget {
+                x,
+                y,
+                width,
+                height,
+                scrolls: ctx.scrolls.clone(),
+            },
+        );
+    }
     if let VNode::Overlay(overlay) = node {
         let anchor_rect = if let Some(ref trigger) = overlay.trigger {
             let anchor = Rect::new(x.max(0) as u16, y.max(0) as u16, width, height);
-            render_node_offset_internal(trigger, x, y, width, height, ctx);
+            render_node_offset_internal(trigger, None, x, y, width, height, ctx);
             Some(anchor)
         } else {
             None
@@ -256,7 +295,7 @@ fn render_node_offset_internal(
         };
         if let Some(children) = children {
             for child in children {
-                render_node_offset_internal(child, x, y, 0, 0, ctx);
+                render_node_offset_internal(child, None, x, y, 0, 0, ctx);
             }
         }
         return;
@@ -265,7 +304,10 @@ fn render_node_offset_internal(
         || y >= ctx.buffer.height as i32
         || x + width as i32 <= 0
         || y + height as i32 <= 0)
-        && !matches!(node, VNode::FlexBox(_) | VNode::Fragment(_))
+        && !matches!(
+            node,
+            VNode::FlexBox(_) | VNode::View(_) | VNode::Pressable(_) | VNode::Fragment(_)
+        )
     {
         return;
     }
@@ -295,7 +337,8 @@ fn render_node_offset_internal(
                         break;
                     }
                     if curr_x >= 0 {
-                        let bg = text.bg.or_else(|| {
+                        let fg = text.fg.or(ctx.active_fg);
+                        let bg = text.bg.or(ctx.active_bg).or_else(|| {
                             ctx.buffer
                                 .get(curr_x as u16, curr_y as u16)
                                 .and_then(|c| c.bg)
@@ -304,7 +347,7 @@ fn render_node_offset_internal(
                             curr_x as u16,
                             curr_y as u16,
                             ch,
-                            text.fg,
+                            fg,
                             bg,
                             text.bold,
                         );
@@ -314,11 +357,288 @@ fn render_node_offset_internal(
         }
         VNode::Fragment(children) => {
             let mut curr_y = y;
-            for child in children {
-                let (_, ch) = measure_node(child, width, height);
-                render_node_offset_internal(child, x, curr_y, width, ch.min(height), ctx);
+            for (idx, child) in children.iter().enumerate() {
+                let child_layout = layout.and_then(|l| l.children.get(idx));
+                let (cw, ch) = if let Some(cl) = child_layout {
+                    (cl.rect.width, cl.rect.height)
+                } else {
+                    let (_, ch) = measure_node(child, width, height);
+                    (width, ch.min(height))
+                };
+                render_node_offset_internal(child, child_layout, x, curr_y, cw, ch, ctx);
                 curr_y = curr_y.saturating_add(ch as i32);
             }
+        }
+        VNode::Pressable(p) => {
+            if p.focus_id.is_some() || p.on_click.is_some() || p.on_key.is_some() || p.tab_stop {
+                let target = HitTarget {
+                    rect: Rect::new(x.max(0) as u16, y.max(0) as u16, width, height),
+                    layer: ctx.layer,
+                    dismiss: None,
+                    on_click: p.on_click.clone(),
+                    on_click_at: p.on_click_at.clone(),
+                    focus_id: p.focus_id,
+                    on_key: p.on_key.clone(),
+                    on_scroll: None,
+                };
+                register_target(ctx, x, y, target);
+            }
+            if p.children.len() == 1 {
+                render_node_offset_internal(&p.children[0], layout, x, y, width, height, ctx);
+            } else {
+                for (idx, child) in p.children.iter().enumerate() {
+                    let child_layout = layout.and_then(|l| l.children.get(idx));
+                    render_node_offset_internal(child, child_layout, x, y, width, height, ctx);
+                }
+            }
+        }
+        VNode::View(v) => {
+            let prev_fg = ctx.active_fg;
+            let prev_bg = ctx.active_bg;
+            if let Some(vis) = &v.visual {
+                if let Some(fg) = vis.foreground_color {
+                    ctx.active_fg = Some(fg);
+                }
+                if let Some(bg) = vis.background_color {
+                    ctx.active_bg = Some(bg);
+                }
+            }
+
+            let (bg, border, border_color, title) = if let Some(vis) = &v.visual {
+                (vis.background_color, vis.border, vis.border_color, vis.title.as_deref())
+            } else {
+                (None, BorderStyle::None, None, None)
+            };
+
+            // 1. Fill background if specified
+            if let Some(bg) = bg {
+                for curr_y in y.max(0)..(y + height as i32).min(ctx.buffer.height as i32) {
+                    for curr_x in x.max(0)..(x + width as i32).min(ctx.buffer.width as i32) {
+                        if curr_x >= 0 && curr_y >= 0 {
+                            ctx.buffer.set_char(
+                                curr_x as u16,
+                                curr_y as u16,
+                                ' ',
+                                None,
+                                Some(bg),
+                                false,
+                            );
+                        }
+                    }
+                }
+            }
+
+            // 2. Draw border
+            let border_w: u16 = if border != BorderStyle::None { 1 } else { 0 };
+            let border_h: u16 = if border != BorderStyle::None { 1 } else { 0 };
+
+            if let Some(chars) = border.chars().filter(|_| width >= 2 && height >= 2) {
+                let right = x + width as i32 - 1;
+                let bottom = y + height as i32 - 1;
+
+                let draw_ch = |cx: i32, cy: i32, ch: char, buf: &mut Buffer| {
+                    if cx >= 0 && cy >= 0 && cx < i32::from(buf.width) && cy < i32::from(buf.height) {
+                        buf.set_char(cx as u16, cy as u16, ch, border_color, bg, false);
+                    }
+                };
+
+                draw_ch(x, y, chars.top_left, ctx.buffer);
+                draw_ch(right, y, chars.top_right, ctx.buffer);
+                draw_ch(x, bottom, chars.bottom_left, ctx.buffer);
+                draw_ch(right, bottom, chars.bottom_right, ctx.buffer);
+
+                for cx in (x + 1).max(0)..right.min(i32::from(ctx.buffer.width)) {
+                    draw_ch(cx, y, chars.horizontal, ctx.buffer);
+                    draw_ch(cx, bottom, chars.horizontal, ctx.buffer);
+                }
+
+                for cy in (y + 1).max(0)..bottom.min(i32::from(ctx.buffer.height)) {
+                    draw_ch(x, cy, chars.vertical, ctx.buffer);
+                    draw_ch(right, cy, chars.vertical, ctx.buffer);
+                }
+            }
+
+            // 3. Draw title
+            if let Some(t) = title.filter(|t| width > 4 && !t.is_empty()) {
+                let title_text = format!(" {} ", t);
+                let max_len = (width.saturating_sub(4)) as usize;
+                let displayed_title: String = title_text.chars().take(max_len).collect();
+                let start_x = x + 2;
+                for (idx, ch) in displayed_title.chars().enumerate() {
+                    let cx = start_x + idx as i32;
+                    if cx >= 0
+                        && y >= 0
+                        && cx < i32::from(ctx.buffer.width)
+                        && y < i32::from(ctx.buffer.height)
+                    {
+                        ctx.buffer
+                            .set_char(cx as u16, y as u16, ch, border_color, None, true);
+                    }
+                }
+            }
+
+            let inner_x = x + border_w as i32 + v.padding.left as i32;
+            let inner_y = y + border_h as i32 + v.padding.top as i32;
+            let extra_w = border_w * 2 + v.padding.left + v.padding.right;
+            let extra_h = border_h * 2 + v.padding.top + v.padding.bottom;
+            let inner_w = width.saturating_sub(extra_w);
+            let inner_h = height.saturating_sub(extra_h);
+
+            if let Some(vis) = &v.visual {
+                if let Some((cx_off, cy_off)) = vis.cursor_offset {
+                    let screen_cx = inner_x + cx_off as i32;
+                    let screen_cy = inner_y + cy_off as i32;
+                    let clip = ctx.buffer.active_clip();
+                    let in_clip = screen_cx >= clip.x as i32
+                        && screen_cx < (clip.x + clip.width) as i32
+                        && screen_cy >= clip.y as i32
+                        && screen_cy < (clip.y + clip.height) as i32;
+                    if in_clip
+                        && screen_cx >= 0
+                        && screen_cy >= 0
+                        && screen_cx < ctx.buffer.width as i32
+                        && screen_cy < ctx.buffer.height as i32
+                    {
+                        ctx.buffer.set_cursor(screen_cx as u16, screen_cy as u16);
+                    }
+                }
+            }
+
+            if width > 0 && height > 0 && !v.children.is_empty() {
+                let computed_storage;
+                let computed = match layout {
+                    Some(l) => l,
+                    None => {
+                        let mut engine = crate::element::taffy_bridge::LayoutEngine::new();
+                        computed_storage = engine.compute_layout(node, width, height);
+                        &computed_storage
+                    }
+                };
+
+                let is_scroll_x = v.overflow_x == taffy::style::Overflow::Scroll;
+                let is_scroll_y = v.overflow_y == taffy::style::Overflow::Scroll;
+                let is_scrollable = is_scroll_x || is_scroll_y;
+
+                let (scroll_x, scroll_y, scroll_fid) = if is_scrollable {
+                    let fid = v
+                        .scroll
+                        .as_ref()
+                        .and_then(|s| s.id)
+                        .unwrap_or_else(next_render_focus_id);
+                    let (mut sx, mut sy) = get_scroll(fid);
+                    if let Some(s) = &v.scroll {
+                        if s.scroll_x > 0 {
+                            sx = s.scroll_x;
+                        }
+                        if s.scroll_y > 0 {
+                            sy = s.scroll_y;
+                        }
+                    }
+                    (sx, sy, Some(fid))
+                } else if let Some(s) = &v.scroll {
+                    (s.scroll_x, s.scroll_y, None)
+                } else {
+                    (0, 0, None)
+                };
+
+                let max_scroll_x = if is_scroll_x {
+                    computed.content_size.0.saturating_sub(inner_w)
+                } else {
+                    0
+                };
+                let max_scroll_y = if is_scroll_y {
+                    computed.content_size.1.saturating_sub(inner_h)
+                } else {
+                    0
+                };
+
+                if is_scrollable && let Some(id) = scroll_fid {
+                    ctx.scrolls.push(ScrollRegion {
+                        id,
+                        x: inner_x,
+                        y: inner_y,
+                        width: inner_w,
+                        height: inner_h,
+                        max_x: (v.scroll.as_ref().map_or(0, |s| s.scroll_x) == 0)
+                            .then_some(max_scroll_x),
+                        max_y: (v.scroll.as_ref().map_or(0, |s| s.scroll_y) == 0)
+                            .then_some(max_scroll_y),
+                    });
+                }
+
+                let mut clipped = false;
+                if is_scroll_x
+                    || is_scroll_y
+                    || v.overflow_x == taffy::style::Overflow::Hidden
+                    || v.overflow_y == taffy::style::Overflow::Hidden
+                {
+                    let clip_rect = Rect::new(
+                        inner_x.max(0) as u16,
+                        inner_y.max(0) as u16,
+                        inner_w,
+                        inner_h,
+                    );
+                    ctx.buffer.push_clip(clip_rect);
+                    clipped = true;
+                }
+
+                for (idx, child) in v.children.iter().enumerate() {
+                    if let Some(child_layout) = computed.children.get(idx) {
+                        render_node_offset_internal(
+                            child,
+                            Some(child_layout),
+                            x + child_layout.rect.x as i32 - scroll_x as i32,
+                            y + child_layout.rect.y as i32 - scroll_y as i32,
+                            child_layout.rect.width,
+                            child_layout.rect.height,
+                            ctx,
+                        );
+                    }
+                }
+
+                if clipped {
+                    ctx.buffer.pop_clip();
+                }
+
+                if is_scrollable {
+                    ctx.scrolls.pop();
+                }
+
+                if computed.scroll_size.1 > 0 && is_scroll_y {
+                    let sb_x = (inner_x + inner_w as i32 - 1).max(0) as u16;
+                    for row in 0..inner_h {
+                        let sb_y = (inner_y + row as i32).max(0) as u16;
+                        if sb_x < ctx.buffer.width && sb_y < ctx.buffer.height {
+                            ctx.buffer.set_char(sb_x, sb_y, '░', border_color, None, false);
+                        }
+                    }
+                    let thumb_y = inner_y.max(0) as u16
+                        + (scroll_y * inner_h / (computed.content_size.1.max(1)))
+                            .min(inner_h.saturating_sub(1));
+                    if sb_x < ctx.buffer.width && thumb_y < ctx.buffer.height {
+                        ctx.buffer.set_char(sb_x, thumb_y, '█', border_color, None, false);
+                    }
+                }
+
+                if computed.scroll_size.0 > 0 && is_scroll_x {
+                    let sb_y = (inner_y + inner_h as i32 - 1).max(0) as u16;
+                    for col in 0..inner_w {
+                        let sb_x = (inner_x + col as i32).max(0) as u16;
+                        if sb_x < ctx.buffer.width && sb_y < ctx.buffer.height {
+                            ctx.buffer.set_char(sb_x, sb_y, '░', border_color, None, false);
+                        }
+                    }
+                    let thumb_x = inner_x.max(0) as u16
+                        + (scroll_x * inner_w / (computed.content_size.0.max(1)))
+                            .min(inner_w.saturating_sub(1));
+                    if thumb_x < ctx.buffer.width && sb_y < ctx.buffer.height {
+                        ctx.buffer.set_char(thumb_x, sb_y, '█', border_color, None, false);
+                    }
+                }
+            }
+
+            ctx.active_fg = prev_fg;
+            ctx.active_bg = prev_bg;
         }
         VNode::FlexBox(b) => {
             if b.interaction.as_ref().is_some_and(|i| i.hidden) {
@@ -422,10 +742,8 @@ fn render_node_offset_internal(
             }
 
             if inner_w > 0 && inner_h > 0 {
-                let is_scroll_x =
-                    b.overflow_x == Overflow::Scroll || b.overflow_x == Overflow::Auto;
-                let is_scroll_y =
-                    b.overflow_y == Overflow::Scroll || b.overflow_y == Overflow::Auto;
+                let is_scroll_x = b.overflow_x == Overflow::Scroll;
+                let is_scroll_y = b.overflow_y == Overflow::Scroll;
 
                 let layout = layout_box(b, inner_w, inner_h);
                 let (total_children_w, total_children_h) = layout.content;
@@ -685,6 +1003,7 @@ fn render_node_offset_internal(
                 for child in &layout.children {
                     render_node_offset_internal(
                         child.node,
+                        None,
                         inner_x + i32::from(child.rect.x) - i32::from(scroll_x),
                         inner_y + i32::from(child.rect.y) - i32::from(scroll_y),
                         child.rect.width,

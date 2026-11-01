@@ -17,3 +17,25 @@ pub enum Justify {
     End,
     SpaceBetween,
 }
+
+impl From<Align> for taffy::style::AlignItems {
+    fn from(a: Align) -> Self {
+        match a {
+            Align::Start => taffy::style::AlignItems::FlexStart,
+            Align::Center => taffy::style::AlignItems::Center,
+            Align::End => taffy::style::AlignItems::FlexEnd,
+            Align::Stretch => taffy::style::AlignItems::Stretch,
+        }
+    }
+}
+
+impl From<Justify> for taffy::style::JustifyContent {
+    fn from(j: Justify) -> Self {
+        match j {
+            Justify::Start => taffy::style::JustifyContent::FlexStart,
+            Justify::Center => taffy::style::JustifyContent::Center,
+            Justify::End => taffy::style::JustifyContent::FlexEnd,
+            Justify::SpaceBetween => taffy::style::JustifyContent::SpaceBetween,
+        }
+    }
+}

@@ -39,14 +39,15 @@ pub fn ProgressBar(props: ProgressBarProps) -> impl IntoNode {
     };
 
     view! {
-        <FlexBox
-            semantics=semantics
-            border=BorderStyle::None
-            padding=Padding::zero()
-            justify_content=Justify::Center
-            align_items=Align::Start
-        >
-            <TextSpan fg=props.fill_color bold=true>{bar_text}</TextSpan>
-        </FlexBox>
+        <Pressable semantics=semantics>
+            <View
+                border=BorderStyle::None
+                padding=Padding::zero()
+                justify_content=JustifyContent::Center
+                align_items=AlignItems::FlexStart
+            >
+                <TextSpan fg=props.fill_color bold=true>{bar_text}</TextSpan>
+            </View>
+        </Pressable>
     }
 }

@@ -29,8 +29,8 @@ fn ScrollDemo() -> impl IntoNode {
         .collect::<Vec<_>>();
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
+            <View
                 width=68
                 border=BorderStyle::Single
                 border_color=Color::DarkGrey
@@ -44,7 +44,7 @@ fn ScrollDemo() -> impl IntoNode {
                     "Mouse Wheel / Trackpad / Shift+Wheel or Arrow Keys scroll both axes seamlessly."
                 </TextSpan>
 
-                <FlexBox flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
+                <View flex_direction=FlexDirection::Row gap=1 align_items=Align::Center>
                     <Button
                         on_click={move || lines_count.update(|c| *c += 5)}
                     >
@@ -56,33 +56,33 @@ fn ScrollDemo() -> impl IntoNode {
                         "Reset Lines"
                     </Button>
                     <TextSpan color=Color::DarkGrey>{format!("Current log lines: {}", lines_count.get())}</TextSpan>
-                </FlexBox>
+                </View>
 
-                <FlexBox height=1 />
+                <View height=1 />
 
                 // Scroll container with custom scrollbars
-                <FlexBox
-                    border=border_style
-                    border_color=if focus.is_active() { Color::White } else { Color::DarkGrey }
-                    focus_id=scroll_id
-                    tab_stop=true
-                    width=62
-                    height=10
-                    padding=Padding::symmetric(1, 0)
-                    overflow=Overflow::Scroll
-                    scrollbar_visibility=ScrollbarVisibility::Auto
-                >
-                    {#each log_entries as entry}
-                        <TextSpan color=Color::White>{entry}</TextSpan>
-                    {/each}
-                </FlexBox>
+                <Pressable focus_id=scroll_id tab_stop=true>
+                    <View
+                        border=border_style
+                        border_color=if focus.is_active() { Color::White } else { Color::DarkGrey }
+                        width=62
+                        height=10
+                        padding=Padding::symmetric(1, 0)
+                        overflow=Overflow::Scroll
+                        scrollbar_visibility=ScrollbarVisibility::Auto
+                    >
+                        {#each log_entries as entry}
+                            <TextSpan color=Color::White>{entry}</TextSpan>
+                        {/each}
+                    </View>
+                </Pressable>
 
-                <FlexBox height=1 />
+                <View height=1 />
                 <Divider />
 
                 <TextSpan color=Color::DarkGrey>"Tab: Focus scroll container | Wheel / Shift+Wheel: Scroll axes | Q/Esc: Quit"</TextSpan>
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

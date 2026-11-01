@@ -52,13 +52,13 @@ fn FormDemo() -> impl IntoNode {
     let sub_opt = submitted.get();
 
     view! {
-        <FlexBox
+        <View
             width=Size::Fill
             height=Size::Fill
             align_items=Align::Center
             justify_content=Justify::Center
         >
-            <FlexBox
+            <View
                 border=BorderStyle::Single
                 border_color=Color::DarkGrey
                 title=" Registration Form "
@@ -95,17 +95,17 @@ fn FormDemo() -> impl IntoNode {
 
                 <Divider />
 
-                <FlexBox flex_direction=FlexDirection::Row gap=1>
+                <View flex_direction=FlexDirection::Row gap=1>
                     <Button on_click={on_submit}>
                         "Submit Registration"
                     </Button>
                     <Button on_click={on_clear}>
                         "Clear"
                     </Button>
-                </FlexBox>
+                </View>
 
                 {#if sub_opt.is_some()}
-                    <FlexBox
+                    <View
                         border=BorderStyle::Single
                         border_color=Color::White
                         padding=Padding::all(1)
@@ -114,10 +114,10 @@ fn FormDemo() -> impl IntoNode {
                         <TextSpan>{format!("Name: {}", sub_opt.as_ref().unwrap().name)}</TextSpan>
                         <TextSpan color=Color::DarkGrey>{format!("Email: {}", sub_opt.as_ref().unwrap().email)}</TextSpan>
                         <TextSpan color=Color::DarkGrey>{format!("Newsletter: {}", sub_opt.as_ref().unwrap().newsletter)}</TextSpan>
-                    </FlexBox>
+                    </View>
                 {/if}
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

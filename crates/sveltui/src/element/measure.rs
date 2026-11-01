@@ -1,6 +1,7 @@
 use crate::element::node::{FlexBoxElement, VNode};
 use crate::layout::{
-    BorderStyle, FlexDirection, FlexItem, ScrollbarVisibility, Size, resolve_flex_sizes,
+    BorderStyle, FlexDirection, FlexDirectionExt, FlexItem, OverflowExt, ScrollbarVisibility, Size,
+    resolve_flex_sizes,
 };
 
 /// Measure a node against a finite parent content area. Explicit sizes and
@@ -30,7 +31,7 @@ pub(crate) fn limits(min: Option<Size>, max: Option<Size>, parent: Option<u16>) 
 fn definite(size: Size, parent: Option<u16>) -> Option<u16> {
     match size {
         Size::Fixed(value) => Some(value),
-        Size::Percent(_) | Size::Fill => parent.map(|p| size.resolve(p, 0)),
+        Size::Percent(_) | Size::Fill | Size::Fr(_) => parent.map(|p| size.resolve(p, 0)),
         Size::Auto => None,
     }
 }
@@ -142,6 +143,8 @@ fn contains_wrapped_text(node: &VNode) -> bool {
     match node {
         VNode::Text(text) => text.wrap,
         VNode::FlexBox(b) => b.children.iter().any(contains_wrapped_text),
+        VNode::View(v) => v.children.iter().any(contains_wrapped_text),
+        VNode::Pressable(p) => p.children.iter().any(contains_wrapped_text),
         VNode::Fragment(items) => items.iter().any(contains_wrapped_text),
         VNode::Overlay(overlay) => overlay
             .trigger
@@ -273,6 +276,18 @@ pub(crate) fn measure(node: &VNode, bounds: Bounds) -> (u16, u16) {
                 );
             }
             (width, height)
+        }
+        VNode::View(_) => {
+            let layout = crate::element::taffy_bridge::LayoutEngine::new().compute_layout(
+                node,
+                bounds.width.unwrap_or(u16::MAX),
+                bounds.height.unwrap_or(u16::MAX),
+            );
+            (layout.rect.width, layout.rect.height)
+        }
+        VNode::Pressable(p) => {
+            let sizes: Vec<_> = p.children.iter().map(|n| measure(n, bounds)).collect();
+            content_size(FlexDirection::Column, &sizes, 0)
         }
     }
 }

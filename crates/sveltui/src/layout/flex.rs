@@ -1,21 +1,16 @@
 use crate::layout::{Align, Justify, Rect};
+pub use taffy::style::FlexDirection;
 
-/// The main axis of a single-line flex container. Children retain source order.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum FlexDirection {
-    /// Stack children top to bottom (main axis Y, cross axis X).
-    #[default]
-    Column,
-    /// Place children left to right (main axis X, cross axis Y).
-    Row,
+pub trait FlexDirectionExt {
+    /// Convert physical width/height to main/cross dimensions, or vice versa.
+    fn axes<T>(self, width: T, height: T) -> (T, T);
 }
 
-impl FlexDirection {
-    /// Convert physical width/height to main/cross dimensions, or vice versa.
-    pub fn axes<T>(self, width: T, height: T) -> (T, T) {
+impl FlexDirectionExt for FlexDirection {
+    fn axes<T>(self, width: T, height: T) -> (T, T) {
         match self {
-            Self::Column => (height, width),
-            Self::Row => (width, height),
+            Self::Column | Self::ColumnReverse => (height, width),
+            Self::Row | Self::RowReverse => (width, height),
         }
     }
 }

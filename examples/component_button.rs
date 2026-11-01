@@ -6,8 +6,8 @@ fn ButtonShowcase() -> impl IntoNode {
     let count = state(0);
 
     view! {
-        <FlexBox width=Size::Fill height=Size::Fill align_items=Align::Center justify_content=Justify::Center>
-            <FlexBox
+        <View width=Size::Fill height=Size::Fill align_items=AlignItems::Center justify_content=JustifyContent::Center>
+            <View
                 border=BorderStyle::Double
                 border_color=Color::DarkGrey
                 padding=Padding::only(1, 3, 0, 3)
@@ -20,8 +20,8 @@ fn ButtonShowcase() -> impl IntoNode {
                 >
                     "Click Me"
                 </Button>
-            </FlexBox>
-        </FlexBox>
+            </View>
+        </View>
     }
 }
 

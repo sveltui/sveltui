@@ -13,10 +13,10 @@ fn line(buffer: &Buffer, y: u16, start: u16, end: u16) -> String {
 
 fn assert_wrapping(paragraph: VNode) {
     let node = view! {
-        <FlexBox width=Size::Fill border=BorderStyle::Single padding=1 gap=1>
+        <View width=Size::Fill border=BorderStyle::Single padding=1 gap=1>
             {paragraph}
             <TextSpan>"!"</TextSpan>
-        </FlexBox>
+        </View>
     };
     for width in [24, 36, 16, 5, 24] {
         let (_, height) = measure_node(&node, width, 200);
@@ -104,12 +104,12 @@ fn text_spans_keep_single_line_overflow_behavior() {
 #[test]
 fn nested_auto_containers_reserve_height_for_wrapped_paragraphs() {
     let node = view! {
-        <FlexBox width=12>
-            <FlexBox>
+        <View width=12>
+            <View>
                 <Paragraph>"one two three four five six"</Paragraph>
-            </FlexBox>
+            </View>
             <TextSpan>"!"</TextSpan>
-        </FlexBox>
+        </View>
     };
     assert_eq!(measure_node(&node, 12, 10), (12, 4));
     let mut buffer = Buffer::new(12, 10);
@@ -152,10 +152,10 @@ fn max_lines_adds_ellipsis_only_when_text_is_hidden() {
         ("", 8, 1, vec![""]),
     ] {
         let node = view! {
-            <FlexBox width=Size::Fill>
+            <View width=Size::Fill>
                 <Paragraph max_lines=max_lines content=text />
                 <TextSpan>"!"</TextSpan>
-            </FlexBox>
+            </View>
         };
         let height = expected.len() as u16;
         assert_eq!(measure_node(&node, width, 20), (width, height + 1));
@@ -175,9 +175,9 @@ fn max_lines_adds_ellipsis_only_when_text_is_hidden() {
 #[test]
 fn limited_paragraph_children_reflow_when_resized() {
     let node = view! {
-        <FlexBox width=Size::Fill>
+        <View width=Size::Fill>
             <Paragraph max_lines=1>"alpha beta gamma"</Paragraph>
-        </FlexBox>
+        </View>
     };
     for (width, expected) in [(6, "alpha…"), (20, "alpha beta gamma"), (6, "alpha…")] {
         assert_eq!(measure_node(&node, width, 10), (width, 1));
