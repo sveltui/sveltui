@@ -82,7 +82,7 @@ pub use reactive::{
     end_frame, on_destroy, on_mount, provide_context, reset_hook_counter, spawn_blocking,
     spawn_task, state, state_with, use_async_state, use_context, use_hook,
 };
-pub use terminal::{Buffer, Cell, CursorStyle, Terminal, TerminalColor as Color};
+pub use terminal::{Buffer, Cell, CursorStyle, Terminal, TerminalColor as Color, hex_color};
 
 pub mod prelude {
     pub use crate::app::App;
@@ -108,6 +108,6 @@ pub mod prelude {
         end_frame, on_destroy, on_mount, provide_context, reset_hook_counter, spawn_blocking,
         spawn_task, state, state_with, use_async_state, use_context, use_hook,
     };
-    pub use crate::terminal::{CursorStyle, TerminalColor as Color};
+    pub use crate::terminal::{CursorStyle, TerminalColor as Color, hex_color};
     pub use crate::{Props, component, view};
 }

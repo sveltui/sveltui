@@ -118,6 +118,7 @@ src/button/
   - Secondary/Hint/Unfocused: `Color::DarkGrey`
   - Borders: `BorderStyle::Single` (unfocused/default), `BorderStyle::Double` (focused/active)
   - Avoid loud, multi-colored backgrounds unless specifically requested by the user.
+  - For a custom color, use `hex_color("#7aa2f7")` rather than a hand-written `Color::Rgb`.
 
 ### 3.3. Opt-in DOM-Like Focus Model
 - Interactive elements register hit targets with a stable `FocusId`.

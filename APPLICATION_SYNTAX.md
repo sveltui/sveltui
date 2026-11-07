@@ -237,6 +237,26 @@ fn Cart() -> impl IntoNode {
 }
 ```
 
+### Colors
+
+Color props take crossterm's named colors, or a hex string through `hex_color`
+(`#rgb` or `#rrggbb`). A bad hex string panics, and inside a `const` it fails
+the build.
+
+```rust
+const ACCENT: Color = hex_color("#7aa2f7");
+
+#[component]
+fn Banner() -> impl IntoNode {
+    view! {
+        <View border=BorderStyle::Single border_color=ACCENT>
+            <TextSpan foreground_color=hex_color("#f80")>"Warm"</TextSpan>
+            <TextSpan foreground_color=Color::DarkGrey>"Muted"</TextSpan>
+        </View>
+    }
+}
+```
+
 ### Children & Snippets
 
 Component children and snippets share a unified syntax via [`Snippet`](file:///Users/themosthigh/Projects/experimental/sveltui/crates/sveltui-element/src/snippet.rs), governed by the **One-Way Rule**:
