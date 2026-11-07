@@ -36,7 +36,7 @@ fn AsyncDemo() -> impl IntoNode {
 
                 <View flex_direction=FlexDirection::Row gap=2 align_items=AlignItems::Center>
                     <TextSpan foreground_color=Color::DarkGrey>"Server Endpoint:"</TextSpan>
-                    <TextInput value=endpoint placeholder="Region (try 'fail' to test catch)..." />
+                    <TextInput bind:value=endpoint placeholder="Region (try 'fail' to test catch)..." />
                 </View>
 
                 <View flex_direction=FlexDirection::Row gap=1>

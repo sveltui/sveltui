@@ -20,6 +20,7 @@ pub fn parse_attr_value(input: ParseStream) -> Result<Expr> {
             && !input.peek(Token![>])
             && !input.peek(Token![/])
             && !(input.peek(Ident) && input.peek2(Token![=]))
+            && !(input.peek(Ident) && input.peek2(Token![:]) && !input.peek2(Token![::]))
         {
             let tt: proc_macro2::TokenTree = input.parse()?;
             tokens.extend(std::iter::once(tt));
@@ -30,14 +31,33 @@ pub fn parse_attr_value(input: ParseStream) -> Result<Expr> {
 
 impl Parse for Attribute {
     fn parse(input: ParseStream) -> Result<Self> {
-        let name: Ident = input.parse()?;
+        let first: Ident = input.parse()?;
+        // `prefix:name` is only valid as `bind:name`. A `::` is a path, not
+        // a prefix, so it's left alone.
+        let (name, bind) = if input.peek(Token![:]) && !input.peek(Token![::]) {
+            input.parse::<Token![:]>()?;
+            if first != "bind" {
+                return Err(syn::Error::new(
+                    first.span(),
+                    format!("Unknown attribute prefix `{first}:`. Only `bind:` is supported."),
+                ));
+            }
+            (input.parse::<Ident>()?, true)
+        } else {
+            (first, false)
+        };
         let value = if input.peek(Token![=]) {
             input.parse::<Token![=]>()?;
             parse_attr_value(input)?
+        } else if bind {
+            return Err(syn::Error::new(
+                name.span(),
+                format!("`bind:{name}` needs something to bind to, like `bind:{name}={{state}}`."),
+            ));
         } else {
             syn::parse_quote_spanned!(name.span() => true)
         };
-        Ok(Attribute { name, value })
+        Ok(Attribute { name, value, bind })
     }
 }
 

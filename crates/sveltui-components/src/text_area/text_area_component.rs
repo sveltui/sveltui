@@ -1,10 +1,10 @@
-use crate::text_input::TextInputBinding;
 use crossterm::event::KeyEvent;
 use crossterm::style::Color;
 use std::rc::Rc;
 use sveltui::prelude::*;
 
 use super::text_area_types::*;
+use crate::controllable::use_controllable;
 
 #[component]
 pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
@@ -28,23 +28,34 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
         _ => 6,
     };
 
-    let (val_sig, binding_set_val) = match props.value {
-        Some(TextInputBinding::Read(r)) => (Some(r), None),
-        Some(TextInputBinding::State(s)) => (Some(s.read()), Some(s.write())),
-        None => (None, None),
-    };
-
-    let set_value = props.set_value.or(binding_set_val);
+    let owns_buffer = props.buffer.is_set();
+    let text = use_controllable(
+        props.value.bound(),
+        props.value.value(),
+        || props.default_value.clone().unwrap_or_default(),
+        props.on_value_change,
+    );
+    let buffer = use_controllable(
+        props.buffer.bound(),
+        props.buffer.value(),
+        || TextBuffer::new(""),
+        props.on_buffer_change,
+    );
 
     let total_lines = with_buffer_mut(id, |buf| {
         buf.set_multiline(true);
-        if let Some(buf_sig) = props.buffer {
-            *buf = buf_sig.get();
-            buf.set_multiline(true);
-        } else if let Some(vs) = val_sig {
-            let current_val = vs.get();
-            if buf.content() != current_val {
-                buf.set_content(current_val);
+        if owns_buffer {
+            let current = buffer.get();
+            if *buf != current {
+                *buf = current;
+                buf.set_multiline(true);
+            }
+        } else {
+            // The text changed from outside, or a controlled parent turned
+            // an edit down, so the buffer takes the owner's text.
+            let current = text.get();
+            if buf.content() != current {
+                buf.set_content(current);
             }
         }
         buf.line_count()
@@ -79,21 +90,33 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
         (lines, cur_x, cur_y, empty, buf.scroll_row)
     });
 
-    let set_buffer = props.set_buffer;
     let show_line_numbers = props.show_line_numbers;
-
-    let on_click_at: Rc<dyn Fn(u16, u16)> = Rc::new(move |rel_x: u16, rel_y: u16| {
-        let click_col = rel_x.saturating_sub(2 + gutter_width as u16) as usize;
-        let click_row = rel_y.saturating_sub(1) as usize;
-        with_buffer_mut(id, |buf| {
-            let target_row = buf.scroll_row + click_row;
-            let target_col = buf.scroll_col + click_col;
-            buf.set_cursor_pos(target_row, target_col);
-            if let Some(sb) = set_buffer {
-                sb.set(buf.clone());
+    // Reports an edit or cursor move to whoever owns the text and buffer.
+    let report: Rc<dyn Fn(Option<String>)> = {
+        let text = text.clone();
+        Rc::new(move |edited: Option<String>| {
+            if owns_buffer {
+                buffer.set(with_buffer(id, |b| b.clone()));
             }
-        });
-    });
+            if let Some(content) = edited {
+                text.set(content);
+            }
+        })
+    };
+
+    let on_click_at: Rc<dyn Fn(u16, u16)> = {
+        let report = report.clone();
+        Rc::new(move |rel_x: u16, rel_y: u16| {
+            let click_col = rel_x.saturating_sub(2 + gutter_width as u16) as usize;
+            let click_row = rel_y.saturating_sub(1) as usize;
+            with_buffer_mut(id, |buf| {
+                let target_row = buf.scroll_row + click_row;
+                let target_col = buf.scroll_col + click_col;
+                buf.set_cursor_pos(target_row, target_col);
+            });
+            report(None);
+        })
+    };
 
     let on_scroll: Rc<dyn Fn(i16, i16)> = Rc::new(move |_dx: i16, dy: i16| {
         with_buffer_mut(id, |buf| {
@@ -110,18 +133,10 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
         if !with_buffer(id, |buf| buf.accepts_key(&key)) {
             return EventResult::Ignored;
         }
-        with_buffer_mut(id, |buf| {
-            let modified = buf.handle_key(&key);
-            if modified {
-                let text = buf.content();
-                if let Some(sv) = set_value {
-                    sv.set(text);
-                }
-                if let Some(sb) = set_buffer {
-                    sb.set(buf.clone());
-                }
-            }
-        });
+        let modified = with_buffer_mut(id, |buf| buf.handle_key(&key));
+        if modified {
+            report(Some(with_buffer(id, |buf| buf.content())));
+        }
         EventResult::Handled
     });
 

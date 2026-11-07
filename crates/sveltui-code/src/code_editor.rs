@@ -1,4 +1,3 @@
-use crate::binding::CodeBinding;
 use crate::buffer::{with_code_buffer, with_code_buffer_mut};
 use crate::highlight::highlight_text;
 use crossterm::event::KeyEvent;
@@ -18,10 +17,18 @@ thread_local! {
 pub struct CodeEditorProps {
     #[prop(optional)]
     pub id: Option<FocusId>,
+    /// The code. Pass it to control the editor yourself: edits then only
+    /// call `on_value_change`, and the code resets unless you pass the new
+    /// value back.
+    /// Code shared with the parent, updated on every edit. Pass it as
+    /// `bind:value={state}`.
+    #[prop(bindable)]
+    pub value: Bindable<String>,
+    /// The code it starts with when nothing else decides.
     #[prop(optional)]
-    pub value: Option<CodeBinding>,
+    pub default_value: Option<String>,
     #[prop(optional)]
-    pub set_value: Option<WriteSignal<String>>,
+    pub on_value_change: Option<Rc<dyn Fn(String)>>,
     #[prop(default = String::from("// Type code here..."))]
     pub placeholder: String,
     #[prop(optional)]
@@ -61,29 +68,33 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
         Color::DarkGrey
     };
 
-    let set_value = props
-        .set_value
-        .or_else(|| props.value.as_ref().and_then(|b| b.write_signal()));
+    let bound = props.value.bound();
+    let on_value_change = props.on_value_change.clone();
+    // The parent's code, if it owns it. Without an owner, the buffer keeps
+    // the code itself after starting from `default_value`.
+    let owned = bound
+        .map(|state| state.get())
+        .or_else(|| props.value.value());
 
     let total_lines = with_code_buffer_mut(id, |buf| {
         buf.tab_size = props.tab_size;
         let last = LAST_SYNCED.with(|m| m.borrow().get(&id).cloned());
-
-        if let Some(ref binding) = props.value {
-            let current = binding.get_text();
-            match last {
-                None => {
-                    if !current.is_empty() {
-                        buf.set_content(&current);
-                    }
-                    LAST_SYNCED.with(|m| m.borrow_mut().insert(id, current));
-                }
-                Some(ref prev) if prev != &current => {
-                    buf.set_content(&current);
-                    LAST_SYNCED.with(|m| m.borrow_mut().insert(id, current));
-                }
-                _ => {}
+        // Sync whenever the owner's code differs from what we last synced.
+        // That covers outside changes and edits a controlled parent turned
+        // down.
+        let first = last.is_none();
+        let incoming = match (owned.clone(), last) {
+            (Some(current), Some(prev)) if prev != current => Some(current),
+            (Some(current), None) => Some(current),
+            (None, None) => Some(props.default_value.clone().unwrap_or_default()),
+            _ => None,
+        };
+        if let Some(code) = incoming {
+            // On the first render an empty value leaves the fresh buffer alone.
+            if !(first && code.is_empty()) {
+                buf.set_content(&code);
             }
+            LAST_SYNCED.with(|m| m.borrow_mut().insert(id, code));
         }
         buf.line_count()
     });
@@ -208,7 +219,7 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
         let cur_visible_w = ((vw as usize).saturating_sub(gutter_width)).max(1);
         let cur_visible_h = (vh as usize).max(1);
 
-        with_code_buffer_mut(id, |buf| {
+        let edited = with_code_buffer_mut(id, |buf| {
             let modified = buf.handle_key(&key);
             let (mut sx, mut sy) = get_scroll(id);
 
@@ -229,11 +240,20 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
             if modified {
                 let text = buf.content();
                 LAST_SYNCED.with(|m| m.borrow_mut().insert(id, text.clone()));
-                if let Some(sv) = set_value {
-                    sv.set(text);
-                }
+                Some(text)
+            } else {
+                None
             }
         });
+        // Report after the buffer is released, so callbacks can read it.
+        if let Some(text) = edited {
+            if let Some(state) = bound {
+                state.set(text.clone());
+            }
+            if let Some(callback) = &on_value_change {
+                callback(text);
+            }
+        }
         EventResult::Handled
     });
 

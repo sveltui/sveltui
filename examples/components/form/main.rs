@@ -70,28 +70,28 @@ fn FormDemo() -> impl IntoNode {
                 <Divider />
 
                 <TextInput
-                    value=name
+                    bind:value=name
                     placeholder="Enter full name..."
                     title="Name"
                     width=48
                 />
 
                 <TextInput
-                    value=email
+                    bind:value=email
                     placeholder="Enter email address..."
                     title="Email"
                     width=48
                 />
 
                 <TextArea
-                    value=bio
+                    bind:value=bio
                     title="Biography"
                     width=48
                     height=4
                 />
 
-                <Checkbox checked=terms label="I agree to Terms & Conditions" />
-                <Switch checked=newsletter label="Subscribe to release announcements" />
+                <Checkbox bind:checked=terms label="I agree to Terms & Conditions" />
+                <Switch bind:checked=newsletter label="Subscribe to release announcements" />
 
                 <Divider />
 

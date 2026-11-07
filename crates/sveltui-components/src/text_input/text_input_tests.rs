@@ -34,7 +34,7 @@ fn cursor_and_focus_ancestry_follow_nested_row_layout() {
             <Pressable focus_id=parent tab_stop=true>
                 <View flex_direction=FlexDirection::Row width=30 height=5 gap=1>
                     <View width=4 height=3 flex_shrink=0.0 />
-                    <TextInput value=value set_value=set_value width=Dimension::Percent(1.0) id=input />
+                    <TextInput value={value.get()} on_value_change={move |v: String| set_value.set(v)} width=Dimension::Percent(1.0) id=input />
                 </View>
             </Pressable>
         }
@@ -104,7 +104,7 @@ fn an_outside_value_change_moves_the_cursor_to_the_end() {
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
     let id = FocusId::new();
     let text = state(String::new());
-    let build = || view! { <TextInput id=id value=text /> };
+    let build = || view! { <TextInput id=id bind:value=text /> };
     let mut manager = FocusManager::new();
     let frame = |manager: &mut FocusManager| {
         let node = manager.with_context(build);
@@ -119,4 +119,81 @@ fn an_outside_value_change_moves_the_cursor_to_the_end() {
     manager.dispatch(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE));
     frame(&mut manager);
     assert_eq!(text.get(), "Rusty");
+}
+
+mod bindings {
+    use crate::*;
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use std::{cell::RefCell, rc::Rc};
+    use sveltui::element::{render_node_interactive, reset_focus_counter};
+    use sveltui::layout::Rect;
+    use sveltui::prelude::*;
+    use sveltui::terminal::Buffer;
+
+    const ID: FocusId = FocusId(100_201);
+
+    fn frame(manager: &mut FocusManager, build: &impl Fn() -> VNode) -> String {
+        for _ in 0..5 {
+            reset_focus_counter();
+            begin_frame();
+            let node = manager.with_context(build);
+            end_frame();
+            let mut buffer = Buffer::new(30, 3);
+            let mut hits = HitMap::new();
+            manager.with_context(|| {
+                render_node_interactive(&node, Rect::new(0, 0, 30, 3), &mut buffer, &mut hits)
+            });
+            if !manager.reconcile(hits.interactions) {
+                return (0..30).map(|x| buffer.get(x, 1).unwrap().ch).collect();
+            }
+        }
+        panic!("input focus did not settle");
+    }
+
+    fn type_char(manager: &mut FocusManager, build: &impl Fn() -> VNode, ch: char) -> String {
+        manager.dispatch(KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE));
+        frame(manager, build)
+    }
+
+    #[test]
+    fn a_read_only_value_reports_edits_but_keeps_its_text() {
+        let reported = Rc::new(RefCell::new(Vec::new()));
+        let build = {
+            let reported = reported.clone();
+            move || {
+                let reported = reported.clone();
+                view! {
+                    <TextInput id=ID value="abc"
+                        on_value_change={move |next: String| reported.borrow_mut().push(next)} />
+                }
+            }
+        };
+        let mut manager = FocusManager::new();
+        frame(&mut manager, &build);
+        manager.focus(ID);
+        let row = type_char(&mut manager, &build, 'd');
+        assert!(row.contains("abc") && !row.contains("abcd"), "{row}");
+        assert_eq!(*reported.borrow(), vec![String::from("abcd")]);
+    }
+
+    #[test]
+    fn bind_value_writes_the_parents_state() {
+        let name = state(String::from("Ada"));
+        let build = move || view! { <TextInput id=ID bind:value={name} /> };
+        let mut manager = FocusManager::new();
+        frame(&mut manager, &build);
+        manager.focus(ID);
+        let row = type_char(&mut manager, &build, '!');
+        assert!(row.contains("Ada!"), "{row}");
+        assert_eq!(name.get(), "Ada!");
+    }
+
+    #[test]
+    fn default_value_seeds_text_that_is_then_edited_locally() {
+        let build = || view! { <TextInput id=ID default_value="hi" /> };
+        let mut manager = FocusManager::new();
+        assert!(frame(&mut manager, &build).contains("hi"));
+        manager.focus(ID);
+        assert!(type_char(&mut manager, &build, '!').contains("hi!"));
+    }
 }

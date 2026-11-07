@@ -6,8 +6,8 @@ mod combobox_tests;
 
 #[component]
 fn ComboboxDemo() -> impl IntoNode {
-    let framework = state(None::<String>);
-    let city = state(None::<String>);
+    let framework = state(String::new());
+    let city = state(String::new());
     let cities = vec![
         ListboxOption::new("ams", "Amsterdam"),
         ListboxOption::new("ber", "Berlin"),
@@ -24,10 +24,7 @@ fn ComboboxDemo() -> impl IntoNode {
                 title=" Combobox " padding=1 gap=1>
 
                 <TextSpan foreground_color=Color::DarkGrey>"Framework (composed from parts)"</TextSpan>
-                <Combobox::Root
-                    value={framework.get()}
-                    on_value_change={move |next: String| framework.set(Some(next))}
-                >
+                <Combobox::Root bind:value={framework}>
                     <View>
                         <View flex_direction=FlexDirection::Row align_items=AlignItems::Center>
                             <Combobox::Input placeholder="Search frameworks" width=30 />
@@ -46,14 +43,14 @@ fn ComboboxDemo() -> impl IntoNode {
 
                 <TextSpan foreground_color=Color::DarkGrey>"City (built from an options list)"</TextSpan>
                 <Combobox options=cities placeholder="Search cities" width=30
-                    value={city.get()} on_value_change={move |next: String| city.set(Some(next))} />
+                    bind:value={city} />
 
                 <Divider />
                 <TextSpan>
                     {format!(
                         "Framework: {}  City: {}",
-                        framework.get().unwrap_or_else(|| "none".into()),
-                        city.get().unwrap_or_else(|| "none".into()),
+                        or_none(framework.get()),
+                        or_none(city.get()),
                     )}
                 </TextSpan>
                 <Paragraph foreground_color=Color::DarkGrey>
@@ -61,6 +58,14 @@ fn ComboboxDemo() -> impl IntoNode {
                 </Paragraph>
             </View>
         </View>
+    }
+}
+
+fn or_none(value: String) -> String {
+    if value.is_empty() {
+        String::from("none")
+    } else {
+        value
     }
 }
 

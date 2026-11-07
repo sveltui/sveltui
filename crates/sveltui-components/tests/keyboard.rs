@@ -43,7 +43,7 @@ fn existing_controls_declare_focus_semantics_and_disabled_activation() {
             <View>
                 <Button id=FocusId(100001) on_click={{let action=action.clone();move || action.set(action.get()+1)}}>"Action"</Button>
                 <Button id=FocusId(100002) disabled=true>"Unavailable"</Button>
-                <Checkbox id=FocusId(100003) checked=checked set_checked=set_checked label="Choice" />
+                <Checkbox id=FocusId(100003) checked={checked.get()} on_checked_change={move |v: bool| set_checked.set(v)} label="Choice" />
             </View>
         }
     };
@@ -142,7 +142,7 @@ fn editor_owns_noop_edits_but_releases_shortcuts_and_tab() {
     let (value, set_value) = create_signal(String::new());
     let build = || {
         view! {
-            <View><TextInput id=FocusId(100001) value=value set_value=set_value />
+            <View><TextInput id=FocusId(100001) value={value.get()} on_value_change={move |v: String| set_value.set(v)} />
                 <Button id=FocusId(100002)>"Next"</Button></View>
         }
     };
@@ -173,7 +173,7 @@ fn editor_owns_noop_edits_but_releases_shortcuts_and_tab() {
 fn textarea_yields_tab_without_inserting_indentation() {
     let (value, set_value) = create_signal(String::from("text"));
     let build = || {
-        view! { <View><TextArea id=FocusId(100001) value=value set_value=set_value />
+        view! { <View><TextArea id=FocusId(100001) value={value.get()} on_value_change={move |v: String| set_value.set(v)} />
         <Button id=FocusId(100002)>"Next"</Button></View> }
     };
     let mut manager = FocusManager::new();

@@ -7,6 +7,7 @@ use std::{
 use sveltui::prelude::*;
 
 use super::menu_types::*;
+use crate::controllable::use_controllable;
 
 fn identity(explicit: Option<FocusId>) -> FocusId {
     let stable = state_with(FocusId::new);
@@ -14,19 +15,14 @@ fn identity(explicit: Option<FocusId>) -> FocusId {
 }
 
 fn root(props: RootProps, kind: MenuTriggerKind) -> VNode {
-    let local = state(props.default_open);
-    let open = props.open.unwrap_or_else(|| local.get());
-    let change = Rc::new(move |next| {
-        if next == open {
-            return;
-        }
-        if props.open.is_none() {
-            local.set(next);
-        }
-        if let Some(callback) = &props.on_open_change {
-            callback(next);
-        }
-    });
+    let open_state = use_controllable(
+        props.open.bound(),
+        props.open.value(),
+        || props.default_open,
+        props.on_open_change.clone(),
+    );
+    let open = open_state.get();
+    let change = Rc::new(move |next| open_state.set(next));
     let context = MenuContext {
         id: identity(props.id),
         trigger: Rc::new(Cell::new(identity(None))),
@@ -58,20 +54,14 @@ pub fn Sub(props: RootProps) -> VNode {
 
 #[component]
 pub fn BarRoot(props: BarRootProps) -> VNode {
-    let local = state(props.default_value);
-    let current = props.value.clone().unwrap_or_else(|| local.get());
-    let value = current.clone();
-    let change = Rc::new(move |next: Option<String>| {
-        if next == current {
-            return;
-        }
-        if props.value.is_none() {
-            local.set(next.clone());
-        }
-        if let Some(callback) = &props.on_value_change {
-            callback(next);
-        }
-    });
+    let selection = use_controllable(
+        props.value.bound(),
+        props.value.value(),
+        || props.default_value.clone(),
+        props.on_value_change.clone(),
+    );
+    let value = selection.get();
+    let change = Rc::new(move |next: Option<String>| selection.set(next));
     let children = provide_context(
         BarContext {
             value,

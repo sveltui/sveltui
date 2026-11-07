@@ -70,7 +70,7 @@ fn Draft() -> impl IntoNode {
         let _ = std::fs::write("draft.txt", value);
     });
 
-    view! { <TextInput value=text placeholder="Draft..." /> }
+    view! { <TextInput bind:value=text placeholder="Draft..." /> }
 }
 ```
 
@@ -105,8 +105,8 @@ fn Profile() -> impl IntoNode {
 
     view! {
         <View>
-            <TextInput value=name placeholder="Name" />
-            <TextInput value=email placeholder="Email" />
+            <TextInput bind:value=name placeholder="Name" />
+            <TextInput bind:value=email placeholder="Email" />
             <Button on_click={move || batch(|| {
                 name.set(String::new());
                 email.set(String::new());
@@ -178,6 +178,60 @@ fn Greetings() -> impl IntoNode {
         <View>
             <Greeting name=name />
             <Greeting name=name subtitle=Some(String::from("Welcome")) compact=true />
+        </View>
+    }
+}
+```
+
+### Two-way Props (`bind:`)
+
+Put `bind:` in front of a prop to let the component write back to your state:
+
+```rust
+let email = state(String::new());
+let accepted = state(false);
+
+view! {
+    <TextInput bind:value={email} placeholder="Email" />
+    <Checkbox bind:checked={accepted} label="I accept the terms" />
+}
+```
+
+Your own components can offer the same thing. Mark the prop `#[prop(bindable)]`
+and give it the type `Bindable<T>`; the component reads it with `.value()`
+(passed as `count={..}`) or `.bound()` (passed as `bind:count={..}`):
+
+```rust
+#[derive(Props)]
+struct CounterProps {
+    #[prop(bindable)]
+    count: Bindable<i32>,
+}
+
+#[component]
+fn Counter(props: CounterProps) -> impl IntoNode {
+    // Count in the parent's state when it's bound; otherwise count locally,
+    // starting from `count={..}` if one was passed.
+    let local = state(props.count.value().unwrap_or(0));
+    let count = props.count.bound().unwrap_or(local);
+
+    view! {
+        <View flex_direction=FlexDirection::Row gap=1>
+            <Button on_click={move || count.update(|n| *n -= 1)}>"-"</Button>
+            <TextSpan>{count.get().to_string()}</TextSpan>
+            <Button on_click={move || count.update(|n| *n += 1)}>"+"</Button>
+        </View>
+    }
+}
+
+#[component]
+fn Cart() -> impl IntoNode {
+    let items = state(1);
+
+    view! {
+        <View>
+            <Counter bind:count={items} />
+            <TextSpan>{format!("{} items in the cart", items.get())}</TextSpan>
         </View>
     }
 }
@@ -320,7 +374,7 @@ fn TaskList(props: TaskListProps) -> impl IntoNode {
         <View>
             {#each props.tasks.get() as task (task.id)}
                 <View flex_direction=FlexDirection::Row gap=1>
-                    <Checkbox checked=task.done />
+                    <Checkbox bind:checked=task.done />
                     <TextSpan>{task.title.clone()}</TextSpan>
                 </View>
             {:else}
@@ -406,7 +460,7 @@ fn SessionName() -> impl IntoNode {
     view! {
         <View>
             <TextSpan>{session.username.get()}</TextSpan>
-            <TextInput value=session.username />
+            <TextInput bind:value=session.username />
         </View>
     }
 }
@@ -440,7 +494,7 @@ fn NumberEditor() -> impl IntoNode {
 
     view! {
         <View>
-            <TextInput value=input />
+            <TextInput bind:value=input />
             <ErrorBoundary>
                 {#snippet fallback(error)}
                     <TextSpan>{format!("Component crashed: {error}")}</TextSpan>
@@ -466,7 +520,7 @@ fn Document() -> impl IntoNode {
 
     view! {
         <View>
-            <TextInput value=path />
+            <TextInput bind:value=path />
             {#await load_document(path.get())}
                 <TextSpan>"Loading..."</TextSpan>
             {:then text}

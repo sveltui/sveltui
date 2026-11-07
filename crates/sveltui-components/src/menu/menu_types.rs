@@ -26,8 +26,12 @@ pub(super) struct BarContext {
 pub struct RootProps {
     #[prop(optional)]
     pub id: Option<FocusId>,
-    #[prop(optional)]
-    pub open: Option<bool>,
+    /// Whether the menu is open. Pass it to control that yourself: opening
+    /// and closing then only call `on_open_change`.
+    /// Whether the menu is open, shared with the parent and updated when it
+    /// opens or closes. Pass it as `bind:open={state}`.
+    #[prop(bindable)]
+    pub open: Bindable<bool>,
     #[prop(default = false)]
     pub default_open: bool,
     #[prop(optional)]
@@ -42,8 +46,13 @@ pub type SubProps = RootProps;
 pub struct BarRootProps {
     #[prop(optional)]
     pub id: Option<FocusId>,
-    #[prop(optional)]
-    pub value: Option<Option<String>>,
+    /// The open menu's value, or `None` when every menu is closed. Pass it to
+    /// control that yourself: switching menus then only calls
+    /// `on_value_change`.
+    /// The open menu's value, shared with the parent and updated whenever a
+    /// menu opens or closes. Pass it as `bind:value={state}`.
+    #[prop(bindable)]
+    pub value: Bindable<Option<String>>,
     #[prop(optional)]
     pub default_value: Option<String>,
     #[prop(optional)]

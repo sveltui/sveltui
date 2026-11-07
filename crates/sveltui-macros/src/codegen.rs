@@ -268,8 +268,13 @@ fn codegen_custom_component(
         }
         attr_names.insert(attr_name);
         let attr_val = &attr.value;
+        let setter = if attr.bind {
+            quote::format_ident!("bind_{}", attr_name, span = attr_name.span())
+        } else {
+            attr_name.clone()
+        };
         prop_setters.push(quote! {
-            .#attr_name(#attr_val)
+            .#setter(#attr_val)
         });
     }
 

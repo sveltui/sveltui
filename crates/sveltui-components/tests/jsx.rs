@@ -16,9 +16,9 @@ fn test_jsx_custom_components_expansion() {
             scrollbar_visibility=ScrollbarVisibility::Auto
         >
             <Button>"Click Me"</Button>
-            <Switch checked=checked set_checked=set_checked label="Toggle" />
-            <Checkbox checked=checked set_checked=set_checked label="Accept" />
-            <TextInput value=val set_value=set_val placeholder="Type..." title="Input" />
+            <Switch checked={checked.get()} on_checked_change={move |v: bool| set_checked.set(v)} label="Toggle" />
+            <Checkbox checked={checked.get()} on_checked_change={move |v: bool| set_checked.set(v)} label="Accept" />
+            <TextInput value={val.get()} on_value_change={move |v: String| set_val.set(v)} placeholder="Type..." title="Input" />
             <Divider title="Separator" />
             <ProgressBar ratio=0.75f32 width=20u16 />
             <Badge bg=Color::Green fg=Color::Black>"Active"</Badge>

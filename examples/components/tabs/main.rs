@@ -28,9 +28,9 @@ fn Stanzas(props: StanzasProps) -> impl IntoNode {
 
 #[component]
 fn RavenTabs() -> impl IntoNode {
-    // Controlled: `value` + `on_value_change`. Leave both out for
-    // uncontrolled tabs; `default_value`, or else the first enabled tab,
-    // is selected.
+    // `bind:value` keeps `part` in sync with the selected tab. For full
+    // control, pass `value` and `on_value_change` instead; leave both out and
+    // `default_value` (or the first enabled tab) is selected.
     let part = state(String::from("part-1"));
 
     view! {
@@ -41,8 +41,7 @@ fn RavenTabs() -> impl IntoNode {
 
                 // Automatic: arrows switch the panel immediately.
                 <Tabs::Root
-                    value={part.get()}
-                    on_value_change={move |next: String| part.set(next)}
+                    bind:value={part}
                     activation_mode=TabsActivation::Automatic
                 >
                     <View gap=1>

@@ -6,7 +6,7 @@ mod select_tests;
 
 #[component]
 fn SelectDemo() -> impl IntoNode {
-    let fruit = state(None::<String>);
+    let fruit = state(String::new());
     let size = state(String::from("md"));
     let sizes = vec![
         ListboxOption::new("sm", "Small"),
@@ -22,10 +22,7 @@ fn SelectDemo() -> impl IntoNode {
                 title=" Select " padding=1 gap=1>
 
                 <TextSpan foreground_color=Color::DarkGrey>"Fruit (grouped, composed from parts)"</TextSpan>
-                <Select::Root
-                    value={fruit.get()}
-                    on_value_change={move |next: String| fruit.set(Some(next))}
-                >
+                <Select::Root bind:value={fruit}>
                     <View>
                         <Select::Trigger width=30>
                             <Select::Value placeholder="Pick a fruit" />
@@ -48,18 +45,25 @@ fn SelectDemo() -> impl IntoNode {
                 </Select::Root>
 
                 <TextSpan foreground_color=Color::DarkGrey>"Size (built from an options list)"</TextSpan>
-                <Select options=sizes value={size.get()} width=30
-                    on_value_change={move |next: String| size.set(next)} />
+                <Select options=sizes bind:value={size} width=30 />
 
                 <Divider />
                 <TextSpan>
-                    {format!("Fruit: {}  Size: {}", fruit.get().unwrap_or_else(|| "none".into()), size.get())}
+                    {format!("Fruit: {}  Size: {}", or_none(fruit.get()), size.get())}
                 </TextSpan>
                 <Paragraph foreground_color=Color::DarkGrey>
                     "Enter/Space/↓ open · ↑↓ Home End move · type to jump · Enter pick · Esc close"
                 </Paragraph>
             </View>
         </View>
+    }
+}
+
+fn or_none(value: String) -> String {
+    if value.is_empty() {
+        String::from("none")
+    } else {
+        value
     }
 }
 

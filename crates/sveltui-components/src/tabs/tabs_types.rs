@@ -15,9 +15,13 @@ pub enum TabsActivation {
 pub struct RootProps {
     #[prop(optional)]
     pub id: Option<FocusId>,
-    /// The selected tab. Pass it to control the selection yourself.
-    #[prop(optional)]
-    pub value: Option<String>,
+    /// The selected tab. Pass it to control the selection yourself: picking
+    /// a tab then only calls `on_value_change`.
+    /// The selected tab, shared with the parent and updated whenever a tab is
+    /// picked. Pass it as `bind:value={state}`. An empty string means the
+    /// first enabled tab.
+    #[prop(bindable)]
+    pub value: Bindable<String>,
     /// The tab selected at first. Leave it out and the first enabled tab is
     /// used.
     #[prop(optional)]

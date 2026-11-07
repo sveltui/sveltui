@@ -14,6 +14,8 @@ pub enum Node {
 pub struct Attribute {
     pub name: Ident,
     pub value: Expr,
+    /// Written as `bind:name`, so it calls the component's `bind_name` prop.
+    pub bind: bool,
 }
 
 pub struct Element {

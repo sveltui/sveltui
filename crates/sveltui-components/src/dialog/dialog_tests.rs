@@ -70,3 +70,44 @@ fn test_dialog_component_into_node() {
         _ => panic!("Expected VNode::Overlay"),
     }
 }
+
+#[test]
+fn bind_open_is_cleared_when_the_dialog_is_dismissed() {
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use sveltui::prelude::*;
+
+    let show = state(true);
+    let build = move || {
+        view! {
+            <Dialog id=FocusId(100_301) bind:open={show} title="Confirm">
+                <Button id=FocusId(100_302)>"OK"</Button>
+            </Dialog>
+        }
+    };
+    let mut manager = FocusManager::new();
+    let frame = |manager: &mut FocusManager| {
+        for _ in 0..5 {
+            reset_focus_counter();
+            begin_frame();
+            let node = manager.with_context(build);
+            end_frame();
+            let mut buffer = Buffer::new(60, 20);
+            let mut hits = HitMap::new();
+            manager.with_context(|| {
+                render_node_interactive(&node, Rect::new(0, 0, 60, 20), &mut buffer, &mut hits)
+            });
+            if !manager.reconcile(hits.interactions) {
+                return;
+            }
+        }
+    };
+    frame(&mut manager);
+    assert_eq!(
+        manager.focused(),
+        Some(FocusId(100_302)),
+        "the dialog took focus"
+    );
+    manager.dispatch(KeyEvent::new(KeyCode::Esc, KeyModifiers::NONE));
+    frame(&mut manager);
+    assert!(!show.get(), "Escape closes the dialog and writes false");
+}

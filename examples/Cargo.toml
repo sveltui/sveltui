@@ -28,6 +28,11 @@ name = "framework_state"
 path = "framework/state/main.rs"
 
 [[example]]
+name = "framework_binding"
+path = "framework/binding/main.rs"
+test = true
+
+[[example]]
 name = "framework_conditionals"
 path = "framework/conditionals/main.rs"
 

@@ -1,4 +1,3 @@
-use crate::binding::CodeBinding;
 use crate::highlight::highlight_text;
 use crossterm::event::{KeyCode, KeyEvent};
 use crossterm::style::Color;
@@ -11,8 +10,9 @@ use sveltui::prelude::*;
 pub struct CodePreviewProps {
     #[prop(optional)]
     pub id: Option<FocusId>,
+    /// The code to show. `code` does the same and wins when both are set.
     #[prop(optional)]
-    pub value: Option<CodeBinding>,
+    pub value: Option<String>,
     #[prop(optional)]
     pub code: Option<String>,
     #[prop(optional)]
@@ -54,8 +54,8 @@ pub fn CodePreview(props: CodePreviewProps) -> impl IntoNode {
 
     let raw_text = if let Some(ref c) = props.code {
         c.clone()
-    } else if let Some(ref b) = props.value {
-        b.get_text()
+    } else if let Some(ref value) = props.value {
+        value.clone()
     } else {
         String::new()
     };

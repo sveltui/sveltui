@@ -93,7 +93,7 @@ fn main() {
                     gap=0
                 >
                     <CodeEditor
-                        value=code
+                        bind:value=code
                         language="rs"
                         show_line_numbers=true
                         width=Dimension::Percent(1.0)
@@ -110,7 +110,7 @@ fn main() {
                     gap=0
                 >
                     <CodePreview
-                        value=code
+                        value={code.get()}
                         language="rs"
                         show_line_numbers=true
                         width=Dimension::Percent(1.0)

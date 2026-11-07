@@ -3,11 +3,18 @@ use std::rc::Rc;
 use sveltui::prelude::*;
 
 use super::switch_types::*;
+use crate::controllable::use_controllable;
 
 #[component]
 pub fn Switch(props: SwitchProps) -> impl IntoNode {
     let id = props.id.unwrap_or_default();
-    let is_on = props.checked.map(|c| c.get()).unwrap_or(false);
+    let checked = use_controllable(
+        props.checked.bound(),
+        props.checked.value(),
+        || props.default_checked,
+        props.on_checked_change,
+    );
+    let is_on = checked.get();
     let focused = is_focused(id);
 
     let toggle_glyph = if is_on { "[●]" } else { "[ ]" };
@@ -19,19 +26,10 @@ pub fn Switch(props: SwitchProps) -> impl IntoNode {
     };
 
     let label_str = props.label.unwrap_or_default();
-    let binding = props.checked;
-    let set_checked = props.set_checked;
     let disabled = props.disabled;
 
-    let on_click: Option<Rc<dyn Fn()>> = if disabled {
-        None
-    } else if let Some(sc) = set_checked {
-        Some(Rc::new(move || sc.update(|c| *c = !*c)))
-    } else if let Some(SwitchBinding::State(s)) = binding {
-        Some(Rc::new(move || s.update(|c| *c = !*c)))
-    } else {
-        None
-    };
+    let on_click: Option<Rc<dyn Fn()>> =
+        (!disabled).then(|| Rc::new(move || checked.set(!checked.get())) as Rc<dyn Fn()>);
 
     let switch_display = format!("{}{}", switch_prefix, toggle_glyph);
 

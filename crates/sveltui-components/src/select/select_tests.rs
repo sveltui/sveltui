@@ -313,3 +313,19 @@ fn options_list_shortcut_renders_and_selects() {
     let text = press(&mut manager, &build, KeyCode::Enter);
     assert!(text.contains("Medium"));
 }
+
+#[test]
+fn bind_value_and_bind_open_follow_the_list() {
+    let fruit = state(String::new());
+    let open = state(false);
+    let build = move || fruit_select(RootProps::builder().bind_value(fruit).bind_open(open));
+    let mut manager = FocusManager::new();
+    open_with_focus(&mut manager, &build);
+    press(&mut manager, &build, KeyCode::Down);
+    assert!(open.get(), "opening writes the bound open state");
+    press(&mut manager, &build, KeyCode::Down);
+    let text = press(&mut manager, &build, KeyCode::Enter);
+    assert_eq!(fruit.get(), "banana");
+    assert!(!open.get());
+    assert!(text.contains("Banana"));
+}

@@ -4,8 +4,18 @@ use sveltui::prelude::*;
 
 #[derive(Props)]
 pub struct DialogProps {
+    /// Whether the dialog is open. Pass it to control that yourself: closing
+    /// it (Escape, for instance) then only calls `on_open_change` and
+    /// `on_close`.
+    /// Whether the dialog is open, shared with the parent and set to `false`
+    /// when it's dismissed. Pass it as `bind:open={state}`.
+    #[prop(bindable)]
+    pub open: Bindable<bool>,
+    /// Whether it starts open when nothing else decides.
     #[prop(default = false)]
-    pub open: bool,
+    pub default_open: bool,
+    #[prop(optional)]
+    pub on_open_change: Option<Rc<dyn Fn(bool)>>,
     #[prop(optional)]
     pub id: Option<FocusId>,
     #[prop(optional)]

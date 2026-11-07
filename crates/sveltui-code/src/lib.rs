@@ -1,10 +1,8 @@
-pub mod binding;
 pub mod buffer;
 pub mod code_editor;
 pub mod code_preview;
 pub mod highlight;
 
-pub use binding::CodeBinding;
 pub use buffer::{
     CodeBuffer, get_code_buffer, set_code_buffer, with_code_buffer, with_code_buffer_mut,
 };
@@ -17,7 +15,6 @@ pub use highlight::{
 pub use sveltui::terminal::CursorStyle;
 
 pub mod prelude {
-    pub use crate::binding::CodeBinding;
     pub use crate::buffer::{
         CodeBuffer, get_code_buffer, set_code_buffer, with_code_buffer, with_code_buffer_mut,
     };

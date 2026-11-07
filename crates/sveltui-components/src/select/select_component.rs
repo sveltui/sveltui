@@ -4,6 +4,7 @@ use std::rc::Rc;
 use sveltui::prelude::*;
 
 use super::select_types::*;
+use crate::controllable::use_controllable;
 use crate::listbox::{Listbox, ListboxOption, Move, PopupLayout, option_row, popup, text_of};
 
 /// Keeps track of the selected value and whether the popup is open, either from
@@ -12,44 +13,30 @@ use crate::listbox::{Listbox, ListboxOption, Move, PopupLayout, option_row, popu
 #[component]
 pub fn Root(props: RootProps) -> VNode {
     let listbox = Listbox::use_listbox(props.id, props.loop_focus);
-    let local_value = state(props.default_value.clone());
-    let local_open = state(props.default_open);
+    // An empty value means nothing's selected.
+    let selection = use_controllable(
+        props.value.bound(),
+        props.value.value(),
+        || props.default_value.clone().unwrap_or_default(),
+        props.on_value_change.clone(),
+    );
+    let open_state = use_controllable(
+        props.open.bound(),
+        props.open.value(),
+        || props.default_open,
+        props.on_open_change.clone(),
+    );
     listbox.begin_frame();
 
-    let selected = props.value.clone().or_else(|| local_value.get());
-    let open = !props.disabled && props.open.unwrap_or_else(|| local_open.get());
+    let selected = Some(selection.get()).filter(|value| !value.is_empty());
+    let open = !props.disabled && open_state.get();
 
-    let set_open: Rc<dyn Fn(bool)> = {
-        let controlled = props.open.is_some();
-        let on_open_change = props.on_open_change.clone();
-        Rc::new(move |next| {
-            if next == open {
-                return;
-            }
-            if !controlled {
-                local_open.set(next);
-            }
-            if let Some(callback) = &on_open_change {
-                callback(next);
-            }
-        })
-    };
-    let select: Rc<dyn Fn(String)> = {
-        let controlled = props.value.is_some();
-        let on_value_change = props.on_value_change.clone();
-        let current = selected.clone();
-        Rc::new(move |next: String| {
-            if current.as_deref() == Some(next.as_str()) {
-                return;
-            }
-            if !controlled {
-                local_value.set(Some(next.clone()));
-            }
-            if let Some(callback) = &on_value_change {
-                callback(next);
-            }
-        })
-    };
+    let set_open: Rc<dyn Fn(bool)> = Rc::new(move |next| {
+        if next != open {
+            open_state.set(next);
+        }
+    });
+    let select: Rc<dyn Fn(String)> = Rc::new(move |next: String| selection.set(next));
 
     let context = SelectContext {
         listbox: listbox.clone(),
@@ -245,7 +232,8 @@ pub fn Select(props: SelectProps) -> VNode {
     Root(
         RootProps::builder()
             .id(props.id)
-            .value(props.value)
+            .value(props.value.value())
+            .bind_value(props.value.bound())
             .default_value(props.default_value)
             .on_value_change(props.on_value_change)
             .disabled(props.disabled)

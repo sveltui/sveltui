@@ -61,7 +61,7 @@ fn ContextDemo() -> impl IntoNode {
                     <Divider />
 
                     <View flex_direction=FlexDirection::Row justify_content=JustifyContent::SpaceBetween align_items=AlignItems::Center>
-                        <Switch checked=high_contrast label="Enable High-Contrast Theme" />
+                        <Switch bind:checked=high_contrast label="Enable High-Contrast Theme" />
                     </View>
 
                     <Divider />

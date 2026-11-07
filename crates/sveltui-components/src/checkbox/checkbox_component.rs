@@ -3,11 +3,18 @@ use std::rc::Rc;
 use sveltui::prelude::*;
 
 use super::checkbox_types::*;
+use crate::controllable::use_controllable;
 
 #[component]
 pub fn Checkbox(props: CheckboxProps) -> impl IntoNode {
     let id = props.id.unwrap_or_default();
-    let is_checked = props.checked.map(|c| c.get()).unwrap_or(false);
+    let checked = use_controllable(
+        props.checked.bound(),
+        props.checked.value(),
+        || props.default_checked,
+        props.on_checked_change,
+    );
+    let is_checked = checked.get();
     let focused = is_focused(id);
 
     let box_glyph = if is_checked { "[x]" } else { "[ ]" };
@@ -19,19 +26,10 @@ pub fn Checkbox(props: CheckboxProps) -> impl IntoNode {
     };
 
     let label_str = props.label.unwrap_or_default();
-    let binding = props.checked;
-    let set_checked = props.set_checked;
     let disabled = props.disabled;
 
-    let on_click: Option<Rc<dyn Fn()>> = if disabled {
-        None
-    } else if let Some(sc) = set_checked {
-        Some(Rc::new(move || sc.update(|c| *c = !*c)))
-    } else if let Some(CheckboxBinding::State(s)) = binding {
-        Some(Rc::new(move || s.update(|c| *c = !*c)))
-    } else {
-        None
-    };
+    let on_click: Option<Rc<dyn Fn()>> =
+        (!disabled).then(|| Rc::new(move || checked.set(!checked.get())) as Rc<dyn Fn()>);
 
     let box_display = format!("{}{}", box_prefix, box_glyph);
 

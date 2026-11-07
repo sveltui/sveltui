@@ -385,7 +385,7 @@ fn TaskList(props: TaskListProps) -> impl IntoNode {
         <View>
             {#each props.tasks.get() as task (task.id)}
                 <View flex_direction=FlexDirection::Row gap=1>
-                    <Checkbox checked=task.done />
+                    <Checkbox bind:checked=task.done />
                     <TextSpan>{task.title.clone()}</TextSpan>
                 </View>
             {:else}
@@ -473,7 +473,7 @@ fn SessionName() -> impl IntoNode {
     view! {
         <View>
             <TextSpan>{session.username.get()}</TextSpan>
-            <TextInput value=session.username />
+            <TextInput bind:value=session.username />
         </View>
     }
 }
@@ -523,7 +523,7 @@ fn NumberEditor() -> impl IntoNode {
 
     view! {
         <View>
-            <TextInput value=input />
+            <TextInput bind:value=input />
             <ErrorBoundary>
                 {#snippet fallback(error)}
                     <TextSpan>{format!("Component crashed: {error}")}</TextSpan>
@@ -581,7 +581,7 @@ fn Document() -> impl IntoNode {
 
     view! {
         <View>
-            <TextInput value=path />
+            <TextInput bind:value=path />
             {#await load_document(path.get())}
                 <TextSpan>"Loading..."</TextSpan>
             {:then text}
@@ -780,4 +780,88 @@ fn test_unmount_and_remount_lifecycle() {
 
     // Fresh state!
     assert_eq!(s_remount.get(), 100);
+}
+
+// Section: Two-way Props (`bind:`)
+mod two_way {
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    use sveltui::element::{render_node_interactive, reset_focus_counter};
+    use sveltui::layout::Rect;
+    use sveltui::prelude::*;
+    use sveltui::terminal::Buffer;
+    use sveltui_components::*;
+
+    #[derive(Props)]
+    struct CounterProps {
+        #[prop(bindable)]
+        count: Bindable<i32>,
+    }
+
+    #[component]
+    fn Counter(props: CounterProps) -> impl IntoNode {
+        // Count in the parent's state when it's bound; otherwise count locally,
+        // starting from `count={..}` if one was passed.
+        let local = state(props.count.value().unwrap_or(0));
+        let count = props.count.bound().unwrap_or(local);
+
+        view! {
+            <View flex_direction=FlexDirection::Row gap=1>
+                <Button on_click={move || count.update(|n| *n -= 1)}>"-"</Button>
+                <TextSpan>{count.get().to_string()}</TextSpan>
+                <Button on_click={move || count.update(|n| *n += 1)}>"+"</Button>
+            </View>
+        }
+    }
+
+    #[component]
+    fn Cart() -> impl IntoNode {
+        let items = state(1);
+
+        view! {
+            <View>
+                <Counter bind:count={items} />
+                <TextSpan>{format!("{} items in the cart", items.get())}</TextSpan>
+            </View>
+        }
+    }
+
+    fn frame(manager: &mut FocusManager) -> String {
+        for _ in 0..5 {
+            reset_focus_counter();
+            begin_frame();
+            let node = manager.with_context(|| view! { <Cart /> });
+            end_frame();
+            let mut buffer = Buffer::new(40, 6);
+            let mut hits = HitMap::new();
+            manager.with_context(|| {
+                render_node_interactive(&node, Rect::new(0, 0, 40, 6), &mut buffer, &mut hits)
+            });
+            if !manager.reconcile(hits.interactions) {
+                return (0..buffer.height)
+                    .map(|y| {
+                        (0..buffer.width)
+                            .map(|x| buffer.get(x, y).unwrap().ch)
+                            .collect()
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
+            }
+        }
+        panic!("cart focus did not settle");
+    }
+
+    fn press(manager: &mut FocusManager, code: KeyCode) -> String {
+        manager.dispatch(KeyEvent::new(code, KeyModifiers::NONE));
+        frame(manager)
+    }
+
+    #[test]
+    fn test_section_two_way_props() {
+        let mut manager = FocusManager::new();
+        assert!(frame(&mut manager).contains("1 items in the cart"));
+        press(&mut manager, KeyCode::Tab);
+        press(&mut manager, KeyCode::Tab);
+        let screen = press(&mut manager, KeyCode::Enter);
+        assert!(screen.contains("2 items in the cart"), "{screen}");
+    }
 }

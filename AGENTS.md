@@ -97,7 +97,7 @@ src/button/
   ```rust
   view! {
       <View border=BorderStyle::Single title=" Dialog ">
-          <TextInput value=username set_value=set_username placeholder="User..." />
+          <TextInput bind:value={username} placeholder="User..." />
           <Divider title="Actions" />
           <Button variant=ButtonVariant::Primary on_click={move || submit()}>
               "Submit"
@@ -130,6 +130,10 @@ src/button/
 ### 3.4. Signal-Driven Reactivity
 - Signals are created using `let (read, write) = create_signal(val)`.
 - Updates use `write.set(new_val)` or `write.update(|val| *val += 1)`.
+- Pass writable state to a component with `bind:` (`bind:value={state}`). Plain
+  props (`value={...}`) are read-only, with changes reported through
+  `on_*_change`. Components make a prop bindable with `#[prop(bindable)]` on a
+  `Bindable<T>` field, which gives the builder both `x(..)` and `bind_x(..)`.
 - Triggering a write automatically marks the runtime dirty (`Runtime::set_dirty(true)`), which schedules an instant double-buffered terminal repaint on the next frame.
 
 ---

@@ -9,16 +9,21 @@ pub struct RootProps {
     #[prop(optional)]
     pub id: Option<FocusId>,
     /// The selected value. Pass it to control the selection yourself.
-    #[prop(optional)]
-    pub value: Option<String>,
+    /// The selected value, shared with the parent and updated whenever an
+    /// option is picked. Pass it as `bind:value={state}`. An empty string
+    /// means nothing's selected.
+    #[prop(bindable)]
+    pub value: Bindable<String>,
     /// The value selected at first.
     #[prop(optional)]
     pub default_value: Option<String>,
     #[prop(optional)]
     pub on_value_change: Option<Rc<dyn Fn(String)>>,
     /// Whether the popup is open. Pass it to control that yourself.
-    #[prop(optional)]
-    pub open: Option<bool>,
+    /// Whether the popup is open, shared with the parent and updated when it
+    /// opens or closes. Pass it as `bind:open={state}`.
+    #[prop(bindable)]
+    pub open: Bindable<bool>,
     #[prop(default = false)]
     pub default_open: bool,
     #[prop(optional)]
@@ -80,8 +85,11 @@ pub struct SelectProps {
     pub id: Option<FocusId>,
     pub options: Vec<ListboxOption>,
     /// The selected value. Pass it to control the selection yourself.
-    #[prop(optional)]
-    pub value: Option<String>,
+    /// The selected value, shared with the parent and updated whenever an
+    /// option is picked. Pass it as `bind:value={state}`. An empty string
+    /// means nothing's selected.
+    #[prop(bindable)]
+    pub value: Bindable<String>,
     #[prop(optional)]
     pub default_value: Option<String>,
     #[prop(optional)]

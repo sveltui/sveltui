@@ -3,6 +3,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use sveltui::prelude::*;
 
 use super::tabs_types::*;
+use crate::controllable::use_controllable;
 
 /// Keeps track of the selected tab, either the `value` you pass in or its own
 /// state, and shares it through context with `List`, `Trigger` and `Content`,
@@ -10,23 +11,24 @@ use super::tabs_types::*;
 /// otherwise the panels render before a default tab has been picked.
 #[component]
 pub fn Root(props: RootProps) -> VNode {
-    let local = state(props.default_value.clone());
+    // An empty value means nothing's selected yet, so the first enabled tab
+    // gets picked while rendering.
+    let selection = use_controllable(
+        props.value.bound(),
+        props.value.value(),
+        || props.default_value.clone().unwrap_or_default(),
+        props.on_value_change.clone(),
+    );
     let ids = use_hook(|| Rc::new(RefCell::new(HashMap::new())));
     let resolved = use_hook(|| Rc::new(RefCell::new(None)));
-    *resolved.borrow_mut() = props.value.clone().or_else(|| local.get());
+    *resolved.borrow_mut() = Some(selection.get()).filter(|value| !value.is_empty());
 
-    let controlled = props.value.is_some();
-    let on_value_change = props.on_value_change.clone();
     let current = resolved.clone();
     let select: Rc<dyn Fn(String)> = Rc::new(move |next: String| {
-        if current.borrow().as_deref() == Some(next.as_str()) {
-            return;
-        }
-        if !controlled {
-            local.set(Some(next.clone()));
-        }
-        if let Some(callback) = &on_value_change {
-            callback(next);
+        // The tab picked by default isn't stored anywhere, so compare with
+        // what's on screen rather than the stored value.
+        if current.borrow().as_deref() != Some(next.as_str()) {
+            selection.set(next);
         }
     });
 

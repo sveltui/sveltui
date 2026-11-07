@@ -4,6 +4,7 @@ use std::{cell::RefCell, rc::Rc};
 use sveltui::prelude::*;
 
 use super::combobox_types::*;
+use crate::controllable::use_controllable;
 use crate::listbox::{
     Listbox, ListboxOption, Move, PopupLayout, option_row, popup, style_label, text_of,
 };
@@ -16,15 +17,26 @@ use crate::{TextInput, TextInputProps};
 #[component]
 pub fn Root(props: RootProps) -> VNode {
     let listbox = Listbox::use_listbox(props.id, props.loop_focus);
-    let local_value = state(props.default_value.clone());
-    let local_open = state(props.default_open);
+    // An empty value means nothing's selected.
+    let selection = use_controllable(
+        props.value.bound(),
+        props.value.value(),
+        || props.default_value.clone().unwrap_or_default(),
+        props.on_value_change.clone(),
+    );
+    let open_state = use_controllable(
+        props.open.bound(),
+        props.open.value(),
+        || props.default_open,
+        props.on_open_change.clone(),
+    );
     let text = state(String::new());
     let text_on_open = use_hook(|| Rc::new(RefCell::new(String::new())));
     let synced = use_hook(|| Rc::new(RefCell::new(None::<(String, String)>)));
     listbox.begin_frame();
 
-    let selected = props.value.clone().or_else(|| local_value.get());
-    let open = !props.disabled && props.open.unwrap_or_else(|| local_open.get());
+    let selected = Some(selection.get()).filter(|value| !value.is_empty());
+    let open = !props.disabled && open_state.get();
     let selected_label = selected
         .as_ref()
         .map(|value| listbox.label_of(value).unwrap_or_else(|| value.clone()));
@@ -48,8 +60,6 @@ pub fn Root(props: RootProps) -> VNode {
     };
 
     let set_open: Rc<dyn Fn(bool)> = {
-        let controlled = props.open.is_some();
-        let on_open_change = props.on_open_change.clone();
         let text_on_open = text_on_open.clone();
         Rc::new(move |next| {
             if next == open {
@@ -58,30 +68,15 @@ pub fn Root(props: RootProps) -> VNode {
             if next {
                 *text_on_open.borrow_mut() = text.get();
             }
-            if !controlled {
-                local_open.set(next);
-            }
-            if let Some(callback) = &on_open_change {
-                callback(next);
-            }
+            open_state.set(next);
         })
     };
     let choose: Rc<dyn Fn(String)> = {
-        let controlled = props.value.is_some();
-        let on_value_change = props.on_value_change.clone();
         let listbox = listbox.clone();
-        let selected = selected.clone();
         let set_open = set_open.clone();
         Rc::new(move |next: String| {
             text.set(listbox.label_of(&next).unwrap_or_else(|| next.clone()));
-            if selected.as_deref() != Some(next.as_str()) {
-                if !controlled {
-                    local_value.set(Some(next.clone()));
-                }
-                if let Some(callback) = &on_value_change {
-                    callback(next);
-                }
-            }
+            selection.set(next);
             set_open(false);
         })
     };
@@ -142,7 +137,7 @@ pub fn Input(props: InputProps) -> VNode {
     TextInput(
         TextInputProps::builder()
             .id(listbox.trigger_id)
-            .value(combobox.text)
+            .bind_value(combobox.text)
             .placeholder(props.placeholder)
             .width(props.width)
             .semantics(semantics)
@@ -321,7 +316,8 @@ pub fn Combobox(props: ComboboxProps) -> VNode {
     Root(
         RootProps::builder()
             .id(props.id)
-            .value(props.value)
+            .value(props.value.value())
+            .bind_value(props.value.bound())
             .default_value(props.default_value)
             .on_value_change(props.on_value_change)
             .disabled(props.disabled)

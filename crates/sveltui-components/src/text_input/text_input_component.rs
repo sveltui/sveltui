@@ -4,6 +4,7 @@ use std::rc::Rc;
 use sveltui::prelude::*;
 
 use super::text_input_types::*;
+use crate::controllable::use_controllable;
 
 pub fn get_cursor(id: FocusId, text_len: usize) -> usize {
     with_buffer_mut(id, |buf| {
@@ -42,26 +43,36 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
         _ => 20,
     };
 
-    let (val_sig, binding_set_val) = match props.value {
-        Some(TextInputBinding::Read(r)) => (Some(r), None),
-        Some(TextInputBinding::State(s)) => (Some(s.read()), Some(s.write())),
-        None => (None, None),
-    };
-
-    let set_value = props.set_value.or(binding_set_val);
+    let owns_buffer = props.buffer.is_set();
+    let text = use_controllable(
+        props.value.bound(),
+        props.value.value(),
+        || props.default_value.clone().unwrap_or_default(),
+        props.on_value_change,
+    );
+    let buffer = use_controllable(
+        props.buffer.bound(),
+        props.buffer.value(),
+        || TextBuffer::new(""),
+        props.on_buffer_change,
+    );
 
     let (display_text, text_color, cursor_col) = with_buffer_mut(id, |buf| {
         buf.set_multiline(false);
 
-        if let Some(buf_sig) = props.buffer {
-            *buf = buf_sig.get();
-            buf.set_multiline(false);
-        } else if let Some(vs) = val_sig {
-            let current_val = vs.get();
-            // The value changed from outside, so the cursor goes to the end
-            // of the new text, the way text fields usually behave.
-            if buf.content() != current_val {
-                buf.set_content(current_val);
+        if owns_buffer {
+            let current = buffer.get();
+            if *buf != current {
+                *buf = current;
+                buf.set_multiline(false);
+            }
+        } else {
+            let current = text.get();
+            // The text changed from outside (or a controlled parent turned
+            // an edit down), so the cursor goes to the end of the new text,
+            // the way text fields usually behave.
+            if buf.content() != current {
+                buf.set_content(current);
                 buf.move_end();
             }
         }
@@ -82,20 +93,32 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
         }
     });
 
-    let set_buffer = props.set_buffer;
     let on_submit = props.on_submit;
+    // Reports an edit or cursor move to whoever owns the text and buffer.
+    let report: Rc<dyn Fn(Option<String>)> = {
+        let text = text.clone();
+        Rc::new(move |edited: Option<String>| {
+            if owns_buffer {
+                buffer.set(with_buffer(id, |b| b.clone()));
+            }
+            if let Some(content) = edited {
+                text.set(content);
+            }
+        })
+    };
     let intercept = props.on_key;
 
-    let on_click_at: Rc<dyn Fn(u16, u16)> = Rc::new(move |rel_x: u16, _rel_y: u16| {
-        let click_col = rel_x.saturating_sub(2) as usize;
-        with_buffer_mut(id, |buf| {
-            let new_cursor = buf.scroll_col + click_col;
-            buf.set_cursor(new_cursor);
-            if let Some(sb) = set_buffer {
-                sb.set(buf.clone());
-            }
-        });
-    });
+    let on_click_at: Rc<dyn Fn(u16, u16)> = {
+        let report = report.clone();
+        Rc::new(move |rel_x: u16, _rel_y: u16| {
+            let click_col = rel_x.saturating_sub(2) as usize;
+            with_buffer_mut(id, |buf| {
+                let new_cursor = buf.scroll_col + click_col;
+                buf.set_cursor(new_cursor);
+            });
+            report(None);
+        })
+    };
 
     let on_key: KeyHandler = Rc::new(move |key: KeyEvent, ctx: &mut EventContext| {
         if let Some(intercept) = &intercept
@@ -118,18 +141,10 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
         if !with_buffer(id, |buf| buf.accepts_key(&key)) {
             return EventResult::Ignored;
         }
-        with_buffer_mut(id, |buf| {
-            let modified = buf.handle_key(&key);
-            if modified {
-                let text = buf.content();
-                if let Some(sv) = set_value {
-                    sv.set(text);
-                }
-                if let Some(sb) = set_buffer {
-                    sb.set(buf.clone());
-                }
-            }
-        });
+        let modified = with_buffer_mut(id, |buf| buf.handle_key(&key));
+        if modified {
+            report(Some(with_buffer(id, |buf| buf.content())));
+        }
         EventResult::Handled
     });
 

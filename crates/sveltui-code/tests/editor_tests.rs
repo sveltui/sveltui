@@ -41,8 +41,7 @@ fn test_code_editor_autofocus_and_typing() {
     let build = move || {
         view! {
             <CodeEditor
-                value=code
-                set_value=set_code
+                value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                 language="rs"
                 autofocus=true
             />

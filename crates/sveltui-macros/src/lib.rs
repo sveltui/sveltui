@@ -72,6 +72,20 @@ pub fn component(_attr: TokenStream, item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// The `T` in `Wrapper<T>` when `ty`'s last path segment is `wrapper`.
+fn extract_generic_inner<'a>(ty: &'a syn::Type, wrapper: &str) -> Option<&'a syn::Type> {
+    if let syn::Type::Path(type_path) = ty
+        && let Some(segment) = type_path.path.segments.last()
+        && segment.ident == wrapper
+        && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+        && let Some(syn::GenericArgument::Type(inner)) = args.args.first()
+    {
+        Some(inner)
+    } else {
+        None
+    }
+}
+
 fn extract_option_inner(ty: &syn::Type) -> Option<&syn::Type> {
     if let syn::Type::Path(type_path) = ty
         && let Some(segment) = type_path.path.segments.last()
@@ -148,12 +162,16 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
         let mut is_optional = false;
         let mut default_expr = None;
         let mut is_default = false;
+        let mut is_bindable = false;
 
         for attr in &field.attrs {
             if attr.path().is_ident("prop") {
                 let _ = attr.parse_nested_meta(|meta| {
                     if meta.path.is_ident("optional") {
                         is_optional = true;
+                        Ok(())
+                    } else if meta.path.is_ident("bindable") {
+                        is_bindable = true;
                         Ok(())
                     } else if meta.path.is_ident("default") {
                         if meta.input.peek(syn::Token![=]) {
@@ -192,6 +210,48 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
 
         if is_snippet && extract_option_inner(field_ty).is_some() {
             is_optional = true;
+        }
+
+        // `#[prop(bindable)]` fields hold a `Bindable<T>`: `x(..)` sets the
+        // read-only value and `bind_x(..)` the bound state, so the view
+        // macro's `bind:x={state}` lands on the same field.
+        if is_bindable {
+            let Some(inner_ty) = extract_generic_inner(field_ty, "Bindable") else {
+                return syn::Error::new(
+                    field_ty.span(),
+                    "#[prop(bindable)] fields must have the type `Bindable<T>`",
+                )
+                .to_compile_error()
+                .into();
+            };
+            let bind_fn = quote::format_ident!("bind_{}", field_name);
+            builder_fields.push(quote! {
+                pub #field_name: Option<#field_ty>,
+            });
+            default_inits.push(quote! {
+                #field_name: None,
+            });
+            setters.push(quote! {
+                pub fn #field_name(mut self, val: impl #root::IntoPropOption<#inner_ty>) -> Self {
+                    let mut bindable = self.#field_name.take().unwrap_or_default();
+                    bindable.set_value(val.into_prop_option());
+                    self.#field_name = Some(bindable);
+                    self
+                }
+                pub fn #bind_fn(
+                    mut self,
+                    val: impl #root::IntoPropOption<#root::State<#inner_ty>>,
+                ) -> Self {
+                    let mut bindable = self.#field_name.take().unwrap_or_default();
+                    bindable.set_bound(val.into_prop_option());
+                    self.#field_name = Some(bindable);
+                    self
+                }
+            });
+            build_inits.push(quote! {
+                #field_name: self.#field_name.unwrap_or_default(),
+            });
+            continue;
         }
 
         builder_fields.push(quote! {
@@ -399,5 +459,53 @@ mod tests {
         });
         let error = result.err().expect("different namespaces must not match");
         assert!(error.to_string().contains("Expected closing tag"));
+    }
+
+    fn generated(tokens: proc_macro2::TokenStream) -> String {
+        let tree = syn::parse2::<ViewTree>(tokens).expect("view should parse");
+        codegen_node(&tree.root).to_string()
+    }
+
+    #[test]
+    fn bind_attributes_call_the_bind_setter() {
+        let code = generated(quote! { <TextInput bind:value={name} placeholder="Name" /> });
+        assert!(code.contains(". bind_value (name)"));
+        assert!(code.contains(". placeholder (\"Name\")"));
+        assert!(!code.contains(". value ("));
+    }
+
+    #[test]
+    fn bind_and_plain_attributes_mix_without_braces() {
+        let code = generated(quote! {
+            <Checkbox label=title bind:checked=accepted disabled=false />
+        });
+        assert!(code.contains(". label (title)"));
+        assert!(code.contains(". bind_checked (accepted)"));
+        assert!(code.contains(". disabled (false)"));
+    }
+
+    #[test]
+    fn paths_in_values_are_not_mistaken_for_prefixes() {
+        let code = generated(quote! {
+            <View border_color=Color::White bind:open=show />
+        });
+        assert!(code.contains(". border_color (Color :: White)"));
+        assert!(code.contains(". bind_open (show)"));
+    }
+
+    #[test]
+    fn unknown_prefixes_are_rejected() {
+        let error = syn::parse2::<ViewTree>(quote! { <TextInput on:value={x} /> })
+            .err()
+            .expect("only bind: is a prefix");
+        assert!(error.to_string().contains("Only `bind:` is supported"));
+    }
+
+    #[test]
+    fn bind_without_a_value_is_rejected() {
+        let error = syn::parse2::<ViewTree>(quote! { <Checkbox bind:checked /> })
+            .err()
+            .expect("bind needs a value");
+        assert!(error.to_string().contains("needs something to bind to"));
     }
 }

@@ -42,8 +42,8 @@ fn test_text_area_basic_instantiation() {
     let (val, set_val) = create_signal(String::from("Hello\nWorld"));
     let area = TextArea(
         TextAreaProps::builder()
-            .value(val)
-            .set_value(set_val)
+            .value(val.get())
+            .on_value_change(move |v: String| set_val.set(v))
             .width(50)
             .height(10)
             .title("Notes")
@@ -71,7 +71,7 @@ fn test_text_area_basic_instantiation() {
 fn textarea_state_binding_renders_each_keystroke_and_newline() {
     let value = state(String::new());
     let id = FocusId::new();
-    let build = || view! { <TextArea id=id value=value placeholder="Notes..." /> };
+    let build = || view! { <TextArea id=id bind:value=value placeholder="Notes..." /> };
     let mut manager = FocusManager::new();
     let (buffer, _) = render(&mut manager, build);
     assert!(row(&buffer, 1).contains("Notes..."));
@@ -96,7 +96,7 @@ fn textarea_state_binding_renders_each_keystroke_and_newline() {
 fn textarea_explicit_signal_setter_updates_and_accepts_external_reset() {
     let (value, set_value) = create_signal(String::new());
     let id = FocusId::new();
-    let build = || view! { <TextArea id=id value=value set_value=set_value /> };
+    let build = || view! { <TextArea id=id value={value.get()} on_value_change={move |v: String| set_value.set(v)} /> };
     let mut manager = FocusManager::new();
     render(&mut manager, build);
     manager.focus(id);
@@ -117,7 +117,7 @@ fn textarea_explicit_signal_setter_updates_and_accepts_external_reset() {
 fn textarea_buffer_binding_preserves_content_and_cursor() {
     let (buffer, set_buffer) = create_signal(TextBuffer::new(""));
     let id = FocusId::new();
-    let build = || view! { <TextArea id=id buffer=buffer set_buffer=set_buffer /> };
+    let build = || view! { <TextArea id=id buffer={buffer.get()} on_buffer_change={move |v: TextBuffer| set_buffer.set(v)} /> };
     let mut manager = FocusManager::new();
     render(&mut manager, build);
     manager.focus(id);
@@ -170,8 +170,8 @@ fn textarea_click_focus_and_tab_keep_input_in_the_focused_control() {
     let build = || {
         view! {
             <View>
-                <TextArea id=area_id value=area />
-                <TextInput id=input_id value=input />
+                <TextArea id=area_id bind:value=area />
+                <TextInput id=input_id bind:value=input />
             </View>
         }
     };
@@ -198,7 +198,7 @@ fn textarea_click_focus_and_tab_keep_input_in_the_focused_control() {
 fn textarea_key_repeat_inserts_and_key_release_is_ignored() {
     let value = state(String::new());
     let id = FocusId::new();
-    let build = || view! { <TextArea id=id value=value /> };
+    let build = || view! { <TextArea id=id bind:value=value /> };
     let mut manager = FocusManager::new();
     render(&mut manager, build);
     manager.focus(id);

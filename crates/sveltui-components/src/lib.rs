@@ -2,6 +2,7 @@ pub mod badge;
 pub mod button;
 pub mod checkbox;
 pub mod combobox;
+mod controllable;
 pub mod dialog;
 pub mod divider;
 mod listbox;
@@ -17,7 +18,7 @@ pub mod text_input;
 
 pub use badge::{Badge, BadgeProps};
 pub use button::{Button, ButtonProps};
-pub use checkbox::{Checkbox, CheckboxBinding, CheckboxProps};
+pub use checkbox::{Checkbox, CheckboxProps};
 pub use combobox::{Combobox, ComboboxProps};
 /// The combobox parts: `Root`, `Input`, `Trigger`, `Content`, `Item`,
 /// `Empty`, `Group`, `GroupHeading` and `Separator`.
@@ -76,7 +77,7 @@ pub mod Select {
         ValueProps,
     };
 }
-pub use switch::{Switch, SwitchBinding, SwitchProps};
+pub use switch::{Switch, SwitchProps};
 /// Composable tabs: `Tabs::Root`, `Tabs::List`, `Tabs::Trigger`, `Tabs::Content`.
 #[allow(non_snake_case)]
 pub mod Tabs {
@@ -87,4 +88,4 @@ pub mod Tabs {
 pub use tabs::TabsActivation;
 pub use text_area::{TextArea, TextAreaProps};
 pub use text_buffer::*;
-pub use text_input::{TextInput, TextInputBinding, TextInputProps, get_cursor, set_cursor};
+pub use text_input::{TextInput, TextInputProps, get_cursor, set_cursor};

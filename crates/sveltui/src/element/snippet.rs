@@ -392,6 +392,7 @@ identity_prop_option!(
     crate::element::interaction::FocusScope,
     crate::element::interaction::FocusGroup,
     crate::element::interaction::Interaction,
+    crate::element::text_buffer::TextBuffer,
 );
 
 impl IntoPropOption<crate::element::focus::FocusId> for usize {
@@ -408,6 +409,12 @@ impl<T> IntoPropOption<crate::reactive::ReadSignal<T>> for crate::reactive::Read
 
 impl<T> IntoPropOption<crate::reactive::WriteSignal<T>> for crate::reactive::WriteSignal<T> {
     fn into_prop_option(self) -> Option<crate::reactive::WriteSignal<T>> {
+        Some(self)
+    }
+}
+
+impl<T> IntoPropOption<crate::reactive::State<T>> for crate::reactive::State<T> {
+    fn into_prop_option(self) -> Option<crate::reactive::State<T>> {
         Some(self)
     }
 }

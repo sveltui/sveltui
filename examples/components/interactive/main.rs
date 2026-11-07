@@ -46,12 +46,12 @@ fn InteractiveShowcase() -> impl IntoNode {
                 <TextSpan foreground_color=Color::DarkGrey>"Form & Input Controls:"</TextSpan>
                 <View flex_direction=FlexDirection::Row gap=2 align_items=AlignItems::Center>
                     <TextSpan foreground_color=Color::DarkGrey>"User:"</TextSpan>
-                    <TextInput value=username placeholder="Enter username..." width=32 />
+                    <TextInput bind:value=username placeholder="Enter username..." width=32 />
                 </View>
 
                 <View flex_direction=FlexDirection::Row gap=4>
-                    <Checkbox checked=notifications label="Desktop Notifications" />
-                    <Switch checked=auto_save label="Auto-save to disk" />
+                    <Checkbox bind:checked=notifications label="Desktop Notifications" />
+                    <Switch bind:checked=auto_save label="Auto-save to disk" />
                 </View>
 
                 <Divider />

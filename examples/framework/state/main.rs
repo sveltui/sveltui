@@ -8,7 +8,7 @@ fn StateDemo() -> impl IntoNode {
 
     view! {
         <View width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) align_items=AlignItems::Center justify_content=JustifyContent::Center>
-            <TextInput value={name}  title="Name" placeholder="Enter name here" width=Dimension::Percent(1.0)/>
+            <TextInput bind:value={name}  title="Name" placeholder="Enter name here" width=Dimension::Percent(1.0)/>
 
             {#if !name.get().is_empty()}
                 <Divider />

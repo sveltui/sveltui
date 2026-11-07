@@ -43,7 +43,7 @@ fn test_code_editor_renders() {
 
     let node = view! {
         <CodeEditor
-            value=code_read
+            value={code_read.get()}
             language="rs"
             show_line_numbers=true
             width=Dimension::Length(50.0)
@@ -77,7 +77,7 @@ fn test_code_binding_from_state() {
 
     let node = view! {
         <CodeEditor
-            value=code_state
+            bind:value=code_state
             language="py"
             show_line_numbers=false
         />

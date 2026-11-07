@@ -1,58 +1,21 @@
+use std::rc::Rc;
 use sveltui::prelude::*;
-
-#[derive(Clone, Copy)]
-pub enum SwitchBinding {
-    Read(ReadSignal<bool>),
-    State(State<bool>),
-}
-
-impl From<ReadSignal<bool>> for SwitchBinding {
-    fn from(s: ReadSignal<bool>) -> Self {
-        Self::Read(s)
-    }
-}
-
-impl From<State<bool>> for SwitchBinding {
-    fn from(s: State<bool>) -> Self {
-        Self::State(s)
-    }
-}
-
-impl SwitchBinding {
-    pub fn get(&self) -> bool {
-        match self {
-            Self::Read(r) => r.get(),
-            Self::State(s) => s.get(),
-        }
-    }
-}
-
-impl IntoPropOption<SwitchBinding> for SwitchBinding {
-    fn into_prop_option(self) -> Option<SwitchBinding> {
-        Some(self)
-    }
-}
-
-impl IntoPropOption<SwitchBinding> for ReadSignal<bool> {
-    fn into_prop_option(self) -> Option<SwitchBinding> {
-        Some(SwitchBinding::Read(self))
-    }
-}
-
-impl IntoPropOption<SwitchBinding> for State<bool> {
-    fn into_prop_option(self) -> Option<SwitchBinding> {
-        Some(SwitchBinding::State(self))
-    }
-}
 
 #[derive(Props)]
 pub struct SwitchProps {
     #[prop(optional)]
     pub id: Option<FocusId>,
+    /// Whether it's checked. Pass it to control the switch yourself: clicks
+    /// then only call `on_checked_change`.
+    /// Checked state shared with the parent, updated on every toggle. Pass it
+    /// as `bind:checked={state}`.
+    #[prop(bindable)]
+    pub checked: Bindable<bool>,
+    /// Whether it starts checked when nothing else decides.
+    #[prop(default = false)]
+    pub default_checked: bool,
     #[prop(optional)]
-    pub checked: Option<SwitchBinding>,
-    #[prop(optional)]
-    pub set_checked: Option<WriteSignal<bool>>,
+    pub on_checked_change: Option<Rc<dyn Fn(bool)>>,
     #[prop(optional)]
     pub label: Option<String>,
     #[prop(default = false)]

@@ -45,7 +45,7 @@ fn ConditionalsDemo() -> impl IntoNode {
                 </View>
 
                 <View height=1 />
-                <Checkbox checked=show_details label="Show permission details" />
+                <Checkbox bind:checked=show_details label="Show permission details" />
                 <Divider />
 
                 // Conditional rendering with {#if} ... {:else if} ... {:else}

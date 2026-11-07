@@ -77,10 +77,10 @@ pub use layout::{
     OverflowExt, Padding, Placement, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility,
 };
 pub use reactive::{
-    AsyncState, BlockingFuture, ComponentScope, Derived, ReadSignal, Runtime, State, TaskHandle,
-    WriteSignal, batch, begin_frame, create_effect, create_signal, derived, effect, end_frame,
-    on_destroy, on_mount, provide_context, reset_hook_counter, spawn_blocking, spawn_task, state,
-    state_with, use_async_state, use_context, use_hook,
+    AsyncState, Bindable, BlockingFuture, ComponentScope, Derived, ReadSignal, Runtime, State,
+    TaskHandle, WriteSignal, batch, begin_frame, create_effect, create_signal, derived, effect,
+    end_frame, on_destroy, on_mount, provide_context, reset_hook_counter, spawn_blocking,
+    spawn_task, state, state_with, use_async_state, use_context, use_hook,
 };
 pub use terminal::{Buffer, Cell, CursorStyle, Terminal, TerminalColor as Color};
 
@@ -103,10 +103,10 @@ pub mod prelude {
         Padding, Placement, Point, Position, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility,
     };
     pub use crate::reactive::{
-        AsyncState, BlockingFuture, ComponentScope, Derived, ReadSignal, State, TaskHandle,
-        WriteSignal, batch, begin_frame, create_effect, create_signal, derived, effect, end_frame,
-        on_destroy, on_mount, provide_context, reset_hook_counter, spawn_blocking, spawn_task,
-        state, state_with, use_async_state, use_context, use_hook,
+        AsyncState, Bindable, BlockingFuture, ComponentScope, Derived, ReadSignal, State,
+        TaskHandle, WriteSignal, batch, begin_frame, create_effect, create_signal, derived, effect,
+        end_frame, on_destroy, on_mount, provide_context, reset_hook_counter, spawn_blocking,
+        spawn_task, state, state_with, use_async_state, use_context, use_hook,
     };
     pub use crate::terminal::{CursorStyle, TerminalColor as Color};
     pub use crate::{Props, component, view};

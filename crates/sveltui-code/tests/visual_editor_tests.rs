@@ -116,8 +116,7 @@ fn test_live_preview_sync_per_keystroke() {
         view! {
             <View flex_direction=FlexDirection::Row width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) gap=2>
                 <CodeEditor
-                    value=code
-                    set_value=set_code
+                    value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                     language="rs"
                     width=45
                     height=8
@@ -125,7 +124,7 @@ fn test_live_preview_sync_per_keystroke() {
                     autofocus=true
                 />
                 <CodePreview
-                    value=code
+                    value={code.get()}
                     language="rs"
                     width=45
                     height=8
@@ -171,8 +170,7 @@ fn test_visual_code_editor_typing_and_cursor() {
     let build = move || {
         view! {
             <CodeEditor
-                value=code
-                set_value=set_code
+                value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                 language="rs"
                 width=50
                 height=8
@@ -255,8 +253,7 @@ fn test_visual_cursor_movement_and_click() {
     let build = move || {
         view! {
             <CodeEditor
-                value=code
-                set_value=set_code
+                value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                 language="rs"
                 width=50
                 height=8
@@ -295,8 +292,7 @@ fn test_syntax_highlighting_colors_on_screen() {
     let build = move || {
         view! {
             <CodeEditor
-                value=code
-                set_value=set_code
+                value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                 language="rs"
                 width=50
                 height=8
@@ -338,8 +334,7 @@ fn test_editor_height_fills_container() {
     let build = move || {
         view! {
             <CodeEditor
-                value=code
-                set_value=set_code
+                value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                 language="rs"
                 width=Dimension::Percent(1.0)
                 height=Dimension::Percent(1.0)
@@ -381,15 +376,14 @@ fn test_code_preview_focus_and_keyboard_scroll() {
             <View flex_direction=FlexDirection::Row width=Dimension::Percent(1.0) height=Dimension::Percent(1.0) gap=1>
                 <CodeEditor
                     id=editor_id
-                    value=code
-                    set_value=set_code
+                    value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                     width=Dimension::Percent(0.5)
                     height=Dimension::Percent(1.0)
                     autofocus=true
                 />
                 <CodePreview
                     id=preview_id
-                    value=code
+                    value={code.get()}
                     width=Dimension::Percent(0.5)
                     height=Dimension::Percent(1.0)
                 />
@@ -461,8 +455,7 @@ fn test_code_editor_cursor_goes_beyond_20_lines() {
     let build = move || {
         view! {
             <CodeEditor
-                value=code
-                set_value=set_code
+                value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                 language="rs"
                 width=Dimension::Percent(1.0)
                 height=Dimension::Percent(1.0)
@@ -573,8 +566,7 @@ fn test_code_editor_mouse_scrolling_and_cursor_movement() {
         view! {
             <CodeEditor
                 id=editor_id
-                value=code
-                set_value=set_code
+                value={code.get()} on_value_change={move |v: String| set_code.set(v)}
                 language="rs"
                 width=Dimension::Percent(1.0)
                 height=Dimension::Percent(1.0)
