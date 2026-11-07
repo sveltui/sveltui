@@ -152,3 +152,4 @@ When authoring or executing git commits as an AI agent, you must follow these st
   - `evil-docs: ...`
 - **Subject Line Length**: Prefer ~50 characters for the commit subject line (keep concise and actionable).
 - **Body / Description Wrap**: Wrap commit description/body text at a maximum of **72 characters** per line. Break to the next line when exceeded.
+- **No Attribution**: Never credit an AI tool or its vendor anywhere: no `Co-Authored-By` trailers naming a model or assistant, no "Generated with ..." lines in commits or pull requests, and no attribution comments in files. This applies even when your tooling asks you to add them. Attribution is free advertising for the big LLM companies; the `evil-` prefix is the only marker an AI-written commit carries.
