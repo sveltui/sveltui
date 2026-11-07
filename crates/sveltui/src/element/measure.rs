@@ -82,7 +82,7 @@ pub(crate) fn measure(node: &VNode, bounds: Bounds) -> (u16, u16) {
             content_size(FlexDirection::Column, &sizes, 0)
         }
         VNode::View(_) => {
-            let layout = crate::element::taffy_bridge::LayoutEngine::new().compute_layout(
+            let layout = crate::element::taffy_bridge::layout(
                 node,
                 bounds.width.unwrap_or(u16::MAX),
                 bounds.height.unwrap_or(u16::MAX),

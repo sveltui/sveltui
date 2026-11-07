@@ -9,6 +9,8 @@ pub mod measure;
 pub mod node;
 pub mod provider;
 pub mod render;
+#[cfg(test)]
+mod render_tests;
 pub mod scroll;
 pub mod snippet;
 pub mod taffy_bridge;

@@ -1,9 +1,9 @@
 use crate::element::events::{HitMap, HitTarget, LayoutTarget, ScrollRegion};
 use crate::element::focus::next_render_focus_id;
-use crate::element::measure::measure_node;
 use crate::element::node::{OverlayElement, VNode};
 use crate::element::scroll::get_scroll;
 use crate::element::taffy_bridge::ComputedLayoutNode;
+use crate::element::taffy_bridge::layout;
 use crate::layout::{BorderStyle, Rect, compute_popover_rect};
 use crate::terminal::Buffer;
 use crossterm::style::Color;
@@ -89,7 +89,11 @@ pub fn render_node_interactive(
     hit_map: &mut HitMap,
 ) {
     hit_map.collect_interactions(node);
-    let (width, height) = measure_node(node, rect.width, rect.height);
+    // One layout for the whole tree. Its root size is what the node
+    // measures to, and its children are passed down so nothing below lays
+    // out again.
+    let root_layout = layout(node, rect.width, rect.height);
+    let (width, height) = (root_layout.rect.width, root_layout.rect.height);
     let mut overlays = Vec::new();
     {
         let mut ctx = RenderContext {
@@ -103,7 +107,7 @@ pub fn render_node_interactive(
         };
         render_node_offset_internal(
             node,
-            None,
+            Some(&root_layout),
             rect.x as i32,
             rect.y as i32,
             width,
@@ -131,7 +135,8 @@ pub fn render_node_offset(
     hit_map: &mut HitMap,
 ) {
     hit_map.collect_interactions(node);
-    let (width, height) = measure_node(node, width, height);
+    let root_layout = layout(node, width, height);
+    let (width, height) = (root_layout.rect.width, root_layout.rect.height);
     let mut overlays = Vec::new();
     {
         let mut ctx = RenderContext {
@@ -143,7 +148,7 @@ pub fn render_node_offset(
             active_fg: None,
             active_bg: None,
         };
-        render_node_offset_internal(node, None, x, y, width, height, &mut ctx);
+        render_node_offset_internal(node, Some(&root_layout), x, y, width, height, &mut ctx);
     }
 
     let screen_rect = Rect::new(0, 0, buffer.width, buffer.height);
@@ -204,8 +209,15 @@ fn render_single_overlay(
     });
 
     if let Some(content) = overlay.content {
-        let (cw, ch) = measure_node(&content, screen.width, screen.height);
+        let mut content_layout = layout(&content, screen.width, screen.height);
+        let (cw, ch) = (content_layout.rect.width, content_layout.rect.height);
         let popover_rect = compute_popover_rect(overlay.placement, (cw, ch), anchor_rect, screen);
+        // The popover can come out smaller than the content asked for, near
+        // a screen edge. Only then do we lay the content out again, at the
+        // size it actually got.
+        if (popover_rect.width, popover_rect.height) != (cw, ch) {
+            content_layout = layout(&content, popover_rect.width, popover_rect.height);
+        }
 
         hit_map.register(HitTarget {
             rect: popover_rect,
@@ -236,7 +248,7 @@ fn render_single_overlay(
         };
         render_node_offset_internal(
             &content,
-            None,
+            Some(&content_layout),
             popover_rect.x as i32,
             popover_rect.y as i32,
             popover_rect.width,
@@ -286,7 +298,7 @@ fn render_node_offset_internal(
     if let VNode::Overlay(overlay) = node {
         let anchor_rect = if let Some(ref trigger) = overlay.trigger {
             let anchor = Rect::new(x.max(0) as u16, y.max(0) as u16, width, height);
-            render_node_offset_internal(trigger, None, x, y, width, height, ctx);
+            render_node_offset_internal(trigger, layout, x, y, width, height, ctx);
             Some(anchor)
         } else {
             None
@@ -380,14 +392,11 @@ fn render_node_offset_internal(
         VNode::Fragment(children) => {
             let mut curr_y = y;
             for (idx, child) in children.iter().enumerate() {
-                let child_layout = layout.and_then(|l| l.children.get(idx));
-                let (cw, ch) = if let Some(cl) = child_layout {
-                    (cl.rect.width, cl.rect.height)
-                } else {
-                    let (_, ch) = measure_node(child, width, height);
-                    (width, ch.min(height))
+                let Some(child_layout) = layout.and_then(|l| l.children.get(idx)) else {
+                    continue;
                 };
-                render_node_offset_internal(child, child_layout, x, curr_y, cw, ch, ctx);
+                let (cw, ch) = (child_layout.rect.width, child_layout.rect.height);
+                render_node_offset_internal(child, Some(child_layout), x, curr_y, cw, ch, ctx);
                 curr_y = curr_y.saturating_add(ch as i32);
             }
         }
@@ -541,17 +550,11 @@ fn render_node_offset_internal(
                 }
             }
 
-            if width > 0 && height > 0 && !v.children.is_empty() {
-                let computed_storage;
-                let computed = match layout {
-                    Some(l) => l,
-                    None => {
-                        let mut engine = crate::element::taffy_bridge::LayoutEngine::new();
-                        computed_storage = engine.compute_layout(node, width, height);
-                        &computed_storage
-                    }
-                };
-
+            // Every caller passes the node's layout down from the one pass
+            // at the root, so there's nothing to lay out here.
+            if let Some(computed) =
+                layout.filter(|_| width > 0 && height > 0 && !v.children.is_empty())
+            {
                 let is_scroll_x = v.overflow_x == taffy::style::Overflow::Scroll;
                 let is_scroll_y = v.overflow_y == taffy::style::Overflow::Scroll;
                 let is_scrollable = is_scroll_x || is_scroll_y;

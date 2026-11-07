@@ -12,10 +12,22 @@ pub struct ComputedLayoutNode {
     pub children: Vec<ComputedLayoutNode>,
 }
 
-pub struct TextMeasureData {
-    pub content: String,
-    pub wrap: bool,
-    pub max_lines: Option<usize>,
+/// Measured sizes for one text node, keyed by the width it was measured
+/// against. Taffy asks about the same text several times per pass (min,
+/// max and definite widths), and wrapping is the expensive part.
+#[derive(Default)]
+struct TextSizes(Vec<(Option<u16>, (f32, f32))>);
+
+impl TextSizes {
+    fn get(&mut self, text: &TextElement, width: Option<u16>) -> (f32, f32) {
+        if let Some(&(_, size)) = self.0.iter().find(|(w, _)| *w == width) {
+            return size;
+        }
+        let (widest, count) = crate::element::text::size(text, width);
+        let size = (widest as f32, count as f32);
+        self.0.push((width, size));
+        size
+    }
 }
 
 pub fn view_to_taffy_style(view: &ViewElement) -> taffy::style::Style {
@@ -94,8 +106,34 @@ pub fn view_to_taffy_style(view: &ViewElement) -> taffy::style::Style {
     }
 }
 
+/// Builds a taffy tree from a VNode tree and lays it out. The tree's
+/// storage is kept between calls, so reusing one engine saves allocating
+/// it again every frame.
 pub struct LayoutEngine {
-    tree: TaffyTree<TextMeasureData>,
+    /// Text leaves carry their index into the `texts` list built for each pass.
+    tree: TaffyTree<usize>,
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How many layout passes have run on this thread, so tests can check a
+    /// frame doesn't lay out more than it needs to.
+    pub(crate) static LAYOUT_PASSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+thread_local! {
+    static SHARED_ENGINE: std::cell::RefCell<LayoutEngine> =
+        std::cell::RefCell::new(LayoutEngine::new());
+}
+
+/// Lays out `root` with this thread's shared engine, so frames reuse its
+/// storage. If the shared engine is already busy (a layout running inside
+/// another), we fall back to a fresh one.
+pub fn layout(root: &VNode, available_w: u16, available_h: u16) -> ComputedLayoutNode {
+    SHARED_ENGINE.with(|engine| match engine.try_borrow_mut() {
+        Ok(mut engine) => engine.compute_layout(root, available_w, available_h),
+        Err(_) => LayoutEngine::new().compute_layout(root, available_w, available_h),
+    })
 }
 
 impl Default for LayoutEngine {
@@ -118,15 +156,18 @@ impl LayoutEngine {
         available_w: u16,
         available_h: u16,
     ) -> ComputedLayoutNode {
+        #[cfg(test)]
+        LAYOUT_PASSES.with(|passes| passes.set(passes.get() + 1));
         self.tree.clear();
-        let taffy_root = self.build_node(root);
+        let mut texts = Vec::new();
+        let taffy_root = self.build_node(root, &mut texts);
 
         let available = taffy::geometry::Size {
             width: AvailableSpace::Definite(available_w as f32),
             height: AvailableSpace::Definite(available_h as f32),
         };
 
-        self.compute_taffy_layout(taffy_root, available);
+        self.compute_taffy_layout(taffy_root, available, &texts);
 
         self.extract_node_layout(taffy_root, root)
     }
@@ -135,47 +176,39 @@ impl LayoutEngine {
         &mut self,
         root: NodeId,
         available: taffy::geometry::Size<AvailableSpace>,
+        texts: &[&TextElement],
     ) {
+        let mut sizes: Vec<TextSizes> = texts.iter().map(|_| TextSizes::default()).collect();
         let _ = self.tree.compute_layout_with_measure(
             root,
             available,
             |known_dimensions, available_space, _node_id, context, _style| {
-                if let Some(ctx) = context {
-                    let max_width = match available_space.width {
-                        AvailableSpace::Definite(w) => Some(w.max(0.0) as u16),
-                        _ => None,
-                    };
-                    let text_elem = TextElement {
-                        content: ctx.content.clone(),
-                        wrap: ctx.wrap,
-                        max_lines: ctx.max_lines,
-                        ..Default::default()
-                    };
-                    let lines = crate::element::text::lines(&text_elem, max_width);
-                    let max_len = lines.iter().map(|l| l.chars().count()).max().unwrap_or(0);
-                    let line_count = lines.len();
-                    taffy::geometry::Size {
-                        width: known_dimensions.width.unwrap_or(max_len as f32),
-                        height: known_dimensions.height.unwrap_or(line_count as f32),
+                let (width, height) = match context {
+                    Some(&mut index) => {
+                        let max_width = match available_space.width {
+                            AvailableSpace::Definite(w) => Some(w.max(0.0) as u16),
+                            _ => None,
+                        };
+                        sizes[index].get(texts[index], max_width)
                     }
-                } else {
-                    taffy::geometry::Size {
-                        width: known_dimensions.width.unwrap_or(0.0),
-                        height: known_dimensions.height.unwrap_or(0.0),
-                    }
+                    None => (0.0, 0.0),
+                };
+                taffy::geometry::Size {
+                    width: known_dimensions.width.unwrap_or(width),
+                    height: known_dimensions.height.unwrap_or(height),
                 }
             },
         );
     }
 
-    fn build_node(&mut self, node: &VNode) -> NodeId {
+    fn build_node<'a>(&mut self, node: &'a VNode, texts: &mut Vec<&'a TextElement>) -> NodeId {
         match node {
             VNode::View(view) => {
                 let style = view_to_taffy_style(view);
                 let child_ids: Vec<NodeId> = view
                     .children
                     .iter()
-                    .map(|child| self.build_node(child))
+                    .map(|child| self.build_node(child, texts))
                     .collect();
                 self.tree
                     .new_with_children(style, &child_ids)
@@ -183,7 +216,7 @@ impl LayoutEngine {
             }
             VNode::Pressable(pressable) => {
                 if pressable.children.len() == 1 {
-                    self.build_node(&pressable.children[0])
+                    self.build_node(&pressable.children[0], texts)
                 } else if pressable.children.is_empty() {
                     self.tree.new_leaf(Style::default()).unwrap()
                 } else {
@@ -199,7 +232,7 @@ impl LayoutEngine {
                     let child_ids: Vec<NodeId> = pressable
                         .children
                         .iter()
-                        .map(|c| self.build_node(c))
+                        .map(|c| self.build_node(c, texts))
                         .collect();
                     self.tree
                         .new_with_children(style, &child_ids)
@@ -242,18 +275,14 @@ impl LayoutEngine {
                     flex_shrink: 0.0,
                     ..Default::default()
                 };
-                let context = TextMeasureData {
-                    content: text.content.clone(),
-                    wrap: text.wrap,
-                    max_lines: text.max_lines,
-                };
+                texts.push(text);
                 self.tree
-                    .new_leaf_with_context(style, context)
+                    .new_leaf_with_context(style, texts.len() - 1)
                     .unwrap_or_else(|_| self.tree.new_leaf(Style::default()).unwrap())
             }
             VNode::Overlay(overlay) => {
                 if let Some(trigger) = &overlay.trigger {
-                    self.build_node(trigger)
+                    self.build_node(trigger, texts)
                 } else {
                     self.tree
                         .new_leaf(Style {
@@ -282,7 +311,7 @@ impl LayoutEngine {
                         ..Default::default()
                     };
                     let child_ids: Vec<NodeId> =
-                        children.iter().map(|c| self.build_node(c)).collect();
+                        children.iter().map(|c| self.build_node(c, texts)).collect();
                     self.tree
                         .new_with_children(style, &child_ids)
                         .unwrap_or_else(|_| self.tree.new_leaf(Style::default()).unwrap())
