@@ -1,9 +1,7 @@
 use sveltui::prelude::*;
 use sveltui_components::*;
 
-mod the_raven;
-
-use the_raven::THE_RAVEN;
+use sveltui_examples::fixtures::THE_RAVEN;
 
 #[cfg(test)]
 mod paragraph_tests;

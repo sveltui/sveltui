@@ -59,3 +59,50 @@ fn core_only_custom_control_has_the_same_focus_and_activation_capabilities() {
     manager.pointer_down(target, 0, 0);
     assert_eq!(count.get(), 2);
 }
+
+#[test]
+fn on_focus_fires_once_when_input_moves_focus_and_never_from_render() {
+    let log = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let item = |id: usize, log: &Rc<std::cell::RefCell<Vec<usize>>>| {
+        let log = log.clone();
+        view! {
+            <Pressable focus_id=FocusId(id) tab_stop=true
+                on_focus={move || log.borrow_mut().push(id)}>
+                <TextSpan>{format!("item {id}")}</TextSpan>
+            </Pressable>
+        }
+    };
+    let build = || {
+        let group = FocusGroup {
+            orientation: Orientation::Horizontal,
+            wrap: true,
+            typeahead: false,
+            disabled_focusable: false,
+        };
+        view! {
+            <Pressable focus_group=group>
+                <View flex_direction=FlexDirection::Row gap=1>
+                    {item(1, &log)}
+                    {item(2, &log)}
+                </View>
+            </Pressable>
+        }
+    };
+    let mut manager = FocusManager::new();
+    render(&mut manager, build);
+    assert!(log.borrow().is_empty(), "rendering never fires on_focus");
+
+    manager.dispatch(key(KeyCode::Tab));
+    render(&mut manager, build);
+    manager.dispatch(key(KeyCode::Right));
+    render(&mut manager, build);
+    render(&mut manager, build);
+    assert_eq!(*log.borrow(), vec![1, 2]);
+
+    // Keys that do not move focus do not fire it again.
+    manager.dispatch(key(KeyCode::Char('x')));
+    // Programmatic focus is not input and does not fire it.
+    manager.focus(FocusId(1));
+    render(&mut manager, build);
+    assert_eq!(*log.borrow(), vec![1, 2]);
+}

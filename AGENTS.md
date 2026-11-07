@@ -54,6 +54,7 @@ sveltui/
 │   └── sveltui-macros/           # Declarative JSX macro (`view! { ... }`, `#[component]`)
 └── examples/                   # `sveltui-examples` package (publish = false)
     ├── Cargo.toml                # Registers every example with an explicit [[example]]
+    ├── src/fixtures/             # Shared data, used as `sveltui_examples::fixtures::*`
     ├── hello_world/main.rs
     ├── framework/<name>/main.rs  # cargo run --example framework_<name>
     ├── components/<name>/        # cargo run --example component_<name>

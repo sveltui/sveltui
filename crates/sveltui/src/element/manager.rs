@@ -105,20 +105,31 @@ impl FocusManager {
                     && !excluded.iter().any(|&id| self.tree.contains(n.id, id))
             })
             .collect();
+        // A group exposes one tab stop: its selected member (tabs, radios),
+        // else the member focused last, else its first member.
         let mut group_heads = HashMap::new();
         for node in &candidates {
             if let Some(group) = self.tree.group(node.id) {
-                let active = self.group_active.get(&group.id).copied().filter(|&id| {
+                let in_group = |id: FocusId| {
                     self.eligible(id)
                         && self.allowed(id)
                         && self.tree.group(id).is_some_and(|g| g.id == group.id)
                         && !excluded
                             .iter()
                             .any(|&ancestor| self.tree.contains(id, ancestor))
-                });
+                };
+                let selected = candidates
+                    .iter()
+                    .find(|n| n.interaction.semantics.selected == Some(true) && in_group(n.id))
+                    .map(|n| n.id);
+                let active = self
+                    .group_active
+                    .get(&group.id)
+                    .copied()
+                    .filter(|&id| in_group(id));
                 group_heads
                     .entry(group.id)
-                    .or_insert(active.unwrap_or(node.id));
+                    .or_insert(selected.or(active).unwrap_or(node.id));
             }
         }
         candidates
@@ -728,6 +739,7 @@ impl FocusManager {
         {
             let before = self.focused;
             self.focus(id);
+            self.notify_focus(before);
             if kind == MenuTriggerKind::Context {
                 return DispatchOutcome {
                     handled: true,
@@ -753,6 +765,7 @@ impl FocusManager {
         let mut activated = false;
         if let Some(id) = target.focus_id {
             self.focus(id);
+            self.notify_focus(before);
             if let Some(node) = self.tree.node(id) {
                 let code = match node.interaction.activation {
                     Activation::Press => Some(KeyCode::Enter),
@@ -1202,8 +1215,25 @@ impl FocusManager {
             handled = true;
         }
         let mut outcome = self.apply(context);
+        self.notify_focus(before);
         outcome.changed |= before != self.focused || handled;
         outcome.handled = handled;
         outcome
+    }
+
+    /// Runs the newly focused node's `on_focus` handler when input moved
+    /// focus away from `before`. Render-time reconciliation never calls
+    /// this, so focus restoration cannot write state during a render.
+    fn notify_focus(&self, before: Option<FocusId>) {
+        if self.focused == before {
+            return;
+        }
+        if let Some(handler) = self
+            .focused
+            .and_then(|id| self.tree.node(id))
+            .and_then(|node| node.on_focus.clone())
+        {
+            self.with_context(|| handler());
+        }
     }
 }

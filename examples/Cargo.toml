@@ -99,6 +99,11 @@ path = "components/scroll/main.rs"
 test = true
 
 [[example]]
+name = "component_tabs"
+path = "components/tabs/main.rs"
+test = true
+
+[[example]]
 name = "component_paragraph"
 path = "components/paragraph/main.rs"
 test = true

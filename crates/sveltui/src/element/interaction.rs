@@ -101,6 +101,7 @@ pub enum Role {
     Treegrid,
     TabList,
     Tab,
+    TabPanel,
     Toolbar,
     RadioGroup,
     Radio,
@@ -117,6 +118,9 @@ pub struct Semantics {
     pub selected: Option<bool>,
     pub expanded: Option<bool>,
     pub controls: Option<FocusId>,
+    /// The element that names this one (`aria-labelledby`), e.g. the tab
+    /// that labels a tab panel.
+    pub labelled_by: Option<FocusId>,
     pub has_popup: Option<Role>,
     pub modal: Option<bool>,
     pub parent_item: Option<FocusId>,
@@ -143,6 +147,14 @@ impl Semantics {
     }
     pub fn controls(mut self, id: FocusId) -> Self {
         self.controls = Some(id);
+        self
+    }
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = Some(selected);
+        self
+    }
+    pub fn labelled_by(mut self, id: FocusId) -> Self {
+        self.labelled_by = Some(id);
         self
     }
 }
@@ -300,6 +312,7 @@ pub struct InteractionNode {
     pub interaction: Interaction,
     pub on_key: Option<KeyHandler>,
     pub on_activate: Option<Rc<dyn Fn()>>,
+    pub on_focus: Option<Rc<dyn Fn()>>,
     pub on_scroll: Option<Rc<dyn Fn(i16, i16)>>,
 }
 
@@ -387,6 +400,7 @@ impl InteractionTree {
                             interaction,
                             on_key: p.on_key.clone(),
                             on_activate: p.on_click.clone(),
+                            on_focus: p.on_focus.clone(),
                             on_scroll: None,
                         });
                     }
@@ -437,6 +451,7 @@ impl InteractionTree {
                             },
                             on_key: o.on_key.clone(),
                             on_activate: None,
+                            on_focus: None,
                             on_scroll: None,
                         });
                         ancestry.push(o.id);

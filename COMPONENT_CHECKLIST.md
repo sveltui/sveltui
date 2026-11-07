@@ -14,9 +14,9 @@ Sveltui follows a declarative, reactive architecture built on top of `crossterm`
 | Metric | Count | Details |
 |---|:---:|---|
 | **Total Component Patterns Tracked** | **42** | Covering standard ARIA APG, Bits-UI, and Base UI component suites |
-| **Implemented (Ready for Use)** | **14** | Production-ready in [`sveltui-components`](./crates/sveltui-components/src/lib/lib_component.rs) and [`sveltui`](./crates/sveltui/src/lib.rs) core |
+| **Implemented (Ready for Use)** | **15** | Production-ready in [`sveltui-components`](./crates/sveltui-components/src/lib.rs) and [`sveltui`](./crates/sveltui/src/lib.rs) core |
 | **Partial / Core Primitives Ready** | **5** | Selection models and layout primitives available in core for widget composition |
-| **Planned / Future Roadmap** | **23** | Scheduled for subsequent releases |
+| **Planned / Future Roadmap** | **22** | Scheduled for subsequent releases |
 
 ### Interaction & Theming Foundations
 - **Focus & Keyboard Navigation**: Managed via [`FocusId`](./crates/sveltui/src/element/focus.rs), [`use_focus`](./crates/sveltui/src/element/focus.rs), explicit `tab_stop=true`, and [`FocusGroup`](./crates/sveltui/src/element/interaction.rs) roving tabindex.
@@ -41,15 +41,16 @@ Sveltui follows a declarative, reactive architecture built on top of `crossterm`
 11. [`DropdownMenu`](./crates/sveltui-components/src/menu/menu_component.rs) — Composable menu (`Root`, `Trigger`, `Content`, `Item`, `Group`, `Sub`, `Separator`).
 12. [`ContextMenu`](./crates/sveltui-components/src/menu/menu_component.rs) — Right-click / pointer-positioned contextual popup menu.
 13. [`MenuBar`](./crates/sveltui-components/src/menu/menu_component.rs) — Horizontal desktop application menu bar with single Tab stop and arrow coordination.
+14. [`Tabs`](./crates/sveltui-components/src/tabs/tabs_component.rs) — Composable tabs (`Root`, `List`, `Trigger`, `Content`) with roving focus, automatic or manual activation, and horizontal or vertical orientation.
 
 ### Core Framework Layout & Element Primitives (`crates/sveltui`)
-14. [`View`](./crates/sveltui/src/element/node.rs) — Unified Taffy-powered layout container supporting sizing, layout, scrollbars, borders, padding, and visual styling.
-15. [`Paragraph`](./crates/sveltui/src/element/text.rs) — Word-wrapped formatted text block with scrolling.
-16. [`TextSpan`](./crates/sveltui/src/element/text.rs) / [`TextElement`](./crates/sveltui/src/element/text.rs) — Text runs with `fg`, `bg`, `bold`, `dim`, `italic`, `underline`.
-17. [`Overlay`](./crates/sveltui/src/element/boundary.rs) — Root floating layer primitive with modal/non-modal policies and backdrop rendering.
-18. [`ErrorBoundary`](./crates/sveltui/src/element/boundary.rs) — Declarative panic catcher with fallback snippets.
-19. [`ContextProvider`](./crates/sveltui/src/element/provider.rs) — Scoped context dependency injection.
-20. [`Collection` / Selection Primitives](./crates/sveltui/src/element/collection.rs) — Headless selection models (`Selection`, `GridSelection`, `TreeSelection`, `Typeahead`).
+15. [`View`](./crates/sveltui/src/element/node.rs) — Unified Taffy-powered layout container supporting sizing, layout, scrollbars, borders, padding, and visual styling.
+16. [`Paragraph`](./crates/sveltui/src/element/text.rs) — Word-wrapped formatted text block with scrolling.
+17. [`TextSpan`](./crates/sveltui/src/element/text.rs) / [`TextElement`](./crates/sveltui/src/element/text.rs) — Text runs with `fg`, `bg`, `bold`, `dim`, `italic`, `underline`.
+18. [`Overlay`](./crates/sveltui/src/element/boundary.rs) — Root floating layer primitive with modal/non-modal policies and backdrop rendering.
+19. [`ErrorBoundary`](./crates/sveltui/src/element/boundary.rs) — Declarative panic catcher with fallback snippets.
+20. [`ContextProvider`](./crates/sveltui/src/element/provider.rs) — Scoped context dependency injection.
+21. [`Collection` / Selection Primitives](./crates/sveltui/src/element/collection.rs) — Headless selection models (`Selection`, `GridSelection`, `TreeSelection`, `Typeahead`).
 
 ---
 
@@ -86,7 +87,7 @@ The table below catalogs components across **WCAG ARIA**, **Bits-UI**, and **Bas
 | `[ ]` | **Accordion** | Disclosure | WCAG APG / Bits-UI / Base UI | <kbd>Tab</kbd> between headers; <kbd>Enter</kbd>/<kbd>Space</kbd> toggles panel; optional roving arrows (<kbd>↑</kbd>/<kbd>↓</kbd>, <kbd>Home</kbd>/<kbd>End</kbd>) | Click header expands/collapses accordion item | Single / multiple open mode; custom trigger and content slots; animated indicator character (`▼`/`▶`) | Planned |
 | `[ ]` | **Collapsible / Disclosure** | Disclosure | Bits-UI / Base UI / APG | <kbd>Tab</kbd> to trigger; <kbd>Enter</kbd>/<kbd>Space</kbd> toggles content visibility | Click trigger expands or collapses section | Open signal binding, custom trigger slot, border styling, transition/expansion height | Planned |
 | `[ ]` | **Radio Group & Radio** | Form / Selection | WCAG APG / Bits-UI / Base UI | Single <kbd>Tab</kbd> stop for group; <kbd>↑</kbd>/<kbd>←</kbd> and <kbd>↓</kbd>/<kbd>→</kbd> moves selection between radio buttons with wrap; <kbd>Space</kbd> selects | Click radio item selects option | `name`, `value` binding, radio indicator styles (`(•)` vs `( )`), horizontal/vertical orientation | Planned (`Role::RadioGroup` & `Role::Radio` exist in core) |
-| `[ ]` | **Tabs** | Navigation | WCAG APG / Bits-UI / Base UI | Single <kbd>Tab</kbd> stop on tab list; <kbd>←</kbd>/<kbd>→</kbd> (or <kbd>↑</kbd>/<kbd>↓</kbd>) navigates tabs; automatic vs manual activation on focus; <kbd>Tab</kbd> into panel | Click tab activates tab panel | Horizontal / vertical orientation, active tab indicator, border underline / pill styling | Planned (`Role::TabList` & `Role::Tab` exist in core) |
+| `[x]` | **Tabs** | Navigation | WCAG APG / Bits-UI / Base UI | Single <kbd>Tab</kbd> stop on tab list (lands on the selected tab); <kbd>←</kbd>/<kbd>→</kbd> (or <kbd>↑</kbd>/<kbd>↓</kbd> when vertical) navigates tabs with optional wrap; <kbd>Home</kbd>/<kbd>End</kbd>; automatic (select on focus) or manual (<kbd>Enter</kbd>/<kbd>Space</kbd>) activation; <kbd>Tab</kbd> into panel | Click tab focuses and activates it | `orientation`, `activation_mode`, `loop_focus`, controlled `value` / `on_value_change` or `default_value`; selected tab bold + underlined, focused tab inverted; inactive panels unmounted | [`Tabs`](./crates/sveltui-components/src/tabs/tabs_component.rs) |
 | `[ ]` | **Slider** | Form / Input | WCAG APG / Bits-UI / Base UI | <kbd>Tab</kbd> focus thumb; <kbd>←</kbd>/<kbd>↓</kbd> decreases value; <kbd>→</kbd>/<kbd>↑</kbd> increases value; <kbd>PageDown</kbd>/<kbd>PageUp</kbd> large step; <kbd>Home</kbd>/<kbd>End</kbd> min/max | Click/drag along track updates thumb position | `min`, `max`, `step`, track character (`─`), thumb character (`●`), range fill color | Planned |
 | `[ ]` | **Number Field / Spinbutton** | Form / Input | WCAG APG / Bits-UI / Base UI | <kbd>↑</kbd> increments; <kbd>↓</kbd> decrements; <kbd>PageUp</kbd>/<kbd>PageDown</kbd> large steps; <kbd>Home</kbd>/<kbd>End</kbd> min/max; numeric typing | Click stepper buttons `[+]` / `[-]` | `min`, `max`, `step`, `format`, input box styling, stepper button borders | Planned |
 | `[ ]` | **Tooltip** | Feedback / Overlay | WCAG APG / Bits-UI / Base UI | Focus on trigger displays tooltip after delay; <kbd>Escape</kbd> dismisses; blur hides | Hover over trigger shows tooltip; mouse leave hides | `placement`, delay duration (ms), arrow character, background/border color | Planned |

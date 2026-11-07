@@ -7,6 +7,7 @@ pub mod menu;
 pub mod popover;
 pub mod progress_bar;
 pub mod switch;
+pub mod tabs;
 pub mod text_area;
 pub mod text_buffer;
 pub mod text_input;
@@ -46,6 +47,14 @@ pub mod MenuBar {
 pub use popover::{Popover, PopoverProps};
 pub use progress_bar::{ProgressBar, ProgressBarProps};
 pub use switch::{Switch, SwitchBinding, SwitchProps};
+/// Composable tabs: `Tabs::Root`, `Tabs::List`, `Tabs::Trigger`, `Tabs::Content`.
+#[allow(non_snake_case)]
+pub mod Tabs {
+    pub use crate::tabs::{
+        Content, ContentProps, List, ListProps, Root, RootProps, Trigger, TriggerProps,
+    };
+}
+pub use tabs::TabsActivation;
 pub use text_area::{TextArea, TextAreaProps};
 pub use text_buffer::*;
 pub use text_input::{TextInput, TextInputBinding, TextInputProps, get_cursor, set_cursor};
