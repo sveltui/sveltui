@@ -99,8 +99,9 @@ pub mod prelude {
     };
     pub use crate::layout::{
         AlignContent, AlignItems, AlignSelf, BorderStyle, Dimension, Display, FlexDirection,
-        FlexDirectionExt, FlexWrap, IntoDimension, JustifyContent, Margin, Overflow, OverflowExt,
-        Padding, Placement, Point, Position, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility,
+        FlexDirectionExt, FlexWrap, Inset, IntoDimension, JustifyContent, Margin, MarginEdge,
+        Overflow, OverflowExt, Padding, Placement, Point, Position, ScrollbarChars, ScrollbarStyle,
+        ScrollbarVisibility,
     };
     pub use crate::reactive::{
         AsyncState, Bindable, BlockingFuture, ComponentScope, Derived, ReadSignal, State,

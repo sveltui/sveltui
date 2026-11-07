@@ -228,24 +228,24 @@ pub fn Trigger(props: TriggerProps) -> VNode {
         }
     });
     let inner_view = if kind == MenuTriggerKind::Submenu {
-        let mut v = ViewElement::new();
-        v.width = Dimension::Auto;
-        v.flex_direction = FlexDirection::Row;
-        v.visual_mut().background_color = bg;
-        v.visual_mut().foreground_color = Some(fg);
-        let mut sub = ViewElement::new();
-        sub.flex_grow = 1.0;
-        sub.flex_basis = Dimension::Length(0.0);
-        sub.overflow_x = Overflow::Hidden;
-        sub.padding = Padding::only(0, 0, 0, 1);
-        sub = sub.child(children);
-        v.child(sub).child(TextElement::new("› ").fg(fg))
+        let sub = ViewElement::new()
+            .flex_grow(1.0)
+            .flex_basis(Dimension::Length(0.0))
+            .overflow_x(Overflow::Hidden)
+            .padding(Padding::only(0, 0, 0, 1))
+            .child(children);
+        ViewElement::new()
+            .flex_direction(FlexDirection::Row)
+            .background_color(bg)
+            .foreground_color(fg)
+            .child(sub)
+            .child(TextElement::new("› ").fg(fg))
     } else {
-        let mut v = ViewElement::new();
-        v.visual_mut().background_color = bg;
-        v.visual_mut().foreground_color = Some(fg);
-        v.padding = Padding::symmetric(1, 0);
-        v.child(children)
+        ViewElement::new()
+            .background_color(bg)
+            .foreground_color(fg)
+            .padding(Padding::symmetric(1, 0))
+            .child(children)
     };
 
     let mut pressable = PressableElement::new();
@@ -347,13 +347,12 @@ pub fn Item(props: ItemProps) -> VNode {
             EventResult::Ignored
         }
     });
-    let mut v = ViewElement::new();
-    v.width = Dimension::Auto;
-    v.height = Dimension::Length(1.0);
-    v.visual_mut().foreground_color = Some(fg);
-    v.visual_mut().background_color = active.then_some(props.focus_bg.unwrap_or(Color::White));
-    v.padding = Padding::symmetric(1, 0);
-    v = v.child(children);
+    let v = ViewElement::new()
+        .height(1)
+        .foreground_color(fg)
+        .background_color(active.then_some(props.focus_bg.unwrap_or(Color::White)))
+        .padding(Padding::symmetric(1, 0))
+        .child(children);
 
     let mut pressable = PressableElement::new();
     pressable.focus_id = Some(id);

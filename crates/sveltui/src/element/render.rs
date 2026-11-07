@@ -471,8 +471,6 @@ fn render_node_offset_internal(
             }
 
             // 2. Draw border
-            let border_w: u16 = if border != BorderStyle::None { 1 } else { 0 };
-            let border_h: u16 = if border != BorderStyle::None { 1 } else { 0 };
 
             if let Some(chars) = border.chars().filter(|_| width >= 2 && height >= 2) {
                 let right = x + width as i32 - 1;
@@ -520,12 +518,13 @@ fn render_node_offset_internal(
                 }
             }
 
-            let inner_x = x + border_w as i32 + v.padding.left as i32;
-            let inner_y = y + border_h as i32 + v.padding.top as i32;
-            let extra_w = border_w * 2 + v.padding.left + v.padding.right;
-            let extra_h = border_h * 2 + v.padding.top + v.padding.bottom;
-            let inner_w = width.saturating_sub(extra_w);
-            let inner_h = height.saturating_sub(extra_h);
+            // Where the children's area starts: border plus padding, as
+            // layout resolved them.
+            let inset = layout.map(|l| l.content_inset).unwrap_or_default();
+            let inner_x = x + inset.left as i32;
+            let inner_y = y + inset.top as i32;
+            let inner_w = width.saturating_sub(inset.left + inset.right);
+            let inner_h = height.saturating_sub(inset.top + inset.bottom);
 
             if let Some(vis) = &v.visual {
                 if let Some((cx_off, cy_off)) = vis.cursor_offset {
@@ -555,8 +554,9 @@ fn render_node_offset_internal(
             if let Some(computed) =
                 layout.filter(|_| width > 0 && height > 0 && !v.children.is_empty())
             {
-                let is_scroll_x = v.overflow_x == taffy::style::Overflow::Scroll;
-                let is_scroll_y = v.overflow_y == taffy::style::Overflow::Scroll;
+                let overflow = v.style.overflow;
+                let is_scroll_x = overflow.x == taffy::style::Overflow::Scroll;
+                let is_scroll_y = overflow.y == taffy::style::Overflow::Scroll;
                 let is_scrollable = is_scroll_x || is_scroll_y;
                 // A fixed-size overlay may be allocated less than its requested
                 // size. Keep its content clip and scroll range inside that allocation.
@@ -664,8 +664,8 @@ fn render_node_offset_internal(
                     });
                 }
 
-                let is_clip_x = is_scroll_x || v.overflow_x == taffy::style::Overflow::Hidden;
-                let is_clip_y = is_scroll_y || v.overflow_y == taffy::style::Overflow::Hidden;
+                let is_clip_x = is_scroll_x || overflow.x == taffy::style::Overflow::Hidden;
+                let is_clip_y = is_scroll_y || overflow.y == taffy::style::Overflow::Hidden;
                 let mut clipped = false;
                 if is_clip_x || is_clip_y {
                     let clip_x = inner_x.max(0) as u16;

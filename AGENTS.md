@@ -57,6 +57,7 @@ sveltui/
     ├── src/fixtures/             # Shared data, used as `sveltui_examples::fixtures::*`
     ├── hello_world/main.rs
     ├── framework/<name>/main.rs  # cargo run --example framework_<name>
+    ├── layout/<name>/            # cargo run --example layout_<name> (View layout props)
     ├── components/<name>/        # cargo run --example component_<name>
     │   ├── main.rs
     │   └── <name>_tests.rs       # optional; example sets `test = true`

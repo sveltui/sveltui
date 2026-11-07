@@ -5,15 +5,17 @@ use crate::element::interaction::{
 };
 use crate::element::snippet::{IntoPropOption, Snippet};
 use crate::layout::{
-    BorderStyle, Dimension, FlexDirection, IntoDimension, Margin, Overflow, Padding, Placement,
-    ScrollbarStyle, ScrollbarVisibility,
+    BorderStyle, Dimension, FlexDirection, Inset, IntoDimension, Margin, Overflow, Padding,
+    Placement, ScrollbarStyle, ScrollbarVisibility,
 };
 use crate::terminal::CursorStyle;
 use crossterm::event::KeyEvent;
 use crossterm::style::Color;
 use std::fmt;
 use std::rc::Rc;
-use taffy::style::{AlignItems, AlignSelf, FlexWrap, JustifyContent};
+use taffy::style::{
+    AlignContent, AlignItems, AlignSelf, Display, FlexWrap, JustifyContent, Position,
+};
 
 #[derive(Clone, Debug, Default)]
 pub struct TextElement {
@@ -365,66 +367,327 @@ impl fmt::Debug for ScrollData {
     }
 }
 
+/// Every `View` prop, written once. It's expanded into both `ViewElement`
+/// and `ViewPropsBuilder`, which each provide `view_mut()` to reach the
+/// element being built, so the two can't drift apart.
+macro_rules! view_setters {
+    () => {
+        // Size
+
+        pub fn width(mut self, width: impl IntoDimension) -> Self {
+            self.view_mut().style.size.width = width.into_dimension();
+            self
+        }
+
+        pub fn height(mut self, height: impl IntoDimension) -> Self {
+            self.view_mut().style.size.height = height.into_dimension();
+            self
+        }
+
+        pub fn min_width(mut self, width: impl IntoPropOption<Dimension>) -> Self {
+            self.view_mut().style.min_size.width =
+                width.into_prop_option().unwrap_or(Dimension::Auto);
+            self
+        }
+
+        pub fn max_width(mut self, width: impl IntoPropOption<Dimension>) -> Self {
+            self.view_mut().style.max_size.width =
+                width.into_prop_option().unwrap_or(Dimension::Auto);
+            self
+        }
+
+        pub fn min_height(mut self, height: impl IntoPropOption<Dimension>) -> Self {
+            self.view_mut().style.min_size.height =
+                height.into_prop_option().unwrap_or(Dimension::Auto);
+            self
+        }
+
+        pub fn max_height(mut self, height: impl IntoPropOption<Dimension>) -> Self {
+            self.view_mut().style.max_size.height =
+                height.into_prop_option().unwrap_or(Dimension::Auto);
+            self
+        }
+
+        /// Width over height. Terminal cells are about twice as tall as they
+        /// are wide, so a square-looking box is roughly `2.0`.
+        pub fn aspect_ratio(mut self, ratio: impl IntoPropOption<f32>) -> Self {
+            self.view_mut().style.aspect_ratio = ratio.into_prop_option();
+            self
+        }
+
+        // Spacing
+
+        pub fn padding(mut self, padding: impl Into<Padding>) -> Self {
+            self.view_mut().style.padding = padding.into().to_taffy();
+            self
+        }
+
+        pub fn margin(mut self, margin: impl Into<Margin>) -> Self {
+            self.view_mut().style.margin = margin.into().to_taffy();
+            self
+        }
+
+        /// Space between children, both along and across the main axis.
+        pub fn gap(mut self, gap: u16) -> Self {
+            let gap = taffy::style::LengthPercentage::Length(f32::from(gap));
+            self.view_mut().style.gap = taffy::geometry::Size {
+                width: gap,
+                height: gap,
+            };
+            self
+        }
+
+        /// Space between rows (wrapped lines in a row layout, or children in
+        /// a column).
+        pub fn row_gap(mut self, gap: u16) -> Self {
+            self.view_mut().style.gap.height =
+                taffy::style::LengthPercentage::Length(f32::from(gap));
+            self
+        }
+
+        /// Space between columns (children in a row layout, or wrapped
+        /// lines in a column).
+        pub fn column_gap(mut self, gap: u16) -> Self {
+            self.view_mut().style.gap.width =
+                taffy::style::LengthPercentage::Length(f32::from(gap));
+            self
+        }
+
+        // Flex
+
+        pub fn display(mut self, display: Display) -> Self {
+            self.view_mut().style.display = display;
+            self
+        }
+
+        pub fn flex_direction(mut self, direction: FlexDirection) -> Self {
+            self.view_mut().style.flex_direction = direction;
+            self
+        }
+
+        pub fn flex_wrap(mut self, wrap: FlexWrap) -> Self {
+            self.view_mut().style.flex_wrap = wrap;
+            self
+        }
+
+        pub fn flex_grow(mut self, grow: f32) -> Self {
+            self.view_mut().style.flex_grow = grow;
+            self
+        }
+
+        pub fn flex_shrink(mut self, shrink: f32) -> Self {
+            self.view_mut().style.flex_shrink = shrink;
+            self
+        }
+
+        pub fn flex_basis(mut self, basis: impl IntoDimension) -> Self {
+            self.view_mut().style.flex_basis = basis.into_dimension();
+            self
+        }
+
+        pub fn align_items(mut self, align: impl IntoPropOption<AlignItems>) -> Self {
+            self.view_mut().style.align_items = align.into_prop_option();
+            self
+        }
+
+        pub fn align_self(mut self, align: impl IntoPropOption<AlignSelf>) -> Self {
+            self.view_mut().style.align_self = align.into_prop_option();
+            self
+        }
+
+        /// How wrapped lines share the space across the main axis.
+        pub fn align_content(mut self, align: impl IntoPropOption<AlignContent>) -> Self {
+            self.view_mut().style.align_content = align.into_prop_option();
+            self
+        }
+
+        pub fn justify_content(mut self, justify: impl IntoPropOption<JustifyContent>) -> Self {
+            self.view_mut().style.justify_content = justify.into_prop_option();
+            self
+        }
+
+        // Position
+
+        /// `Absolute` takes the view out of the flow and places it with
+        /// `inset`, relative to its parent.
+        pub fn position(mut self, position: Position) -> Self {
+            self.view_mut().style.position = position;
+            self
+        }
+
+        pub fn inset(mut self, inset: impl Into<Inset>) -> Self {
+            self.view_mut().style.inset = inset.into().to_taffy();
+            self
+        }
+
+        // Overflow and scrolling
+
+        pub fn overflow(mut self, overflow: Overflow) -> Self {
+            self.view_mut().style.overflow = taffy::geometry::Point {
+                x: overflow,
+                y: overflow,
+            };
+            self
+        }
+
+        pub fn overflow_x(mut self, overflow: Overflow) -> Self {
+            self.view_mut().style.overflow.x = overflow;
+            self
+        }
+
+        pub fn overflow_y(mut self, overflow: Overflow) -> Self {
+            self.view_mut().style.overflow.y = overflow;
+            self
+        }
+
+        pub fn scroll_x(mut self, x: u16) -> Self {
+            self.view_mut().scroll_mut().scroll_x = x;
+            self
+        }
+
+        pub fn scroll_y(mut self, y: u16) -> Self {
+            self.view_mut().scroll_mut().scroll_y = y;
+            self
+        }
+
+        pub fn scroll_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+            self.view_mut().scroll_mut().id = id.into_prop_option();
+            self
+        }
+
+        pub fn focus_id(self, id: impl IntoPropOption<FocusId>) -> Self {
+            self.scroll_id(id)
+        }
+
+        pub fn scrollbar_visibility(mut self, visibility: ScrollbarVisibility) -> Self {
+            self.view_mut().scroll_mut().scrollbar_visibility = visibility;
+            self
+        }
+
+        pub fn scrollbar_style(mut self, style: ScrollbarStyle) -> Self {
+            self.view_mut().scroll_mut().scrollbar_style = style;
+            self
+        }
+
+        pub fn on_scroll(mut self, handler: impl IntoScrollHandler) -> Self {
+            self.view_mut().scroll_mut().on_scroll = Some(handler.into_scroll_handler());
+            self
+        }
+
+        // Look
+
+        pub fn background_color(mut self, color: impl IntoPropOption<Color>) -> Self {
+            self.view_mut().visual_mut().background_color = color.into_prop_option();
+            self
+        }
+
+        pub fn foreground_color(mut self, color: impl IntoPropOption<Color>) -> Self {
+            self.view_mut().visual_mut().foreground_color = color.into_prop_option();
+            self
+        }
+
+        pub fn bg(self, color: impl IntoPropOption<Color>) -> Self {
+            self.background_color(color)
+        }
+
+        pub fn fg(self, color: impl IntoPropOption<Color>) -> Self {
+            self.foreground_color(color)
+        }
+
+        /// The border style. Any border takes up one cell on each side.
+        pub fn border(mut self, border: BorderStyle) -> Self {
+            self.view_mut().visual_mut().border = border;
+            self
+        }
+
+        pub fn border_color(mut self, color: impl IntoPropOption<Color>) -> Self {
+            self.view_mut().visual_mut().border_color = color.into_prop_option();
+            self
+        }
+
+        pub fn title(mut self, title: impl IntoPropOption<String>) -> Self {
+            self.view_mut().visual_mut().title = title.into_prop_option();
+            self
+        }
+
+        pub fn cursor_offset(mut self, offset: impl IntoPropOption<(u16, u16)>) -> Self {
+            self.view_mut().visual_mut().cursor_offset = offset.into_prop_option();
+            self
+        }
+
+        pub fn cursor_style(mut self, style: impl IntoPropOption<CursorStyle>) -> Self {
+            self.view_mut().visual_mut().cursor_style = style.into_prop_option();
+            self
+        }
+
+        // Children
+
+        pub fn child(mut self, child: impl IntoNode) -> Self {
+            self.view_mut().push_child(child.into_node());
+            self
+        }
+
+        pub fn slot_children(self, child: impl IntoNode) -> Self {
+            self.child(child)
+        }
+
+        pub fn children(mut self, children: impl IntoIterator<Item = impl IntoNode>) -> Self {
+            for child in children {
+                self.view_mut().push_child(child.into_node());
+            }
+            self
+        }
+    };
+}
+
+/// The box every layout is built from. Its layout lives in a taffy style,
+/// so a frame hands it to taffy as is. What it looks like (`visual`) and
+/// how it scrolls (`scroll`) are boxed, since most views use neither.
 #[derive(Clone, Debug)]
 pub struct ViewElement {
-    pub width: Dimension,
-    pub height: Dimension,
-    pub min_width: Option<Dimension>,
-    pub max_width: Option<Dimension>,
-    pub min_height: Option<Dimension>,
-    pub max_height: Option<Dimension>,
-    pub margin: Margin,
-    pub padding: Padding,
-    pub gap: u16,
-    pub flex_direction: FlexDirection,
-    pub align_items: Option<AlignItems>,
-    pub justify_content: Option<JustifyContent>,
-    pub align_self: Option<AlignSelf>,
-    /// Native flex growth factor; defaults to 0.
-    pub flex_grow: f32,
-    /// Native flex shrink factor; defaults to 1.
-    pub flex_shrink: f32,
-    pub flex_basis: Dimension,
-    pub flex_wrap: FlexWrap,
-    pub overflow_x: Overflow,
-    pub overflow_y: Overflow,
-    pub scroll: Option<Box<ScrollData>>,
+    pub(crate) style: taffy::Style,
     pub visual: Option<Box<VisualData>>,
+    pub scroll: Option<Box<ScrollData>>,
     pub children: Vec<VNode>,
 }
 
 impl Default for ViewElement {
     fn default() -> Self {
         Self {
-            width: Dimension::Auto,
-            height: Dimension::Auto,
-            min_width: None,
-            max_width: None,
-            min_height: None,
-            max_height: None,
-            margin: Margin::default(),
-            padding: Padding::default(),
-            gap: 0,
-            flex_direction: FlexDirection::Column,
-            align_items: None,
-            justify_content: None,
-            align_self: None,
-            flex_grow: 0.0,
-            flex_shrink: 1.0,
-            flex_basis: Dimension::Auto,
-            flex_wrap: FlexWrap::NoWrap,
-            overflow_x: Overflow::Visible,
-            overflow_y: Overflow::Visible,
-            scroll: None,
+            style: taffy::Style {
+                display: Display::Flex,
+                flex_direction: FlexDirection::Column,
+                flex_shrink: 1.0,
+                ..Default::default()
+            },
             visual: None,
+            scroll: None,
             children: Vec::new(),
         }
     }
 }
 
+/// The props `View` takes. They're the element itself, so building a
+/// `View` from them copies nothing.
+pub type ViewProps = ViewElement;
+
+/// Builds a `View`. `view!` uses this; it has the same setters as
+/// `ViewElement`.
+#[derive(Clone, Default)]
+pub struct ViewPropsBuilder(ViewElement);
+
 impl ViewElement {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn builder() -> ViewPropsBuilder {
+        ViewPropsBuilder::default()
+    }
+
+    /// The layout style this view hands to taffy.
+    pub fn style(&self) -> &taffy::Style {
+        &self.style
     }
 
     pub fn visual_mut(&mut self) -> &mut VisualData {
@@ -439,510 +702,38 @@ impl ViewElement {
             .as_mut()
     }
 
-    pub fn flex_direction(mut self, dir: FlexDirection) -> Self {
-        self.flex_direction = dir;
+    fn view_mut(&mut self) -> &mut ViewElement {
         self
     }
 
-    pub fn width(mut self, w: impl IntoDimension) -> Self {
-        self.width = w.into_dimension();
-        self
-    }
-
-    pub fn height(mut self, h: impl IntoDimension) -> Self {
-        self.height = h.into_dimension();
-        self
-    }
-
-    pub fn min_width(mut self, mw: impl IntoPropOption<Dimension>) -> Self {
-        self.min_width = mw.into_prop_option();
-        self
-    }
-
-    pub fn max_width(mut self, mw: impl IntoPropOption<Dimension>) -> Self {
-        self.max_width = mw.into_prop_option();
-        self
-    }
-
-    pub fn min_height(mut self, mh: impl IntoPropOption<Dimension>) -> Self {
-        self.min_height = mh.into_prop_option();
-        self
-    }
-
-    pub fn max_height(mut self, mh: impl IntoPropOption<Dimension>) -> Self {
-        self.max_height = mh.into_prop_option();
-        self
-    }
-
-    pub fn gap(mut self, g: u16) -> Self {
-        self.gap = g;
-        self
-    }
-
-    pub fn align_self(mut self, a: impl IntoPropOption<AlignSelf>) -> Self {
-        self.align_self = a.into_prop_option();
-        self
-    }
-
-    pub fn flex_grow(mut self, fg: f32) -> Self {
-        self.flex_grow = fg;
-        self
-    }
-
-    pub fn flex_shrink(mut self, fs: f32) -> Self {
-        self.flex_shrink = fs;
-        self
-    }
-
-    pub fn flex_basis(mut self, basis: impl IntoDimension) -> Self {
-        self.flex_basis = basis.into_dimension();
-        self
-    }
-
-    pub fn flex_wrap(mut self, fw: FlexWrap) -> Self {
-        self.flex_wrap = fw;
-        self
-    }
-
-    pub fn border(mut self, b: BorderStyle) -> Self {
-        self.visual_mut().border = b;
-        self
-    }
-
-    pub fn border_color(mut self, c: impl IntoPropOption<Color>) -> Self {
-        self.visual_mut().border_color = c.into_prop_option();
-        self
-    }
-
-    pub fn title(mut self, t: impl IntoPropOption<String>) -> Self {
-        self.visual_mut().title = t.into_prop_option();
-        self
-    }
-
-    pub fn cursor_offset(mut self, co: impl IntoPropOption<(u16, u16)>) -> Self {
-        self.visual_mut().cursor_offset = co.into_prop_option();
-        self
-    }
-
-    pub fn cursor_style(mut self, cs: impl IntoPropOption<CursorStyle>) -> Self {
-        self.visual_mut().cursor_style = cs.into_prop_option();
-        self
-    }
-
-    pub fn scroll_x(mut self, sx: u16) -> Self {
-        self.scroll_mut().scroll_x = sx;
-        self
-    }
-
-    pub fn scroll_y(mut self, sy: u16) -> Self {
-        self.scroll_mut().scroll_y = sy;
-        self
-    }
-
-    pub fn scrollbar_visibility(mut self, sv: ScrollbarVisibility) -> Self {
-        self.scroll_mut().scrollbar_visibility = sv;
-        self
-    }
-
-    pub fn scrollbar_style(mut self, ss: ScrollbarStyle) -> Self {
-        self.scroll_mut().scrollbar_style = ss;
-        self
-    }
-
-    pub fn padding(mut self, p: impl Into<Padding>) -> Self {
-        self.padding = p.into();
-        self
-    }
-
-    pub fn margin(mut self, m: impl Into<Margin>) -> Self {
-        self.margin = m.into();
-        self
-    }
-
-    pub fn align_items(mut self, align: impl IntoPropOption<AlignItems>) -> Self {
-        self.align_items = align.into_prop_option();
-        self
-    }
-
-    pub fn justify_content(mut self, justify: impl IntoPropOption<JustifyContent>) -> Self {
-        self.justify_content = justify.into_prop_option();
-        self
-    }
-
-    pub fn background_color(mut self, color: impl IntoPropOption<Color>) -> Self {
-        self.visual_mut().background_color = color.into_prop_option();
-        self
-    }
-
-    pub fn foreground_color(mut self, color: impl IntoPropOption<Color>) -> Self {
-        self.visual_mut().foreground_color = color.into_prop_option();
-        self
-    }
-
-    pub fn overflow_x(mut self, o: Overflow) -> Self {
-        self.overflow_x = o;
-        self
-    }
-
-    pub fn overflow_y(mut self, o: Overflow) -> Self {
-        self.overflow_y = o;
-        self
-    }
-
-    pub fn overflow(mut self, o: Overflow) -> Self {
-        self.overflow_x = o;
-        self.overflow_y = o;
-        self
-    }
-
-    pub fn scroll_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
-        self.scroll_mut().id = id.into_prop_option();
-        self
-    }
-
-    pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
-        self.scroll_mut().id = id.into_prop_option();
-        self
-    }
-
-    pub fn child(mut self, child: impl IntoNode) -> Self {
-        match child.into_node() {
-            VNode::Fragment(items) => self.children.extend(items),
+    fn push_child(&mut self, child: VNode) {
+        match child {
+            // Fragments never become boxes. Their items join our children,
+            // however deeply they're nested.
+            VNode::Fragment(items) => items.into_iter().for_each(|item| self.push_child(item)),
             VNode::Empty => {}
             other => self.children.push(other),
         }
-        self
     }
 
-    pub fn children(mut self, children: impl IntoIterator<Item = impl IntoNode>) -> Self {
-        for c in children {
-            match c.into_node() {
-                VNode::Fragment(items) => self.children.extend(items),
-                VNode::Empty => {}
-                other => self.children.push(other),
-            }
-        }
-        self
-    }
-}
-
-#[derive(Clone)]
-pub struct ViewProps {
-    pub width: Dimension,
-    pub height: Dimension,
-    pub min_width: Option<Dimension>,
-    pub max_width: Option<Dimension>,
-    pub min_height: Option<Dimension>,
-    pub max_height: Option<Dimension>,
-    pub margin: Margin,
-    pub padding: Padding,
-    pub gap: u16,
-    pub flex_direction: FlexDirection,
-    pub align_items: Option<AlignItems>,
-    pub justify_content: Option<JustifyContent>,
-    pub align_self: Option<AlignSelf>,
-    /// Native flex growth factor; defaults to 0.
-    pub flex_grow: f32,
-    /// Native flex shrink factor; defaults to 1.
-    pub flex_shrink: f32,
-    pub flex_basis: Dimension,
-    pub flex_wrap: FlexWrap,
-    pub overflow_x: Overflow,
-    pub overflow_y: Overflow,
-    pub scroll: Option<Box<ScrollData>>,
-    pub visual: Option<Box<VisualData>>,
-    pub children: Vec<VNode>,
-}
-
-impl Default for ViewProps {
-    fn default() -> Self {
-        Self {
-            width: Dimension::Auto,
-            height: Dimension::Auto,
-            min_width: None,
-            max_width: None,
-            min_height: None,
-            max_height: None,
-            margin: Margin::default(),
-            padding: Padding::default(),
-            gap: 0,
-            flex_direction: FlexDirection::Column,
-            align_items: None,
-            justify_content: None,
-            align_self: None,
-            flex_grow: 0.0,
-            flex_shrink: 1.0,
-            flex_basis: Dimension::Auto,
-            flex_wrap: FlexWrap::NoWrap,
-            overflow_x: Overflow::Visible,
-            overflow_y: Overflow::Visible,
-            scroll: None,
-            visual: None,
-            children: Vec::new(),
-        }
-    }
-}
-
-#[derive(Clone, Default)]
-pub struct ViewPropsBuilder {
-    props: ViewProps,
-}
-
-impl ViewProps {
-    pub fn builder() -> ViewPropsBuilder {
-        ViewPropsBuilder::default()
-    }
+    view_setters!();
 }
 
 impl ViewPropsBuilder {
-    pub fn width(mut self, width: impl IntoDimension) -> Self {
-        self.props.width = width.into_dimension();
-        self
-    }
-
-    pub fn height(mut self, height: impl IntoDimension) -> Self {
-        self.props.height = height.into_dimension();
-        self
-    }
-
-    pub fn min_width(mut self, min_width: impl IntoPropOption<Dimension>) -> Self {
-        self.props.min_width = min_width.into_prop_option();
-        self
-    }
-
-    pub fn max_width(mut self, max_width: impl IntoPropOption<Dimension>) -> Self {
-        self.props.max_width = max_width.into_prop_option();
-        self
-    }
-
-    pub fn min_height(mut self, min_height: impl IntoPropOption<Dimension>) -> Self {
-        self.props.min_height = min_height.into_prop_option();
-        self
-    }
-
-    pub fn max_height(mut self, max_height: impl IntoPropOption<Dimension>) -> Self {
-        self.props.max_height = max_height.into_prop_option();
-        self
-    }
-
-    pub fn margin(mut self, margin: impl Into<Margin>) -> Self {
-        self.props.margin = margin.into();
-        self
-    }
-
-    pub fn padding(mut self, padding: impl Into<Padding>) -> Self {
-        self.props.padding = padding.into();
-        self
-    }
-
-    pub fn gap(mut self, gap: u16) -> Self {
-        self.props.gap = gap;
-        self
-    }
-
-    pub fn flex_direction(mut self, dir: FlexDirection) -> Self {
-        self.props.flex_direction = dir;
-        self
-    }
-
-    pub fn align_items(mut self, align: impl IntoPropOption<AlignItems>) -> Self {
-        self.props.align_items = align.into_prop_option();
-        self
-    }
-
-    pub fn justify_content(mut self, justify: impl IntoPropOption<JustifyContent>) -> Self {
-        self.props.justify_content = justify.into_prop_option();
-        self
-    }
-
-    pub fn align_self(mut self, align: impl IntoPropOption<AlignSelf>) -> Self {
-        self.props.align_self = align.into_prop_option();
-        self
-    }
-
-    pub fn flex_grow(mut self, grow: f32) -> Self {
-        self.props.flex_grow = grow;
-        self
-    }
-
-    pub fn flex_shrink(mut self, shrink: f32) -> Self {
-        self.props.flex_shrink = shrink;
-        self
-    }
-
-    pub fn flex_basis(mut self, basis: impl IntoDimension) -> Self {
-        self.props.flex_basis = basis.into_dimension();
-        self
-    }
-
-    pub fn flex_wrap(mut self, wrap: FlexWrap) -> Self {
-        self.props.flex_wrap = wrap;
-        self
-    }
-
-    pub fn overflow_x(mut self, overflow: Overflow) -> Self {
-        self.props.overflow_x = overflow;
-        self
-    }
-
-    pub fn overflow_y(mut self, overflow: Overflow) -> Self {
-        self.props.overflow_y = overflow;
-        self
-    }
-
-    pub fn overflow(mut self, overflow: Overflow) -> Self {
-        self.props.overflow_x = overflow;
-        self.props.overflow_y = overflow;
-        self
-    }
-
-    fn visual_mut(&mut self) -> &mut VisualData {
-        self.props
-            .visual
-            .get_or_insert_with(|| Box::new(VisualData::default()))
-            .as_mut()
-    }
-
-    fn scroll_mut(&mut self) -> &mut ScrollData {
-        self.props
-            .scroll
-            .get_or_insert_with(|| Box::new(ScrollData::default()))
-            .as_mut()
-    }
-
-    pub fn scroll_x(mut self, x: u16) -> Self {
-        self.scroll_mut().scroll_x = x;
-        self
-    }
-
-    pub fn scroll_y(mut self, y: u16) -> Self {
-        self.scroll_mut().scroll_y = y;
-        self
-    }
-
-    pub fn scroll_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
-        self.scroll_mut().id = id.into_prop_option();
-        self
-    }
-
-    pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
-        self.scroll_mut().id = id.into_prop_option();
-        self
-    }
-
-    pub fn scrollbar_visibility(mut self, vis: ScrollbarVisibility) -> Self {
-        self.scroll_mut().scrollbar_visibility = vis;
-        self
-    }
-
-    pub fn scrollbar_style(mut self, style: ScrollbarStyle) -> Self {
-        self.scroll_mut().scrollbar_style = style;
-        self
-    }
-
-    pub fn on_scroll(mut self, handler: impl IntoScrollHandler) -> Self {
-        self.scroll_mut().on_scroll = Some(handler.into_scroll_handler());
-        self
-    }
-
-    pub fn background_color(mut self, color: impl IntoPropOption<Color>) -> Self {
-        self.visual_mut().background_color = color.into_prop_option();
-        self
-    }
-
-    pub fn foreground_color(mut self, color: impl IntoPropOption<Color>) -> Self {
-        self.visual_mut().foreground_color = color.into_prop_option();
-        self
-    }
-
-    pub fn bg(self, color: impl IntoPropOption<Color>) -> Self {
-        self.background_color(color)
-    }
-
-    pub fn fg(self, color: impl IntoPropOption<Color>) -> Self {
-        self.foreground_color(color)
-    }
-
-    pub fn border(mut self, border: BorderStyle) -> Self {
-        self.visual_mut().border = border;
-        self
-    }
-
-    pub fn border_color(mut self, color: impl IntoPropOption<Color>) -> Self {
-        self.visual_mut().border_color = color.into_prop_option();
-        self
-    }
-
-    pub fn title(mut self, title: impl IntoPropOption<String>) -> Self {
-        self.visual_mut().title = title.into_prop_option();
-        self
-    }
-
-    pub fn cursor_offset(mut self, offset: impl IntoPropOption<(u16, u16)>) -> Self {
-        self.visual_mut().cursor_offset = offset.into_prop_option();
-        self
-    }
-
-    pub fn cursor_style(mut self, style: impl IntoPropOption<CursorStyle>) -> Self {
-        self.visual_mut().cursor_style = style.into_prop_option();
-        self
-    }
-
-    pub fn slot_children(mut self, node: impl IntoNode) -> Self {
-        match node.into_node() {
-            VNode::Fragment(items) => self.props.children.extend(items),
-            VNode::Empty => {}
-            other => self.props.children.push(other),
-        }
-        self
-    }
-
-    pub fn child(self, node: impl IntoNode) -> Self {
-        self.slot_children(node)
-    }
-
-    pub fn children(mut self, children: impl IntoIterator<Item = impl IntoNode>) -> Self {
-        for c in children {
-            match c.into_node() {
-                VNode::Fragment(items) => self.props.children.extend(items),
-                VNode::Empty => {}
-                other => self.props.children.push(other),
-            }
-        }
-        self
+    fn view_mut(&mut self) -> &mut ViewElement {
+        &mut self.0
     }
 
     pub fn build(self) -> ViewProps {
-        self.props
+        self.0
     }
+
+    view_setters!();
 }
 
 #[allow(non_snake_case)]
 pub fn View(props: ViewProps) -> ViewElement {
-    ViewElement {
-        width: props.width,
-        height: props.height,
-        min_width: props.min_width,
-        max_width: props.max_width,
-        min_height: props.min_height,
-        max_height: props.max_height,
-        margin: props.margin,
-        padding: props.padding,
-        gap: props.gap,
-        flex_direction: props.flex_direction,
-        align_items: props.align_items,
-        justify_content: props.justify_content,
-        align_self: props.align_self,
-        flex_grow: props.flex_grow,
-        flex_shrink: props.flex_shrink,
-        flex_basis: props.flex_basis,
-        flex_wrap: props.flex_wrap,
-        overflow_x: props.overflow_x,
-        overflow_y: props.overflow_y,
-        scroll: props.scroll,
-        visual: props.visual,
-        children: props.children,
-    }
+    props
 }
 
 #[derive(Clone, Default)]

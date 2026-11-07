@@ -61,6 +61,31 @@ name = "framework_error_boundary"
 path = "framework/error_boundary/main.rs"
 
 [[example]]
+name = "layout_flex"
+path = "layout/flex/main.rs"
+test = true
+
+[[example]]
+name = "layout_centering"
+path = "layout/centering/main.rs"
+test = true
+
+[[example]]
+name = "layout_positioning"
+path = "layout/positioning/main.rs"
+test = true
+
+[[example]]
+name = "layout_wrapping"
+path = "layout/wrapping/main.rs"
+test = true
+
+[[example]]
+name = "layout_sizing"
+path = "layout/sizing/main.rs"
+test = true
+
+[[example]]
 name = "component_button"
 path = "components/button/main.rs"
 
@@ -91,11 +116,6 @@ path = "components/keyboard/main.rs"
 [[example]]
 name = "component_form"
 path = "components/form/main.rs"
-test = true
-
-[[example]]
-name = "component_layout"
-path = "components/layout/main.rs"
 test = true
 
 [[example]]

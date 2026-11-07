@@ -2,7 +2,7 @@ use sveltui::prelude::*;
 use sveltui_components::*;
 
 #[cfg(test)]
-mod layout_tests;
+mod flex_tests;
 
 #[component]
 fn LayoutDemo() -> impl IntoNode {

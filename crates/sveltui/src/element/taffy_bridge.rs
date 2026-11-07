@@ -1,11 +1,13 @@
 use crate::element::node::{TextElement, VNode, ViewElement};
-use crate::layout::BorderStyle;
 use crate::layout::geometry::Rect;
+use crate::layout::{BorderStyle, Padding};
 use taffy::prelude::*;
 
 #[derive(Clone, Debug, Default)]
 pub struct ComputedLayoutNode {
     pub rect: Rect,
+    /// Border plus padding on each side: where the children's area starts.
+    pub content_inset: Padding,
     pub viewport_size: (u16, u16),
     pub content_size: (u16, u16),
     pub scroll_size: (u16, u16),
@@ -30,80 +32,45 @@ impl TextSizes {
     }
 }
 
+/// The taffy style for a view: its stored style, plus the parts that depend
+/// on its other settings (the border it draws and whether it shows a
+/// scrollbar).
 pub fn view_to_taffy_style(view: &ViewElement) -> taffy::style::Style {
-    let border_inset = if view
+    let mut style = view.style.clone();
+    style.align_items = style.align_items.or(Some(AlignItems::Stretch));
+
+    let border = view
         .visual
         .as_ref()
-        .is_some_and(|v| v.border != BorderStyle::None)
+        .is_some_and(|v| v.border != BorderStyle::None);
+    let inset = LengthPercentage::Length(if border { 1.0 } else { 0.0 });
+    style.border = taffy::geometry::Rect {
+        left: inset,
+        right: inset,
+        top: inset,
+        bottom: inset,
+    };
+
+    // A scrollbar only takes up room when the view scrolls and has a bound
+    // on both axes; an unbounded view just grows to fit instead.
+    let scrolls = style.overflow.x == taffy::style::Overflow::Scroll
+        || style.overflow.y == taffy::style::Overflow::Scroll;
+    let bounded =
+        |size: Dimension, max: Dimension| size != Dimension::Auto || max != Dimension::Auto;
+    let shows_scrollbar = view
+        .scroll
+        .as_ref()
+        .is_none_or(|s| s.scrollbar_visibility != crate::layout::ScrollbarVisibility::Never);
+    style.scrollbar_width = if scrolls
+        && bounded(style.size.width, style.max_size.width)
+        && bounded(style.size.height, style.max_size.height)
+        && shows_scrollbar
     {
         1.0
     } else {
         0.0
     };
-
-    taffy::style::Style {
-        display: Display::Flex,
-        flex_direction: view.flex_direction,
-        align_items: view.align_items.or(Some(AlignItems::Stretch)),
-        justify_content: view.justify_content,
-        align_self: view.align_self,
-        flex_grow: view.flex_grow,
-        flex_shrink: view.flex_shrink,
-        flex_basis: view.flex_basis,
-        flex_wrap: view.flex_wrap,
-        size: taffy::geometry::Size {
-            width: view.width,
-            height: view.height,
-        },
-        min_size: taffy::geometry::Size {
-            width: view.min_width.unwrap_or(Dimension::Auto),
-            height: view.min_height.unwrap_or(Dimension::Auto),
-        },
-        max_size: taffy::geometry::Size {
-            width: view.max_width.unwrap_or(Dimension::Auto),
-            height: view.max_height.unwrap_or(Dimension::Auto),
-        },
-        gap: taffy::geometry::Size {
-            width: LengthPercentage::Length(view.gap as f32),
-            height: LengthPercentage::Length(view.gap as f32),
-        },
-        padding: taffy::geometry::Rect {
-            left: LengthPercentage::Length(view.padding.left as f32),
-            right: LengthPercentage::Length(view.padding.right as f32),
-            top: LengthPercentage::Length(view.padding.top as f32),
-            bottom: LengthPercentage::Length(view.padding.bottom as f32),
-        },
-        margin: taffy::geometry::Rect {
-            left: LengthPercentageAuto::Length(view.margin.left as f32),
-            right: LengthPercentageAuto::Length(view.margin.right as f32),
-            top: LengthPercentageAuto::Length(view.margin.top as f32),
-            bottom: LengthPercentageAuto::Length(view.margin.bottom as f32),
-        },
-        border: taffy::geometry::Rect {
-            left: LengthPercentage::Length(border_inset),
-            right: LengthPercentage::Length(border_inset),
-            top: LengthPercentage::Length(border_inset),
-            bottom: LengthPercentage::Length(border_inset),
-        },
-        overflow: taffy::geometry::Point {
-            x: view.overflow_x,
-            y: view.overflow_y,
-        },
-        scrollbar_width: if (view.overflow_y == taffy::style::Overflow::Scroll
-            || view.overflow_x == taffy::style::Overflow::Scroll)
-            && (view.width != Dimension::Auto || view.max_width.is_some())
-            && (view.height != Dimension::Auto || view.max_height.is_some())
-            && view
-                .scroll
-                .as_ref()
-                .is_none_or(|s| s.scrollbar_visibility != crate::layout::ScrollbarVisibility::Never)
-        {
-            1.0
-        } else {
-            0.0
-        },
-        ..Default::default()
-    }
+    style
 }
 
 /// Builds a taffy tree from a VNode tree and lays it out. The tree's
@@ -343,26 +310,32 @@ impl LayoutEngine {
         let content_w = l.content_size.width.max(0.0).round() as u16;
         let content_h = l.content_size.height.max(0.0).round() as u16;
 
-        let (content_w, content_h, viewport_w, viewport_h) = if let VNode::View(v) = vnode {
-            let border = u16::from(
-                v.visual
-                    .as_ref()
-                    .is_some_and(|v| v.border != BorderStyle::None),
-            );
-            let padding_w = v.padding.left.saturating_add(v.padding.right);
-            let padding_h = v.padding.top.saturating_add(v.padding.bottom);
+        // Border plus padding, per side, as taffy resolved them.
+        let cells = |value: f32| value.max(0.0).round() as u16;
+        let content_inset = if matches!(vnode, VNode::View(_)) {
+            Padding::only(
+                cells(l.border.top + l.padding.top),
+                cells(l.border.right + l.padding.right),
+                cells(l.border.bottom + l.padding.bottom),
+                cells(l.border.left + l.padding.left),
+            )
+        } else {
+            Padding::zero()
+        };
+
+        let (content_w, content_h, viewport_w, viewport_h) = if matches!(vnode, VNode::View(_)) {
             // Taffy's content extent includes the leading border and both
             // padding edges. Scroll offsets and clipping use content coordinates.
+            let leading_w = cells(l.border.left + l.padding.left + l.padding.right);
+            let leading_h = cells(l.border.top + l.padding.top + l.padding.bottom);
             (
-                content_w.saturating_sub(border.saturating_add(padding_w)),
-                content_h.saturating_sub(border.saturating_add(padding_h)),
+                content_w.saturating_sub(leading_w),
+                content_h.saturating_sub(leading_h),
                 width
-                    .saturating_sub(border * 2)
-                    .saturating_sub(padding_w)
+                    .saturating_sub(content_inset.left + content_inset.right)
                     .saturating_sub(l.scrollbar_size.width as u16),
                 height
-                    .saturating_sub(border * 2)
-                    .saturating_sub(padding_h)
+                    .saturating_sub(content_inset.top + content_inset.bottom)
                     .saturating_sub(l.scrollbar_size.height as u16),
             )
         } else {
@@ -398,6 +371,7 @@ impl LayoutEngine {
 
         ComputedLayoutNode {
             rect: Rect::new(x, y, width, height),
+            content_inset,
             viewport_size: (viewport_w, viewport_h),
             content_size: (content_w, content_h),
             scroll_size: (scroll_w, scroll_h),

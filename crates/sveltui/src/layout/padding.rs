@@ -55,3 +55,15 @@ impl From<(u16, u16)> for Padding {
         Padding::symmetric(h, v)
     }
 }
+
+impl Padding {
+    pub(crate) fn to_taffy(self) -> taffy::geometry::Rect<taffy::style::LengthPercentage> {
+        let side = |cells: u16| taffy::style::LengthPercentage::Length(f32::from(cells));
+        taffy::geometry::Rect {
+            left: side(self.left),
+            right: side(self.right),
+            top: side(self.top),
+            bottom: side(self.bottom),
+        }
+    }
+}
