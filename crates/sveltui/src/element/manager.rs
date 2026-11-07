@@ -31,6 +31,9 @@ pub struct FocusManager {
     requested_focus: Option<FocusId>,
     anchors: HashMap<FocusId, (u16, u16)>,
     hovered: Option<FocusId>,
+    /// The target the pointer is over. We only call `on_pointer_enter` when
+    /// this changes, so it fires once per visit instead of on every mouse move.
+    entered: Option<FocusId>,
 }
 
 impl FocusManager {
@@ -105,8 +108,8 @@ impl FocusManager {
                     && !excluded.iter().any(|&id| self.tree.contains(n.id, id))
             })
             .collect();
-        // A group exposes one tab stop: its selected member (tabs, radios),
-        // else the member focused last, else its first member.
+        // A group gets one tab stop: its selected member if it has one,
+        // otherwise the member focused last, otherwise its first member.
         let mut group_heads = HashMap::new();
         for node in &candidates {
             if let Some(group) = self.tree.group(node.id) {
@@ -793,6 +796,29 @@ impl FocusManager {
         outcome
     }
 
+    /// Calls `on_pointer_enter` on the topmost target under the pointer if the
+    /// pointer has just moved onto it, and says whether a handler ran.
+    fn pointer_enter(&mut self, hits: &crate::element::HitMap, x: u16, y: u16) -> bool {
+        let target = hits
+            .hit_test(x, y)
+            .filter(|t| t.on_pointer_enter.is_some() && t.focus_id.is_some());
+        let id = target.and_then(|t| t.focus_id);
+        if id == self.entered {
+            return false;
+        }
+        self.entered = id;
+        let disabled = id
+            .and_then(|id| self.tree.node(id))
+            .is_some_and(|n| n.interaction.disabled);
+        match target.and_then(|t| t.on_pointer_enter.clone()) {
+            Some(handler) if !disabled => {
+                self.with_context(|| handler());
+                true
+            }
+            _ => false,
+        }
+    }
+
     fn switch_bar(&mut self, layer_id: FocusId, key: KeyEvent) -> bool {
         if key
             .modifiers
@@ -904,19 +930,25 @@ impl FocusManager {
         x: u16,
         y: u16,
     ) -> DispatchOutcome {
+        let entered = self.pointer_enter(hits, x, y);
+        let idle = DispatchOutcome {
+            handled: entered,
+            changed: entered,
+            exit: false,
+        };
         let next = self.menu_pointer_target(hits, x, y);
         if self.hovered == next {
-            return DispatchOutcome::default();
+            return idle;
         }
         self.hovered = next;
         let Some(id) = next else {
-            return DispatchOutcome::default();
+            return idle;
         };
         let Some(node) = self.tree.node(id) else {
-            return DispatchOutcome::default();
+            return idle;
         };
         if node.interaction.disabled {
-            return DispatchOutcome::default();
+            return idle;
         }
         let policy = node.interaction.menu;
         let before = self.focused;
@@ -1221,9 +1253,9 @@ impl FocusManager {
         outcome
     }
 
-    /// Runs the newly focused node's `on_focus` handler when input moved
-    /// focus away from `before`. Render-time reconciliation never calls
-    /// this, so focus restoration cannot write state during a render.
+    /// Calls `on_focus` on whatever just got focus, if input moved it away from
+    /// `before`. We never call this while reconciling a render, so restoring
+    /// focus can't set off state writes mid-render.
     fn notify_focus(&self, before: Option<FocusId>) {
         if self.focused == before {
             return;

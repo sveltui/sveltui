@@ -58,8 +58,11 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
             buf.set_multiline(false);
         } else if let Some(vs) = val_sig {
             let current_val = vs.get();
+            // The value changed from outside, so the cursor goes to the end
+            // of the new text, the way text fields usually behave.
             if buf.content() != current_val {
                 buf.set_content(current_val);
+                buf.move_end();
             }
         }
 
@@ -81,6 +84,7 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
 
     let set_buffer = props.set_buffer;
     let on_submit = props.on_submit;
+    let intercept = props.on_key;
 
     let on_click_at: Rc<dyn Fn(u16, u16)> = Rc::new(move |rel_x: u16, _rel_y: u16| {
         let click_col = rel_x.saturating_sub(2) as usize;
@@ -93,7 +97,12 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
         });
     });
 
-    let on_key: KeyHandler = Rc::new(move |key: KeyEvent, _ctx: &mut EventContext| {
+    let on_key: KeyHandler = Rc::new(move |key: KeyEvent, ctx: &mut EventContext| {
+        if let Some(intercept) = &intercept
+            && intercept(key, ctx) == EventResult::Handled
+        {
+            return EventResult::Handled;
+        }
         if key.code == KeyCode::Enter {
             if let Some(ref submit) = on_submit {
                 let text = with_buffer(id, |b| b.content());
@@ -134,13 +143,17 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
         .title
         .clone()
         .unwrap_or_else(|| props.placeholder.clone());
+    let semantics = props
+        .semantics
+        .unwrap_or_else(|| Semantics::new(Role::Textbox, title_str));
 
     view! {
         <Pressable
             focus_id=id
             tab_stop=true
-            semantics=Semantics::new(Role::Textbox, title_str)
+            semantics=semantics
             on_click_at=on_click_at
+            on_click=props.on_click
             on_key=on_key
         >
             <View

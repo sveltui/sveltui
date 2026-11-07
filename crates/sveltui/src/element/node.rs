@@ -258,11 +258,9 @@ impl IntoNode for PressableElement {
     }
 }
 
-/// Converts a click callback, or an optional one, into the stored handler.
-///
-/// Accepting `Option` here lets components forward an optional handler prop
-/// with the same setter (`on_click=props.on_click`) instead of needing a
-/// second, `Option`-only setter.
+/// Turns a callback, or an `Option` of one, into a click handler. Passing
+/// `None` clears it, so the same setter works whether you have a handler or
+/// only maybe have one.
 pub trait IntoClickHandler {
     fn into_click_handler(self) -> Option<Rc<dyn Fn()>>;
 }
@@ -960,8 +958,10 @@ pub struct PressableElement {
     pub on_click: Option<Rc<dyn Fn()>>,
     pub on_click_at: Option<Rc<dyn Fn(u16, u16)>>,
     pub on_key: Option<KeyHandler>,
-    /// Runs when keyboard or pointer input moves focus onto this element.
+    /// Called when a key press or click moves focus onto this element.
     pub on_focus: Option<Rc<dyn Fn()>>,
+    /// Called when the pointer moves onto this element.
+    pub on_pointer_enter: Option<Rc<dyn Fn()>>,
     pub interaction: Option<Box<Interaction>>,
     pub children: Vec<VNode>,
 }
@@ -1039,6 +1039,11 @@ impl PressableElement {
         self
     }
 
+    pub fn on_pointer_enter(mut self, handler: impl IntoClickHandler) -> Self {
+        self.on_pointer_enter = handler.into_click_handler();
+        self
+    }
+
     pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
         self.on_key = handler.into_key_handler();
         self
@@ -1072,8 +1077,10 @@ pub struct PressableProps {
     pub on_click: Option<Rc<dyn Fn()>>,
     pub on_click_at: Option<Rc<dyn Fn(u16, u16)>>,
     pub on_key: Option<KeyHandler>,
-    /// Runs when keyboard or pointer input moves focus onto this element.
+    /// Called when a key press or click moves focus onto this element.
     pub on_focus: Option<Rc<dyn Fn()>>,
+    /// Called when the pointer moves onto this element.
+    pub on_pointer_enter: Option<Rc<dyn Fn()>>,
     pub interaction: Option<Box<Interaction>>,
     pub children: Vec<VNode>,
 }
@@ -1145,6 +1152,11 @@ impl PressablePropsBuilder {
         self
     }
 
+    pub fn on_pointer_enter(mut self, handler: impl IntoClickHandler) -> Self {
+        self.props.on_pointer_enter = handler.into_click_handler();
+        self
+    }
+
     pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
         self.props.on_key = handler.into_key_handler();
         self
@@ -1188,6 +1200,7 @@ pub fn Pressable(props: PressableProps) -> PressableElement {
         on_click_at: props.on_click_at,
         on_key: props.on_key,
         on_focus: props.on_focus,
+        on_pointer_enter: props.on_pointer_enter,
         interaction: props.interaction,
         children: props.children,
     }

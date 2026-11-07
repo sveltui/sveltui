@@ -200,6 +200,7 @@ fn render_single_overlay(
         focus_id: None,
         on_key: None,
         on_scroll: None,
+        on_pointer_enter: None,
     });
 
     if let Some(content) = overlay.content {
@@ -215,6 +216,7 @@ fn render_single_overlay(
             focus_id: None,
             on_key: None,
             on_scroll: None,
+            on_pointer_enter: None,
         });
 
         for cy in popover_rect.y..(popover_rect.y + popover_rect.height) {
@@ -390,7 +392,12 @@ fn render_node_offset_internal(
             }
         }
         VNode::Pressable(p) => {
-            if p.focus_id.is_some() || p.on_click.is_some() || p.on_key.is_some() || p.tab_stop {
+            if p.focus_id.is_some()
+                || p.on_click.is_some()
+                || p.on_key.is_some()
+                || p.on_pointer_enter.is_some()
+                || p.tab_stop
+            {
                 let target = HitTarget {
                     rect: Rect::new(x.max(0) as u16, y.max(0) as u16, width, height),
                     layer: ctx.layer,
@@ -400,6 +407,7 @@ fn render_node_offset_internal(
                     focus_id: p.focus_id,
                     on_key: p.on_key.clone(),
                     on_scroll: None,
+                    on_pointer_enter: p.on_pointer_enter.clone(),
                 };
                 register_target(ctx, x, y, target);
             }
@@ -635,6 +643,7 @@ fn render_node_offset_internal(
                             focus_id: Some(id),
                             on_key: None,
                             on_scroll: Some(on_scroll),
+                            on_pointer_enter: None,
                         };
                         register_target(ctx, x, y, target);
                     }

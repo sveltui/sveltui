@@ -99,6 +99,16 @@ path = "components/scroll/main.rs"
 test = true
 
 [[example]]
+name = "component_select"
+path = "components/select/main.rs"
+test = true
+
+[[example]]
+name = "component_combobox"
+path = "components/combobox/main.rs"
+test = true
+
+[[example]]
 name = "component_tabs"
 path = "components/tabs/main.rs"
 test = true

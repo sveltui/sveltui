@@ -14,6 +14,8 @@ pub struct HitTarget {
     pub focus_id: Option<FocusId>,
     pub on_key: Option<KeyHandler>,
     pub on_scroll: Option<Rc<dyn Fn(i16, i16)>>,
+    /// Called when the pointer moves onto this target.
+    pub on_pointer_enter: Option<Rc<dyn Fn()>>,
 }
 
 #[derive(Default, Clone)]

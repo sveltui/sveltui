@@ -1,13 +1,13 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use sveltui::prelude::*;
 
-/// When focusing a tab also selects it.
+/// How a tab gets selected.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum TabsActivation {
-    /// Moving focus to a tab (arrows, Home/End) selects it immediately.
+    /// Focusing a tab selects it.
     #[default]
     Automatic,
-    /// Arrows only move focus; Enter/Space (or a click) selects.
+    /// Arrows only move focus; press Enter or Space, or click, to select.
     Manual,
 }
 
@@ -15,11 +15,11 @@ pub enum TabsActivation {
 pub struct RootProps {
     #[prop(optional)]
     pub id: Option<FocusId>,
-    /// Controlled selection. Leave unset for uncontrolled tabs.
+    /// The selected tab. Pass it to control the selection yourself.
     #[prop(optional)]
     pub value: Option<String>,
-    /// Initial selection for uncontrolled tabs. Without it the first enabled
-    /// tab is selected.
+    /// The tab selected at first. Leave it out and the first enabled tab is
+    /// used.
     #[prop(optional)]
     pub default_value: Option<String>,
     #[prop(optional)]
@@ -28,7 +28,7 @@ pub struct RootProps {
     pub orientation: Orientation,
     #[prop(default = TabsActivation::Automatic)]
     pub activation_mode: TabsActivation,
-    /// Whether arrow keys wrap from the last tab to the first.
+    /// Whether the arrow keys wrap around from the last tab to the first.
     #[prop(default = true)]
     pub loop_focus: bool,
     #[snippet(optional)]
@@ -61,14 +61,16 @@ pub struct ContentProps {
     pub children: Option<Snippet>,
 }
 
-/// Shared state that `Tabs::Root` provides to its parts.
+/// What the root shares with the tab parts through context: the selection,
+/// stable ids, the select callback and how the list moves focus.
 #[derive(Clone)]
 pub(super) struct TabsContext {
-    /// The selection for this frame. Starts as the explicit value; if that
-    /// is `None`, the first enabled trigger to render claims it.
+    /// The selected tab for this render. It starts as the explicit value, and
+    /// if there isn't one, the first enabled tab to render claims it.
     pub(super) resolved: Rc<RefCell<Option<String>>>,
-    /// Stable (tab id, panel id) pair per value, kept across frames so a
-    /// tab's `controls` and its panel's `labelled_by` always match.
+    /// A stable (tab id, panel id) pair per value. We keep these across renders
+    /// so a tab's `controls` and its panel's `labelled_by` always point at each
+    /// other.
     pub(super) ids: Rc<RefCell<HashMap<String, (FocusId, FocusId)>>>,
     pub(super) select: Rc<dyn Fn(String)>,
     pub(super) orientation: Orientation,
@@ -77,7 +79,8 @@ pub(super) struct TabsContext {
 }
 
 impl TabsContext {
-    /// The (tab id, panel id) pair for `value`, created on first use.
+    /// The (tab id, panel id) pair for `value`, made the first time it's asked
+    /// for.
     pub(super) fn ids_for(&self, value: &str) -> (FocusId, FocusId) {
         *self
             .ids

@@ -98,3 +98,25 @@ fn test_text_input_cursor_forward_typing() {
     assert_eq!(val.get(), "abc");
     assert_eq!(get_cursor(id, 3), 3);
 }
+
+#[test]
+fn an_outside_value_change_moves_the_cursor_to_the_end() {
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+    let id = FocusId::new();
+    let text = state(String::new());
+    let build = || view! { <TextInput id=id value=text /> };
+    let mut manager = FocusManager::new();
+    let frame = |manager: &mut FocusManager| {
+        let node = manager.with_context(build);
+        let (_, hits) = render(&node, 40, 3);
+        manager.reconcile(hits.interactions);
+    };
+    frame(&mut manager);
+    manager.focus(id);
+
+    text.set(String::from("Rust"));
+    frame(&mut manager);
+    manager.dispatch(KeyEvent::new(KeyCode::Char('y'), KeyModifiers::NONE));
+    frame(&mut manager);
+    assert_eq!(text.get(), "Rusty");
+}

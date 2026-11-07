@@ -372,9 +372,9 @@ impl IntoPropOption<crate::layout::Placement> for crate::layout::Placement {
     }
 }
 
-/// Implements `IntoPropOption<T> for T` for types passed to props as-is.
-/// Together with the blanket `Option<T>` impl, one setter accepts both
-/// `value` and `Option<value>`.
+/// Implements `IntoPropOption<T> for T` for each type listed. Together with the
+/// blanket `Option<T>` impl, that lets one setter take either `T` or
+/// `Option<T>`.
 macro_rules! identity_prop_option {
     ($($ty:ty),* $(,)?) => {$(
         impl IntoPropOption<$ty> for $ty {

@@ -4,9 +4,10 @@ use sveltui::prelude::*;
 
 use super::tabs_types::*;
 
-/// Owns the selection and provides it to `List`, `Trigger` and `Content`.
-/// Place `List` before the `Content` parts so a default selection resolves
-/// before panels render.
+/// Keeps track of the selected tab, either the `value` you pass in or its own
+/// state, and shares it through context with `List`, `Trigger` and `Content`,
+/// along with stable tab and panel ids. Put `List` before the `Content` parts;
+/// otherwise the panels render before a default tab has been picked.
 #[component]
 pub fn Root(props: RootProps) -> VNode {
     let local = state(props.default_value.clone());
@@ -47,8 +48,8 @@ pub fn Root(props: RootProps) -> VNode {
     }
 }
 
-/// The row (or column) of tabs. It is a single tab stop; arrow keys move
-/// between its triggers.
+/// A row or column of tabs, depending on the root's orientation. The whole list
+/// is one tab stop, and the arrow keys move between tabs.
 #[component]
 pub fn List(props: ListProps) -> VNode {
     let tabs = use_context::<TabsContext>().expect("Tabs::List requires Tabs::Root");
@@ -88,7 +89,7 @@ pub fn Trigger(props: TriggerProps) -> VNode {
             .insert(props.value.clone(), (id, panel_id));
     }
 
-    // With no explicit selection, the first enabled tab is selected.
+    // Nothing selected yet? The first enabled tab to render claims it.
     if !props.disabled {
         let mut resolved = tabs.resolved.borrow_mut();
         if resolved.is_none() {
@@ -141,19 +142,19 @@ pub fn Trigger(props: TriggerProps) -> VNode {
     }
 }
 
-/// The panel for one tab. Only the selected panel is rendered.
+/// A tab panel. It only renders while its tab is selected, and it's labelled by
+/// that tab using the ids the root keeps.
 #[component]
 pub fn Content(props: ContentProps) -> VNode {
     let tabs = use_context::<TabsContext>().expect("Tabs::Content requires Tabs::Root");
     if !tabs.is_selected(&props.value) {
         return VNode::Empty;
     }
-    // Panel ids are owned by Tabs so the tab's `controls` always matches.
     let (tab_id, id) = tabs.ids_for(&props.value);
     let semantics = Semantics::new(Role::TabPanel, "").labelled_by(tab_id);
     let children = props.children.render(());
-    // APG: the panel is itself a tab stop only when it holds nothing
-    // focusable, so Tab from the tab reaches the content in one step.
+    // The panel only takes a tab stop when there's nothing focusable inside it;
+    // otherwise Tab goes straight to its content.
     let tab_stop = !has_tab_stop(&children);
     view! {
         <Pressable focus_id=id tab_stop=tab_stop semantics=semantics>
@@ -172,8 +173,8 @@ fn has_tab_stop(node: &VNode) -> bool {
     }
 }
 
-/// Applies the tab's text color, and bold + underline when selected, to
-/// plain text children that don't set their own color.
+/// Colors any text in `node` that doesn't have its own color, and makes it bold
+/// and underlined when `selected`.
 fn styled(mut node: VNode, fg: Color, selected: bool) -> VNode {
     fn walk(node: &mut VNode, fg: Color, selected: bool) {
         match node {

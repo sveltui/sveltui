@@ -92,6 +92,7 @@ pub enum Role {
     List,
     Listbox,
     Option,
+    Combobox,
     Table,
     Grid,
     Row,
@@ -118,9 +119,10 @@ pub struct Semantics {
     pub selected: Option<bool>,
     pub expanded: Option<bool>,
     pub controls: Option<FocusId>,
-    /// The element that names this one (`aria-labelledby`), e.g. the tab
-    /// that labels a tab panel.
+    /// The element that labels this one (`aria-labelledby`).
     pub labelled_by: Option<FocusId>,
+    /// The descendant that has virtual focus (`aria-activedescendant`).
+    pub active_descendant: Option<FocusId>,
     pub has_popup: Option<Role>,
     pub modal: Option<bool>,
     pub parent_item: Option<FocusId>,
@@ -155,6 +157,10 @@ impl Semantics {
     }
     pub fn labelled_by(mut self, id: FocusId) -> Self {
         self.labelled_by = Some(id);
+        self
+    }
+    pub fn active_descendant(mut self, id: Option<FocusId>) -> Self {
+        self.active_descendant = id;
         self
     }
 }
@@ -474,19 +480,29 @@ impl InteractionTree {
         }
         let mut tree = Self::default();
         visit(root, None, &mut Vec::new(), &mut tree);
-        for layer in &tree.layers {
-            if let Some(id) = layer.opener
-                && let Some(node) = tree.nodes.iter_mut().find(|n| n.id == id)
-            {
-                node.interaction.semantics.controls = Some(layer.id);
-                node.interaction.semantics.expanded = Some(layer.active);
-                node.interaction.semantics.has_popup = Some(if layer.config.scope.contain_tab {
+        for index in 0..tree.layers.len() {
+            let layer = &tree.layers[index];
+            let (layer_id, active, config, opener) =
+                (layer.id, layer.active, layer.config, layer.opener);
+            // The popup's own role wins; without one we guess from how the
+            // layer behaves.
+            let popup_role = tree
+                .node(layer_id)
+                .map(|n| n.interaction.semantics.role)
+                .filter(|role| *role != Role::Generic)
+                .unwrap_or(if config.scope.contain_tab {
                     Role::Dialog
-                } else if layer.config.tab == TabDismiss::Any {
+                } else if config.tab == TabDismiss::Any {
                     Role::Menu
                 } else {
                     Role::Generic
                 });
+            if let Some(id) = opener
+                && let Some(node) = tree.nodes.iter_mut().find(|n| n.id == id)
+            {
+                node.interaction.semantics.controls = Some(layer_id);
+                node.interaction.semantics.expanded = Some(active);
+                node.interaction.semantics.has_popup = Some(popup_role);
             }
         }
         for layer in &tree.layers {

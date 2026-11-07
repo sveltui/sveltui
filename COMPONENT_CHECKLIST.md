@@ -14,8 +14,8 @@ Sveltui follows a declarative, reactive architecture built on top of `crossterm`
 | Metric | Count | Details |
 |---|:---:|---|
 | **Total Component Patterns Tracked** | **42** | Covering standard ARIA APG, Bits-UI, and Base UI component suites |
-| **Implemented (Ready for Use)** | **15** | Production-ready in [`sveltui-components`](./crates/sveltui-components/src/lib.rs) and [`sveltui`](./crates/sveltui/src/lib.rs) core |
-| **Partial / Core Primitives Ready** | **5** | Selection models and layout primitives available in core for widget composition |
+| **Implemented (Ready for Use)** | **17** | Production-ready in [`sveltui-components`](./crates/sveltui-components/src/lib.rs) and [`sveltui`](./crates/sveltui/src/lib.rs) core |
+| **Partial / Core Primitives Ready** | **3** | Selection models and layout primitives available in core for widget composition |
 | **Planned / Future Roadmap** | **22** | Scheduled for subsequent releases |
 
 ### Interaction & Theming Foundations
@@ -42,15 +42,17 @@ Sveltui follows a declarative, reactive architecture built on top of `crossterm`
 12. [`ContextMenu`](./crates/sveltui-components/src/menu/menu_component.rs) — Right-click / pointer-positioned contextual popup menu.
 13. [`MenuBar`](./crates/sveltui-components/src/menu/menu_component.rs) — Horizontal desktop application menu bar with single Tab stop and arrow coordination.
 14. [`Tabs`](./crates/sveltui-components/src/tabs/tabs_component.rs) — Composable tabs (`Root`, `List`, `Trigger`, `Content`) with roving focus, automatic or manual activation, and horizontal or vertical orientation.
+15. [`Select`](./crates/sveltui-components/src/select/select_component.rs) — Dropdown listbox (`Root`, `Trigger`, `Value`, `Content`, `Item`, groups and separators) with virtual-focus navigation and typeahead, plus a `<Select options=...>` shortcut.
+16. [`Combobox`](./crates/sveltui-components/src/combobox/combobox_component.rs) — Text input with a filtered popup listbox (`Root`, `Input`, `Trigger`, `Content`, `Item`, `Empty`, groups and separators), plus a `<Combobox options=...>` shortcut.
 
 ### Core Framework Layout & Element Primitives (`crates/sveltui`)
-15. [`View`](./crates/sveltui/src/element/node.rs) — Unified Taffy-powered layout container supporting sizing, layout, scrollbars, borders, padding, and visual styling.
-16. [`Paragraph`](./crates/sveltui/src/element/text.rs) — Word-wrapped formatted text block with scrolling.
-17. [`TextSpan`](./crates/sveltui/src/element/text.rs) / [`TextElement`](./crates/sveltui/src/element/text.rs) — Text runs with `fg`, `bg`, `bold`, `dim`, `italic`, `underline`.
-18. [`Overlay`](./crates/sveltui/src/element/boundary.rs) — Root floating layer primitive with modal/non-modal policies and backdrop rendering.
-19. [`ErrorBoundary`](./crates/sveltui/src/element/boundary.rs) — Declarative panic catcher with fallback snippets.
-20. [`ContextProvider`](./crates/sveltui/src/element/provider.rs) — Scoped context dependency injection.
-21. [`Collection` / Selection Primitives](./crates/sveltui/src/element/collection.rs) — Headless selection models (`Selection`, `GridSelection`, `TreeSelection`, `Typeahead`).
+17. [`View`](./crates/sveltui/src/element/node.rs) — Unified Taffy-powered layout container supporting sizing, layout, scrollbars, borders, padding, and visual styling.
+18. [`Paragraph`](./crates/sveltui/src/element/text.rs) — Word-wrapped formatted text block with scrolling.
+19. [`TextSpan`](./crates/sveltui/src/element/text.rs) / [`TextElement`](./crates/sveltui/src/element/text.rs) — Text runs with `fg`, `bg`, `bold`, `dim`, `italic`, `underline`.
+20. [`Overlay`](./crates/sveltui/src/element/boundary.rs) — Root floating layer primitive with modal/non-modal policies and backdrop rendering.
+21. [`ErrorBoundary`](./crates/sveltui/src/element/boundary.rs) — Declarative panic catcher with fallback snippets.
+22. [`ContextProvider`](./crates/sveltui/src/element/provider.rs) — Scoped context dependency injection.
+23. [`Collection` / Selection Primitives](./crates/sveltui/src/element/collection.rs) — Headless selection models (`Selection`, `GridSelection`, `TreeSelection`, `Typeahead`).
 
 ---
 
@@ -80,8 +82,8 @@ The table below catalogs components across **WCAG ARIA**, **Bits-UI**, and **Bas
 | `[x]` | **Divider / Separator** | Layout / Structure | WCAG APG / Bits-UI / Base UI | Non-interactive separator (`Role::Separator`) | None | Orientation (`Horizontal` / `Vertical`), optional `title`, border character set, `border_color`, fill allocation | [`Divider`](./crates/sveltui-components/src/divider/divider_component.rs) |
 | `[x]` | **Scroll Area** | Layout | Bits-UI / Base UI | Scrolling via focused child control navigation or directional keys | Mouse wheel vertical & horizontal scroll; scrollbar track click | `overflow`, `ScrollbarStyle` (`chars`, `fg`, `bg`), `ScrollbarVisibility` (`Auto`, `Always`, `Never`), auto-scrollbar exclusion | [`View`](./crates/sveltui/src/element/node.rs) |
 | `[-]` | **Alert Dialog** | Overlay | WCAG APG / Bits-UI / Base UI | Immediate focus on cancel or safe action; modal trap; <kbd>Escape</kbd> dismisses if allowed; <kbd>Tab</kbd> cycles | Outside click blocked or handled; action button clicks | Derived from [`Dialog`](./crates/sveltui-components/src/dialog/dialog_component.rs) with `role: Role::Dialog` / `alert` alert styling and confirmation action buttons | [`Dialog`](./crates/sveltui-components/src/dialog/dialog_component.rs) / Plan dedicated preset |
-| `[-]` | **Listbox / Select** | Form / Selection | WCAG APG / Bits-UI / Base UI | Single <kbd>Tab</kbd> stop; <kbd>↑</kbd>/<kbd>↓</kbd> changes active option; <kbd>Home</kbd>/<kbd>End</kbd>; typeahead search; <kbd>Enter</kbd>/<kbd>Space</kbd> selects | Click opens popup list; click item selects; outside click dismisses | Headless selection model exists in [`Selection`](./crates/sveltui/src/element/collection.rs) and [`Typeahead`](./crates/sveltui/src/element/collection.rs); requires high-level JSX wrapper | In Progress |
-| `[-]` | **Combobox / Autocomplete** | Form / Input | WCAG APG / Bits-UI / Base UI | Typing filters options; <kbd>↓</kbd> opens listbox & navigates; <kbd>Enter</kbd> selects; <kbd>Escape</kbd> closes listbox & reverts | Click trigger opens listbox; click item commits selection | Combines [`TextInput`](./crates/sveltui-components/src/text_input/text_input_component.rs), [`Overlay`](./crates/sveltui/src/element/boundary.rs), and [`Collection`](./crates/sveltui/src/element/collection.rs) filtering | In Progress |
+| `[x]` | **Listbox / Select** | Form / Selection | WCAG APG / Bits-UI / Base UI | Trigger is one <kbd>Tab</kbd> stop; <kbd>Enter</kbd>/<kbd>Space</kbd>/<kbd>↓</kbd>/<kbd>↑</kbd> open; <kbd>↑</kbd>/<kbd>↓</kbd> move the highlight with wrap, skipping disabled; <kbd>Home</kbd>/<kbd>End</kbd>; typeahead; <kbd>Enter</kbd>/<kbd>Space</kbd> pick; <kbd>Esc</kbd> and <kbd>Tab</kbd> close | Click trigger toggles; hover highlights; click option picks; outside click closes | Focus stays on the trigger (`aria-activedescendant`); groups, headings, separators, disabled options; controlled or uncontrolled value and open state | [`Select`](./crates/sveltui-components/src/select/select_component.rs) |
+| `[x]` | **Combobox / Autocomplete** | Form / Input | WCAG APG / Bits-UI / Base UI | Typing opens and filters (case-insensitive); <kbd>↓</kbd>/<kbd>↑</kbd> open and move the highlight; <kbd>Enter</kbd> picks and fills the input; <kbd>Esc</kbd> closes and restores the earlier text; <kbd>Tab</kbd> closes and moves on | Click input opens; click ▾ toggles; hover highlights; click option picks; outside click closes | Focus stays in the input (`aria-activedescendant`); `Empty` state; optional filtering; controlled or uncontrolled value and open state | [`Combobox`](./crates/sveltui-components/src/combobox/combobox_component.rs) |
 | `[-]` | **Grid / Data Grid** | Data Display | WCAG APG Grid | 2D navigation (<kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>); <kbd>Home</kbd>/<kbd>End</kbd> row bounds; <kbd>Ctrl+Home</kbd>/<kbd>Ctrl+End</kbd>; single/multi-cell selection | Click cell to select; click header to sort; drag scroll | Low-level [`GridSelection`](./crates/sveltui/src/element/collection.rs) implemented in core; table renderer needed | In Progress |
 | `[-]` | **Tree View** | Navigation / Data | WCAG APG Tree View | <kbd>↑</kbd>/<kbd>↓</kbd> navigates visible nodes; <kbd>→</kbd> expands parent or moves to first child; <kbd>←</kbd> collapses parent or moves to owner; typeahead | Click item selects; click chevron expands/collapses | Low-level [`TreeSelection`](./crates/sveltui/src/element/collection.rs) implemented in core; tree node JSX component needed | In Progress |
 | `[ ]` | **Accordion** | Disclosure | WCAG APG / Bits-UI / Base UI | <kbd>Tab</kbd> between headers; <kbd>Enter</kbd>/<kbd>Space</kbd> toggles panel; optional roving arrows (<kbd>↑</kbd>/<kbd>↓</kbd>, <kbd>Home</kbd>/<kbd>End</kbd>) | Click header expands/collapses accordion item | Single / multiple open mode; custom trigger and content slots; animated indicator character (`▼`/`▶`) | Planned |

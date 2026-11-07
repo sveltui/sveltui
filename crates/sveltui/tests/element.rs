@@ -27,6 +27,7 @@ fn test_hit_map() {
         focus_id: Some(FocusId(1)),
         on_key: None,
         on_scroll: None,
+        on_pointer_enter: None,
     });
 
     assert!(hit_map.hit_test(6, 6).is_some());

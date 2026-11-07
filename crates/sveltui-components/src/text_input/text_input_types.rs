@@ -59,4 +59,14 @@ pub struct TextInputProps {
     pub on_submit: Option<Rc<dyn Fn(String)>>,
     #[prop(default = CursorStyle::Line)]
     pub cursor_style: CursorStyle,
+    /// Gets every key before the input does. Return `EventResult::Handled` and
+    /// the input won't process that key itself.
+    #[prop(optional)]
+    pub on_key: Option<KeyHandler>,
+    /// The input's semantics. Defaults to `Role::Textbox`.
+    #[prop(optional)]
+    pub semantics: Option<Semantics>,
+    /// Called when the input is clicked.
+    #[prop(optional)]
+    pub on_click: Option<Rc<dyn Fn()>>,
 }
