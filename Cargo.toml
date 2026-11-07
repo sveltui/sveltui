@@ -5,8 +5,9 @@ members = [
     "crates/sveltui-components",
     "crates/sveltui-macros",
     "crates/sveltui",
+    "examples",
 ]
-default-members = ["crates/sveltui"]
+default-members = ["crates/sveltui", "examples"]
 
 [workspace.package]
 version = "0.1.0-alpha.2"

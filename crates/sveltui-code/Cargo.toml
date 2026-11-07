@@ -20,7 +20,3 @@ syntect = { workspace = true }
 [[bench]]
 name = "buffer_benchmarks"
 harness = false
-
-[[example]]
-name = "code_editor"
-path = "../../examples/code_editor.rs"

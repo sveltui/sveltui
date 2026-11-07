@@ -50,9 +50,42 @@ sveltui/
 ├── crates/
 │   ├── sveltui/                  # Core crate (App, reactive, layout, terminal, element)
 │   ├── sveltui-components/       # Built-in components (Button, TextInput, Dialog, etc.)
+│   ├── sveltui-code/             # Syntax-highlighted code preview & editor
 │   └── sveltui-macros/           # Declarative JSX macro (`view! { ... }`, `#[component]`)
-└── examples/                   # Framework and component examples
+└── examples/                   # `sveltui-examples` package (publish = false)
+    ├── Cargo.toml                # Registers every example with an explicit [[example]]
+    ├── hello_world/main.rs
+    ├── framework/<name>/main.rs  # cargo run --example framework_<name>
+    ├── components/<name>/        # cargo run --example component_<name>
+    │   ├── main.rs
+    │   └── <name>_tests.rs       # optional; example sets `test = true`
+    └── code/editor/main.rs       # cargo run --example code_editor
 ```
+
+### 2.1. Dependency Rule
+
+The core `sveltui` crate depends on **no workspace crate except
+`sveltui-macros`**, including dev-dependencies. Anything that needs
+components (tests, examples) lives in `sveltui-components`, `sveltui-code`
+or the `examples/` package.
+
+### 2.2. Module & Test Layout
+
+Each component in `sveltui-components` is a folder module:
+
+```
+src/button/
+├── mod.rs                # declares the submodules and re-exports them
+├── button_types.rs       # Props structs, bindings, enums, type aliases
+├── button_component.rs   # #[component] functions and private helpers
+└── button_tests.rs       # unit tests (`#[cfg(test)] mod button_tests;`)
+```
+
+- A unit test file lives next to its source as `<modname>_tests.rs` (for
+  example `crates/sveltui/src/app/app_tests.rs`). Do not use `#[path]`.
+- `crates/*/tests/` holds integration tests that span several modules or
+  components (for example `sveltui-components/tests/keyboard.rs`). Name
+  them after the topic, without a `_tests` suffix.
 
 ---
 

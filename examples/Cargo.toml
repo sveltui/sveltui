@@ -1,0 +1,108 @@
+[package]
+name = "sveltui-examples"
+description = "Runnable examples for the sveltui workspace."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+autoexamples = false
+
+[dependencies]
+sveltui.workspace = true
+sveltui-components.workspace = true
+sveltui-code.workspace = true
+crossterm.workspace = true
+
+[[example]]
+name = "hello_world"
+path = "hello_world/main.rs"
+
+[[example]]
+name = "counter"
+path = "counter/main.rs"
+
+[[example]]
+name = "framework_state"
+path = "framework/state/main.rs"
+
+[[example]]
+name = "framework_conditionals"
+path = "framework/conditionals/main.rs"
+
+[[example]]
+name = "framework_loops"
+path = "framework/loops/main.rs"
+
+[[example]]
+name = "framework_snippets"
+path = "framework/snippets/main.rs"
+
+[[example]]
+name = "framework_lifecycle"
+path = "framework/lifecycle/main.rs"
+
+[[example]]
+name = "framework_context"
+path = "framework/context/main.rs"
+
+[[example]]
+name = "framework_async"
+path = "framework/async/main.rs"
+
+[[example]]
+name = "framework_error_boundary"
+path = "framework/error_boundary/main.rs"
+
+[[example]]
+name = "component_button"
+path = "components/button/main.rs"
+
+[[example]]
+name = "component_dialog"
+path = "components/dialog/main.rs"
+
+[[example]]
+name = "component_dropdown"
+path = "components/dropdown/main.rs"
+
+[[example]]
+name = "component_context_menu"
+path = "components/context_menu/main.rs"
+
+[[example]]
+name = "component_menu_bar"
+path = "components/menu_bar/main.rs"
+
+[[example]]
+name = "component_interactive"
+path = "components/interactive/main.rs"
+
+[[example]]
+name = "component_keyboard"
+path = "components/keyboard/main.rs"
+
+[[example]]
+name = "component_form"
+path = "components/form/main.rs"
+test = true
+
+[[example]]
+name = "component_layout"
+path = "components/layout/main.rs"
+test = true
+
+[[example]]
+name = "component_scroll"
+path = "components/scroll/main.rs"
+test = true
+
+[[example]]
+name = "component_paragraph"
+path = "components/paragraph/main.rs"
+test = true
+
+[[example]]
+name = "code_editor"
+path = "code/editor/main.rs"

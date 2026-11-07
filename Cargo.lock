@@ -698,7 +698,6 @@ dependencies = [
  "criterion",
  "crossterm",
  "notify",
- "sveltui-components",
  "sveltui-macros",
  "taffy",
 ]
@@ -720,6 +719,16 @@ dependencies = [
  "crossterm",
  "sveltui",
  "sveltui-macros",
+]
+
+[[package]]
+name = "sveltui-examples"
+version = "0.1.0-alpha.2"
+dependencies = [
+ "crossterm",
+ "sveltui",
+ "sveltui-code",
+ "sveltui-components",
 ]
 
 [[package]]
