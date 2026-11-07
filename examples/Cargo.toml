@@ -139,6 +139,16 @@ path = "components/combobox/main.rs"
 test = true
 
 [[example]]
+name = "component_data_grid"
+path = "components/data_grid/main.rs"
+test = true
+
+[[example]]
+name = "component_table"
+path = "components/table/main.rs"
+test = true
+
+[[example]]
 name = "component_tabs"
 path = "components/tabs/main.rs"
 test = true

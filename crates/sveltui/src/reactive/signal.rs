@@ -1,4 +1,4 @@
-use crate::reactive::runtime::{AnyVal, Runtime, SIGNAL_VALUES, SignalId};
+use crate::reactive::runtime::{AnyVal, Runtime, SIGNAL_VALUES, SignalId, next_version};
 use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -53,6 +53,15 @@ impl<T: Clone + 'static> ReadSignal<T> {
         f(val)
     }
 
+    /// A number that changes every time the value is written, and only
+    /// then. Comparing it with one saved earlier tells us whether anything
+    /// derived from the value is out of date, without comparing the value.
+    pub fn version(&self) -> u64 {
+        Runtime::track(self.id);
+        let vals = SIGNAL_VALUES.read().expect("SIGNAL_VALUES lock poisoned");
+        vals.get(&self.id).map_or(0, |entry| entry.1)
+    }
+
     pub fn id(&self) -> SignalId {
         self.id
     }
@@ -89,7 +98,7 @@ impl<T: 'static> WriteSignal<T> {
     pub fn set(&self, new_val: T) {
         {
             let mut vals = SIGNAL_VALUES.write().expect("SIGNAL_VALUES lock poisoned");
-            vals.insert(self.id, AnyVal(Box::new(new_val)));
+            vals.insert(self.id, AnyVal(Box::new(new_val), next_version()));
         }
         Runtime::trigger(self.id);
     }
@@ -97,8 +106,11 @@ impl<T: 'static> WriteSignal<T> {
     pub fn update(&self, f: impl FnOnce(&mut T)) {
         {
             let mut vals = SIGNAL_VALUES.write().expect("SIGNAL_VALUES lock poisoned");
-            if let Some(val) = vals.get_mut(&self.id).and_then(|b| b.0.downcast_mut::<T>()) {
-                f(val);
+            if let Some(entry) = vals.get_mut(&self.id) {
+                entry.1 = next_version();
+                if let Some(val) = entry.0.downcast_mut::<T>() {
+                    f(val);
+                }
             }
         }
         Runtime::trigger(self.id);
@@ -113,7 +125,7 @@ pub fn create_signal<T: Clone + 'static>(initial: T) -> (ReadSignal<T>, WriteSig
     let id = SignalId(NEXT_SIGNAL_ID.fetch_add(1, Ordering::Relaxed));
     {
         let mut vals = SIGNAL_VALUES.write().expect("SIGNAL_VALUES lock poisoned");
-        vals.insert(id, AnyVal(Box::new(initial)));
+        vals.insert(id, AnyVal(Box::new(initial), next_version()));
     }
 
     (
@@ -170,6 +182,12 @@ impl<T: Clone + 'static> State<T> {
 
     pub fn update(&self, f: impl FnOnce(&mut T)) {
         self.write.update(f);
+    }
+
+    /// A number that changes every time the value is written (see
+    /// `ReadSignal::version`).
+    pub fn version(&self) -> u64 {
+        self.read.version()
     }
 
     pub fn read(&self) -> ReadSignal<T> {

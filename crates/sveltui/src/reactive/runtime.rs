@@ -4,7 +4,15 @@ use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, RwLock};
 
-pub(crate) struct AnyVal(pub(crate) Box<dyn Any>);
+/// A signal's value, and its version: a number that changes on every write.
+pub(crate) struct AnyVal(pub(crate) Box<dyn Any>, pub(crate) u64);
+
+static NEXT_VERSION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
+/// A version no other write has had.
+pub(crate) fn next_version() -> u64 {
+    NEXT_VERSION.fetch_add(1, Ordering::Relaxed)
+}
 unsafe impl Send for AnyVal {}
 unsafe impl Sync for AnyVal {}
 

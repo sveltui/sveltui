@@ -97,6 +97,7 @@ pub enum Role {
     Grid,
     Row,
     Cell,
+    ColumnHeader,
     Tree,
     TreeItem,
     Treegrid,

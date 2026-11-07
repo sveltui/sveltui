@@ -104,8 +104,9 @@ pub mod prelude {
         ScrollbarVisibility,
     };
     pub use crate::layout::{
-        GridAutoFlow, GridLine, GridLines, Repeat, Track, auto, evenly, fit_content, fr, length,
-        line, lines, max_content, min_content, minmax, percent, repeat, span,
+        GridAutoFlow, GridLine, GridLines, Repeat, RuleAxes, Side, Track, auto, evenly,
+        fit_content, fr, length, line, lines, max_content, min_content, minmax, percent, repeat,
+        span,
     };
     pub use crate::reactive::{
         AsyncState, Bindable, BlockingFuture, ComponentScope, Derived, ReadSignal, State,

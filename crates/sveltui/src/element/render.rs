@@ -275,17 +275,20 @@ fn render_node_offset_internal(
             .iter()
             .filter_map(|p| p.focus_id)
             .chain(v.scroll.as_ref().and_then(|s| s.id));
+        // The first view to claim an id keeps it. A parent comes before its
+        // children, so parts that share their parent's id (to focus it when
+        // clicked) don't take over its place.
         for id in ids {
-            ctx.hit_map.layouts.insert(
-                id,
-                LayoutTarget {
+            ctx.hit_map
+                .layouts
+                .entry(id)
+                .or_insert_with(|| LayoutTarget {
                     x,
                     y,
                     width,
                     height,
                     scrolls: ctx.scrolls.clone(),
-                },
-            );
+                });
         }
     }
     if let VNode::Overlay(overlay) = node {
@@ -637,6 +640,18 @@ fn render_node_offset_internal(
                             .then_some(max_scroll_y),
                     });
                 }
+
+                // Rules go in before the content clip so they can reach the
+                // border through any padding. They never leave the area inside
+                // the border, so even a scrolling grid's rules stay in place.
+                crate::element::rules::draw_grid_rules(
+                    ctx.buffer,
+                    v,
+                    computed,
+                    (x, y),
+                    (width, height),
+                    (scroll_x, scroll_y),
+                );
 
                 let is_clip_x = is_scroll_x || overflow.x == taffy::style::Overflow::Hidden;
                 let is_clip_y = is_scroll_y || overflow.y == taffy::style::Overflow::Hidden;

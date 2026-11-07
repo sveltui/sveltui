@@ -11,7 +11,38 @@ pub struct ComputedLayoutNode {
     pub viewport_size: (u16, u16),
     pub content_size: (u16, u16),
     pub scroll_size: (u16, u16),
+    /// Where a grid's rules go, when it draws them (see `grid_rules`).
+    pub rules: Option<Box<RuleLines>>,
     pub children: Vec<ComputedLayoutNode>,
+}
+
+/// The middle of each gap between a grid's tracks, relative to the grid's
+/// own top-left corner, in content coordinates (before scrolling).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct RuleLines {
+    /// x of each line between two columns.
+    pub columns: Vec<u16>,
+    /// y of each line between two rows.
+    pub rows: Vec<u16>,
+}
+
+/// The middle cell of each gap between tracks. Taffy lists a grid's
+/// tracks as gutter, track, gutter, ..., gutter, starting at the content
+/// edge; the outer gutters aren't between two tracks, so they get no line.
+fn rule_positions(info: &taffy::DetailedGridTracksInfo, start: f32) -> Vec<u16> {
+    let mut offset = start + info.gutters.first().copied().unwrap_or(0.0);
+    let mut lines = Vec::new();
+    for (index, size) in info.sizes.iter().enumerate() {
+        offset += size;
+        if index + 1 < info.sizes.len() {
+            let gutter = info.gutters.get(index + 1).copied().unwrap_or(0.0);
+            if gutter >= 1.0 {
+                lines.push((offset + (gutter - 1.0) / 2.0).round().max(0.0) as u16);
+            }
+            offset += gutter;
+        }
+    }
+    lines
 }
 
 /// Measured sizes for one text node, keyed by the width it was measured
@@ -60,6 +91,22 @@ pub fn view_to_taffy_style(view: &ViewElement) -> taffy::style::Style {
         .scroll
         .as_ref()
         .is_none_or(|s| s.scrollbar_visibility != crate::layout::ScrollbarVisibility::Never);
+    // A rule needs a gap to sit in.
+    if let Some(visual) = view
+        .visual
+        .as_ref()
+        .filter(|v| v.grid_rules != BorderStyle::None)
+    {
+        let one = LengthPercentage::length(1.0);
+        let none = LengthPercentage::length(0.0);
+        if visual.grid_rule_axes.columns() && style.gap.width == none {
+            style.gap.width = one;
+        }
+        if visual.grid_rule_axes.rows() && style.gap.height == none {
+            style.gap.height = one;
+        }
+    }
+
     style.scrollbar_width = if scrolls
         && bounded(style.size.width, style.max_size.width)
         && bounded(style.size.height, style.max_size.height)
@@ -311,6 +358,23 @@ impl LayoutEngine {
             (content_w, content_h, width, height)
         };
 
+        let rules = match vnode {
+            VNode::View(v)
+                if v.visual
+                    .as_ref()
+                    .is_some_and(|vis| vis.grid_rules != BorderStyle::None) =>
+            {
+                match self.tree.detailed_layout_info(taffy_node) {
+                    taffy::DetailedLayoutInfo::Grid(info) => Some(Box::new(RuleLines {
+                        columns: rule_positions(&info.columns, l.border.left + l.padding.left),
+                        rows: rule_positions(&info.rows, l.border.top + l.padding.top),
+                    })),
+                    _ => None,
+                }
+            }
+            _ => None,
+        };
+
         let scroll_w = content_w.saturating_sub(viewport_w);
         let scroll_h = content_h.saturating_sub(viewport_h);
 
@@ -330,6 +394,7 @@ impl LayoutEngine {
         ComputedLayoutNode {
             rect: Rect::new(x, y, width, height),
             content_inset,
+            rules,
             viewport_size: (viewport_w, viewport_h),
             content_size: (content_w, content_h),
             scroll_size: (scroll_w, scroll_h),

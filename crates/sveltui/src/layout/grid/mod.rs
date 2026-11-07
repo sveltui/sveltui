@@ -12,6 +12,30 @@ mod grid_tests;
 
 pub use taffy::style::GridAutoFlow;
 
+/// Which of a grid's gaps `grid_rules` draws a line in.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum RuleAxes {
+    /// Between every row and every column.
+    #[default]
+    Both,
+    /// Only between rows: horizontal lines.
+    Rows,
+    /// Only between columns: vertical lines.
+    Columns,
+    /// In no gaps. Only `separator` children draw a line.
+    None,
+}
+
+impl RuleAxes {
+    pub(crate) fn rows(self) -> bool {
+        matches!(self, RuleAxes::Both | RuleAxes::Rows)
+    }
+
+    pub(crate) fn columns(self) -> bool {
+        matches!(self, RuleAxes::Both | RuleAxes::Columns)
+    }
+}
+
 /// The size of one column or row in a grid.
 ///
 /// We usually build these with the helpers: `length(20)`, `fr(1.0)`,

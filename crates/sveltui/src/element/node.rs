@@ -4,7 +4,9 @@ use crate::element::interaction::{
     KeyHandler, Semantics,
 };
 use crate::element::snippet::{IntoPropOption, Snippet};
-use crate::layout::grid::{GridAutoFlow, GridLines, IntoTracks, to_auto_tracks, to_template};
+use crate::layout::grid::{
+    GridAutoFlow, GridLines, IntoTracks, RuleAxes, to_auto_tracks, to_template,
+};
 use crate::layout::{AlignContent, AlignItems, AlignSelf, JustifyContent};
 use crate::layout::{
     BorderStyle, Dimension, FlexDirection, Inset, IntoDimension, Margin, Overflow, Padding,
@@ -342,6 +344,11 @@ pub struct VisualData {
     pub title: Option<String>,
     pub cursor_offset: Option<(u16, u16)>,
     pub cursor_style: Option<CursorStyle>,
+    /// Lines drawn in a grid's gaps, joined to each other and to the border.
+    pub grid_rules: BorderStyle,
+    pub grid_rule_axes: RuleAxes,
+    /// This view is a line across its parent grid (see `separator`).
+    pub separator: bool,
 }
 
 #[derive(Clone, Default)]
@@ -561,6 +568,30 @@ macro_rules! view_setters {
         /// The rows this child covers.
         pub fn grid_row(mut self, lines: impl Into<GridLines>) -> Self {
             self.view_mut().style.grid_row = lines.into().to_taffy();
+            self
+        }
+
+        /// Draws lines in the grid's gaps, in this style and the border
+        /// color. They join each other and the view's border, and break
+        /// around cells that span across them. Gaps that would hold a line
+        /// are at least one cell wide.
+        pub fn grid_rules(mut self, rules: BorderStyle) -> Self {
+            self.view_mut().visual_mut().grid_rules = rules;
+            self
+        }
+
+        /// Which gaps `grid_rules` draws in: between rows, columns, or both.
+        pub fn grid_rule_axes(mut self, axes: RuleAxes) -> Self {
+            self.view_mut().visual_mut().grid_rule_axes = axes;
+            self
+        }
+
+        /// Turns this view into a line across its parent grid, in the
+        /// parent's `grid_rules` style and joined to its other rules and
+        /// border. It's how a grid gets a line in one place only, such as
+        /// under a header. Give it its own row (`grid_column=lines(1, -1)`).
+        pub fn separator(mut self, separator: bool) -> Self {
+            self.view_mut().visual_mut().separator = separator;
             self
         }
 

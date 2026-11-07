@@ -16,3 +16,10 @@ readme = "../../README.md"
 sveltui.workspace = true
 sveltui-macros.workspace = true
 crossterm.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "data_grid"
+harness = false

@@ -3,6 +3,7 @@ pub mod button;
 pub mod checkbox;
 pub mod combobox;
 mod controllable;
+pub mod data_grid;
 pub mod dialog;
 pub mod divider;
 mod listbox;
@@ -11,6 +12,7 @@ pub mod popover;
 pub mod progress_bar;
 pub mod select;
 pub mod switch;
+pub mod table;
 pub mod tabs;
 pub mod text_area;
 pub mod text_buffer;
@@ -32,6 +34,9 @@ pub mod Combobox {
         Group, GroupHeading, GroupHeadingProps, GroupProps, Separator, SeparatorProps,
     };
 }
+pub use data_grid::{
+    CellRef, CellState, DataGrid, DataGridProps, GridColumn, GridRows, SortDirection, SortState,
+};
 pub use dialog::{Dialog, DialogProps};
 pub use divider::{Divider, DividerProps};
 /// Shared menu primitive and composable parts.
@@ -86,6 +91,16 @@ pub mod Tabs {
     };
 }
 pub use tabs::TabsActivation;
+/// A table: `Table::Root` holding a `Table::Header` and a `Table::Body` of
+/// `Table::Row`s, each made of `Table::Cell`s.
+#[allow(non_snake_case)]
+pub mod Table {
+    pub use crate::table::{
+        Body, BodyProps, Cell, CellProps, Header, HeaderCell, HeaderProps, Root, RootProps, Row,
+        RowProps,
+    };
+}
+pub use table::{CellAlign, TableRules};
 pub use text_area::{TextArea, TextAreaProps};
 pub use text_buffer::*;
 pub use text_input::{TextInput, TextInputProps, get_cursor, set_cursor};

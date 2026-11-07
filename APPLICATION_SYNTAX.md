@@ -287,6 +287,21 @@ fn Dashboard() -> impl IntoNode {
 }
 ```
 
+`grid_rules` draws lines in a grid's gaps, joined to each other and to the
+border, and broken around cells that span them. `grid_rule_axes` picks rows,
+columns or both, and a child with `separator=true` draws a single line across
+the grid, such as under a header.
+
+```rust
+view! {
+    <View display=Display::Grid border=BorderStyle::Rounded grid_rules=BorderStyle::Single
+        grid_template_columns=[auto(), fr(1.0)]>
+        <TextSpan>"Name"</TextSpan><TextSpan>"Ada"</TextSpan>
+        <TextSpan>"Language"</TextSpan><TextSpan>"Rust"</TextSpan>
+    </View>
+}
+```
+
 ### Children & Snippets
 
 Component children and snippets share a unified syntax via [`Snippet`](file:///Users/themosthigh/Projects/experimental/sveltui/crates/sveltui-element/src/snippet.rs), governed by the **One-Way Rule**:

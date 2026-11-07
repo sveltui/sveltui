@@ -865,3 +865,32 @@ mod two_way {
         assert!(screen.contains("2 items in the cart"), "{screen}");
     }
 }
+
+mod numeric_props {
+    use sveltui::prelude::*;
+
+    #[derive(Props)]
+    struct MeterProps {
+        #[prop(default = 1)]
+        step: u16,
+        #[prop(default = 0.5)]
+        level: f32,
+        count: usize,
+    }
+
+    #[component]
+    fn Meter(props: MeterProps) -> impl IntoNode {
+        view! { <TextSpan>{format!("{} {} {}", props.step, props.level, props.count)}</TextSpan> }
+    }
+
+    #[test]
+    fn plain_literals_fit_numeric_props() {
+        // Number props take their own type, so `step=2` is a u16 rather
+        // than an i32 with no conversion.
+        let node = view! { <Meter step=2 level=0.25 count=3 /> }.into_node();
+        let VNode::Text(text) = node else {
+            panic!("expected text")
+        };
+        assert_eq!(text.content, "2 0.25 3");
+    }
+}

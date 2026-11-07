@@ -418,3 +418,9 @@ impl<T> IntoPropOption<crate::reactive::State<T>> for crate::reactive::State<T> 
         Some(self)
     }
 }
+
+impl<T> IntoPropOption<std::collections::HashSet<T>> for std::collections::HashSet<T> {
+    fn into_prop_option(self) -> Option<std::collections::HashSet<T>> {
+        Some(self)
+    }
+}

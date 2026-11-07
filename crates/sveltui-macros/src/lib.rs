@@ -73,6 +73,16 @@ pub fn component(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// The `T` in `Wrapper<T>` when `ty`'s last path segment is `wrapper`.
+/// Whether `ty` is a number, `bool` or `char`.
+fn is_primitive(ty: &syn::Type) -> bool {
+    const PRIMITIVES: [&str; 16] = [
+        "u8", "u16", "u32", "u64", "u128", "usize", "i8", "i16", "i32", "i64", "i128", "isize",
+        "f32", "f64", "bool", "char",
+    ];
+    matches!(ty, syn::Type::Path(path) if path.qself.is_none()
+        && path.path.get_ident().is_some_and(|ident| PRIMITIVES.iter().any(|p| ident == p)))
+}
+
 fn extract_generic_inner<'a>(ty: &'a syn::Type, wrapper: &str) -> Option<&'a syn::Type> {
     if let syn::Type::Path(type_path) = ty
         && let Some(segment) = type_path.path.segments.last()
@@ -332,6 +342,15 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
                             self
                         }
                     });
+                } else if is_primitive(field_ty) {
+                    // A number takes its own type, so a literal like `gap=2`
+                    // becomes that type instead of an `i32` with no `Into`.
+                    setters.push(quote! {
+                        pub fn #field_name(mut self, val: #field_ty) -> Self {
+                            self.#field_name = Some(val);
+                            self
+                        }
+                    });
                 } else {
                     setters.push(quote! {
                         pub fn #field_name(mut self, val: impl Into<#field_ty>) -> Self {
@@ -368,6 +387,13 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
                 setters.push(quote! {
                     pub fn #slot_fn(mut self, val: impl Into<#field_ty>) -> Self {
                         self.#field_name = Some(val.into());
+                        self
+                    }
+                });
+            } else if is_primitive(field_ty) {
+                setters.push(quote! {
+                    pub fn #field_name(mut self, val: #field_ty) -> Self {
+                        self.#field_name = Some(val);
                         self
                     }
                 });

@@ -10,12 +10,12 @@ pub mod placement;
 pub mod scrollbar;
 
 pub use alignment::{AlignContent, AlignItems, AlignSelf, FlexDirectionExt, JustifyContent};
-pub use border::{BorderChars, BorderStyle};
+pub use border::{BorderChars, BorderStyle, Side};
 pub use dimension::{Dimension, IntoDimension};
 pub use geometry::Rect;
 pub use grid::{
-    GridAutoFlow, GridLine, GridLines, IntoTracks, Repeat, Track, auto, evenly, fit_content, fr,
-    length, line, lines, max_content, min_content, minmax, percent, repeat, span,
+    GridAutoFlow, GridLine, GridLines, IntoTracks, Repeat, RuleAxes, Track, auto, evenly,
+    fit_content, fr, length, line, lines, max_content, min_content, minmax, percent, repeat, span,
 };
 pub use inset::Inset;
 pub use margin::{Margin, MarginEdge};
