@@ -568,7 +568,7 @@ fn menu_defaults_blend_borders_and_dim_disabled_custom_children() {
     ] {
         let node = view! {
             <Menu::Root open=true>
-                <Menu::Content bg=bg opt_border_color=border_override width=20
+                <Menu::Content bg=bg border_color=border_override width=20
                     placement={Placement::Anchor { x: 0, y: 0 }}>
                     <Menu::Item disabled=true>
                         <View flex_direction=FlexDirection::Row>

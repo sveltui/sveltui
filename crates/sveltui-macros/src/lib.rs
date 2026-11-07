@@ -216,69 +216,42 @@ pub fn derive_props(input: TokenStream) -> TokenStream {
                     });
                 } else if is_snippet {
                     let slot_fn = quote::format_ident!("slot_{}", field_name);
-                    let opt_field = quote::format_ident!("opt_{}", field_name);
                     setters.push(quote! {
                         pub fn #slot_fn(mut self, val: impl #root::IntoPropOption<#inner_ty>) -> Self {
                             self.#field_name = Some(val.into_prop_option());
                             self
                         }
-                        pub fn #field_name(mut self, val: impl #root::IntoPropOption<#inner_ty>) -> Self {
-                            self.#field_name = Some(val.into_prop_option());
-                            self
-                        }
-                        pub fn #opt_field(mut self, val: #field_ty) -> Self {
-                            self.#field_name = Some(val);
-                            self
+                        pub fn #field_name(self, val: impl #root::IntoPropOption<#inner_ty>) -> Self {
+                            self.#slot_fn(val)
                         }
                     });
                 } else {
-                    let opt_field = quote::format_ident!("opt_{}", field_name);
+                    // Every setter for an optional prop accepts both `T` and
+                    // `Option<T>`, so forwarding an optional value needs no
+                    // separate `opt_<field>` setter.
                     let s = quote!(#inner_ty).to_string().replace(" ", "");
-                    if s.contains("Rc<dynFn()") || s.contains("Rc<(dynFn())") {
-                        setters.push(quote! {
-                            pub fn #field_name(mut self, val: impl #root::IntoClickHandler) -> Self {
-                                self.#field_name = Some(Some(val.into_click_handler()));
-                                self
-                            }
-                            pub fn #opt_field(mut self, val: #field_ty) -> Self {
-                                self.#field_name = Some(val);
-                                self
-                            }
-                        });
+                    let (param, value) = if s.contains("Rc<dynFn()") || s.contains("Rc<(dynFn())") {
+                        (
+                            quote!(impl #root::IntoClickHandler),
+                            quote!(val.into_click_handler()),
+                        )
                     } else if s.contains("KeyHandler") || s.contains("KeyEvent") {
-                        setters.push(quote! {
-                            pub fn #field_name(mut self, val: impl #root::IntoKeyHandler) -> Self {
-                                self.#field_name = Some(Some(val.into_key_handler()));
-                                self
-                            }
-                            pub fn #opt_field(mut self, val: #field_ty) -> Self {
-                                self.#field_name = Some(val);
-                                self
-                            }
-                        });
-                    } else if s.contains("WriteSignal") || s.contains("ReadSignal") {
-                        setters.push(quote! {
-                            pub fn #field_name(mut self, val: #inner_ty) -> Self {
-                                self.#field_name = Some(Some(val));
-                                self
-                            }
-                            pub fn #opt_field(mut self, val: #field_ty) -> Self {
-                                self.#field_name = Some(val);
-                                self
-                            }
-                        });
+                        (
+                            quote!(impl #root::IntoKeyHandler),
+                            quote!(val.into_key_handler()),
+                        )
                     } else {
-                        setters.push(quote! {
-                            pub fn #field_name(mut self, val: impl #root::IntoPropOption<#inner_ty>) -> Self {
-                                self.#field_name = Some(val.into_prop_option());
-                                self
-                            }
-                            pub fn #opt_field(mut self, val: #field_ty) -> Self {
-                                self.#field_name = Some(val);
-                                self
-                            }
-                        });
-                    }
+                        (
+                            quote!(impl #root::IntoPropOption<#inner_ty>),
+                            quote!(val.into_prop_option()),
+                        )
+                    };
+                    setters.push(quote! {
+                        pub fn #field_name(mut self, val: #param) -> Self {
+                            self.#field_name = Some(#value);
+                            self
+                        }
+                    });
                 }
             } else {
                 if field_name == "children" {

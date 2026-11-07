@@ -273,7 +273,7 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
         <Pressable
             focus_id=id
             tab_stop=true
-            opt_focus_scope=focus_scope
+            focus_scope=focus_scope
             semantics=Semantics::new(Role::Textbox, title_str)
             on_click_at=on_click_at
             on_key=on_key
@@ -290,9 +290,9 @@ pub fn CodeEditor(props: CodeEditorProps) -> impl IntoNode {
                 overflow_x=Overflow::Scroll
                 overflow_y=Overflow::Scroll
                 scroll_id=id
-                opt_title=props.title
-                opt_cursor_offset=cursor_offset
-                opt_cursor_style=cursor_style
+                title=props.title
+                cursor_offset=cursor_offset
+                cursor_style=cursor_style
             >
                 {#each rendered_line_nodes as line_node}
                     {line_node}

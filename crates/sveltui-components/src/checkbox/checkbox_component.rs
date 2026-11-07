@@ -42,7 +42,7 @@ pub fn Checkbox(props: CheckboxProps) -> impl IntoNode {
             disabled=props.disabled
             activation=Activation::Toggle
             semantics=Semantics::new(Role::Checkbox, label_str.clone()).checked(is_checked)
-            opt_on_click=on_click
+            on_click=on_click
         >
             <View
                 border=BorderStyle::None

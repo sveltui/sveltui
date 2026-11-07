@@ -263,8 +263,8 @@ fn test_render_node_cursor_offset() {
                     .padding(1)
                     .width(20)
                     .height(3)
-                    .opt_cursor_offset(cursor)
-                    .opt_cursor_style(style),
+                    .cursor_offset(cursor)
+                    .cursor_style(style),
             )
             .into_node()
     };

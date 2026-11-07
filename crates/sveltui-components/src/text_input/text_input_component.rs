@@ -150,9 +150,9 @@ pub fn TextInput(props: TextInputProps) -> impl IntoNode {
                 width=props.width
                 justify_content=JustifyContent::Center
                 align_items=AlignItems::FlexStart
-                opt_title=props.title
-                opt_cursor_offset=cursor_offset
-                opt_cursor_style=cursor_style
+                title=props.title
+                cursor_offset=cursor_offset
+                cursor_style=cursor_style
             >
                 <TextSpan foreground_color=text_color bold=focused>{display_text}</TextSpan>
             </View>

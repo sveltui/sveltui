@@ -71,10 +71,10 @@ fn explicit_text_colors_override_inherited_colors_and_none_preserves_inheritance
             <View width=20 foreground_color=Color::White background_color=Color::DarkGrey>
                 {#if paragraph}
                     <Paragraph foreground_color=Color::Blue background_color=Color::Red>"A"</Paragraph>
-                    <Paragraph opt_foreground_color=None opt_background_color=None>"B"</Paragraph>
+                    <Paragraph foreground_color=None background_color=None>"B"</Paragraph>
                 {:else}
                     <TextSpan foreground_color=Color::Blue background_color=Color::Red>"A"</TextSpan>
-                    <TextSpan opt_foreground_color=None opt_background_color=None>"B"</TextSpan>
+                    <TextSpan foreground_color=None background_color=None>"B"</TextSpan>
                 {/if}
             </View>
         };

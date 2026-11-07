@@ -153,12 +153,6 @@ impl IntoPropOption<String> for &String {
     }
 }
 
-impl IntoPropOption<String> for Option<&str> {
-    fn into_prop_option(self) -> Option<String> {
-        self.map(|s| s.to_string())
-    }
-}
-
 impl<T> IntoPropOption<Snippet<T>> for Snippet<T> {
     fn into_prop_option(self) -> Option<Snippet<T>> {
         if self.is_some() { Some(self) } else { None }
@@ -374,6 +368,46 @@ impl IntoPropOption<Option<String>> for Option<String> {
 }
 impl IntoPropOption<crate::layout::Placement> for crate::layout::Placement {
     fn into_prop_option(self) -> Option<crate::layout::Placement> {
+        Some(self)
+    }
+}
+
+/// Implements `IntoPropOption<T> for T` for types passed to props as-is.
+/// Together with the blanket `Option<T>` impl, one setter accepts both
+/// `value` and `Option<value>`.
+macro_rules! identity_prop_option {
+    ($($ty:ty),* $(,)?) => {$(
+        impl IntoPropOption<$ty> for $ty {
+            fn into_prop_option(self) -> Option<$ty> {
+                Some(self)
+            }
+        }
+    )*};
+}
+
+identity_prop_option!(
+    (u16, u16),
+    crate::terminal::CursorStyle,
+    crate::element::interaction::Semantics,
+    crate::element::interaction::FocusScope,
+    crate::element::interaction::FocusGroup,
+    crate::element::interaction::Interaction,
+);
+
+impl IntoPropOption<crate::element::focus::FocusId> for usize {
+    fn into_prop_option(self) -> Option<crate::element::focus::FocusId> {
+        Some(self.into())
+    }
+}
+
+impl<T> IntoPropOption<crate::reactive::ReadSignal<T>> for crate::reactive::ReadSignal<T> {
+    fn into_prop_option(self) -> Option<crate::reactive::ReadSignal<T>> {
+        Some(self)
+    }
+}
+
+impl<T> IntoPropOption<crate::reactive::WriteSignal<T>> for crate::reactive::WriteSignal<T> {
+    fn into_prop_option(self) -> Option<crate::reactive::WriteSignal<T>> {
         Some(self)
     }
 }

@@ -25,8 +25,8 @@ pub fn Divider(props: DividerProps) -> impl IntoNode {
                 height=1
                 overflow=Overflow::Hidden
                 align_items=AlignItems::Stretch
-                opt_min_width=props.min_width
-                opt_max_width=props.max_width
+                min_width=props.min_width
+                max_width=props.max_width
             >
                 {#if props.children.is_some()}
                     {@render props.children}

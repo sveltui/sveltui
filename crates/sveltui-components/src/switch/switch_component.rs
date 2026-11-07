@@ -42,7 +42,7 @@ pub fn Switch(props: SwitchProps) -> impl IntoNode {
             disabled=props.disabled
             activation=Activation::Toggle
             semantics=Semantics::new(Role::Switch, label_str.clone()).checked(is_on)
-            opt_on_click=on_click
+            on_click=on_click
         >
             <View
                 border=BorderStyle::None

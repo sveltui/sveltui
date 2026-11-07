@@ -18,7 +18,7 @@ pub fn Button(props: ButtonProps) -> impl IntoNode {
     };
 
     let border_style = props.border.unwrap_or(default_border_style);
-    let border_color = props.border_color.or(Some(default_border_color));
+    let border_color = props.border_color.unwrap_or(default_border_color);
     let text_color = default_text_color;
     let on_click = props.on_click.filter(|_| !props.disabled);
 
@@ -29,11 +29,11 @@ pub fn Button(props: ButtonProps) -> impl IntoNode {
             disabled=props.disabled
             activation=Activation::Press
             semantics=Semantics::new(Role::Button, "")
-            opt_on_click=on_click
+            on_click=on_click
         >
             <View
                 border=border_style
-                opt_border_color=border_color
+                border_color=border_color
                 padding=props.padding
                 width=props.width
                 height=props.height

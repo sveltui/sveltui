@@ -3,7 +3,7 @@ use crate::element::interaction::{
     Activation, DismissLayer, EventContext, EventResult, FocusGroup, FocusScope, Interaction,
     KeyHandler, Semantics,
 };
-use crate::element::snippet::Snippet;
+use crate::element::snippet::{IntoPropOption, Snippet};
 use crate::layout::{
     BorderStyle, Dimension, FlexDirection, IntoDimension, Margin, Overflow, Padding, Placement,
     ScrollbarStyle, ScrollbarVisibility,
@@ -40,8 +40,8 @@ impl TextElement {
         }
     }
 
-    pub fn color(mut self, color: Color) -> Self {
-        self.fg = Some(color);
+    pub fn color(mut self, color: impl IntoPropOption<Color>) -> Self {
+        self.fg = color.into_prop_option();
         self
     }
 
@@ -62,23 +62,13 @@ impl TextElement {
         self
     }
 
-    pub fn fg(mut self, color: Color) -> Self {
-        self.fg = Some(color);
+    pub fn fg(mut self, color: impl IntoPropOption<Color>) -> Self {
+        self.fg = color.into_prop_option();
         self
     }
 
-    pub fn opt_fg(mut self, color: Option<Color>) -> Self {
-        self.fg = color;
-        self
-    }
-
-    pub fn bg(mut self, color: Color) -> Self {
-        self.bg = Some(color);
-        self
-    }
-
-    pub fn opt_bg(mut self, color: Option<Color>) -> Self {
-        self.bg = color;
+    pub fn bg(mut self, color: impl IntoPropOption<Color>) -> Self {
+        self.bg = color.into_prop_option();
         self
     }
 
@@ -143,12 +133,12 @@ impl OverlayElement {
         self.id = id;
         self
     }
-    pub fn opener(mut self, id: FocusId) -> Self {
-        self.opener = Some(id);
+    pub fn opener(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.opener = id.into_prop_option();
         self
     }
-    pub fn anchor(mut self, id: FocusId) -> Self {
-        self.anchor = Some(id);
+    pub fn anchor(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.anchor = id.into_prop_option();
         self
     }
     pub fn layer(mut self, layer: DismissLayer) -> Self {
@@ -165,20 +155,13 @@ impl OverlayElement {
         self
     }
 
-    pub fn focus_group(mut self, group: FocusGroup) -> Self {
-        self.focus_group = Some(group);
-        self
-    }
-    pub fn opt_on_key(mut self, handler: Option<KeyHandler>) -> Self {
-        self.on_key = handler;
+    pub fn focus_group(mut self, group: impl IntoPropOption<FocusGroup>) -> Self {
+        self.focus_group = group.into_prop_option();
         self
     }
 
-    pub fn on_key(
-        mut self,
-        handler: impl Fn(KeyEvent, &mut EventContext) -> EventResult + 'static,
-    ) -> Self {
-        self.on_key = Some(Rc::new(handler));
+    pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
+        self.on_key = handler.into_key_handler();
         self
     }
 
@@ -189,18 +172,6 @@ impl OverlayElement {
         } else {
             self.trigger = Some(Box::new(node));
         }
-        self
-    }
-
-    pub fn opt_trigger(mut self, trigger: Option<impl IntoNode>) -> Self {
-        self.trigger = trigger.and_then(|t| {
-            let node = t.into_node();
-            if matches!(node, VNode::Empty) {
-                None
-            } else {
-                Some(Box::new(node))
-            }
-        });
         self
     }
 
@@ -243,22 +214,13 @@ impl OverlayElement {
         self
     }
 
-    pub fn on_open(mut self, handler: impl Fn() + 'static) -> Self {
-        self.on_open = Some(Rc::new(handler));
-        self
-    }
-    pub fn opt_on_open(mut self, handler: Option<Rc<dyn Fn()>>) -> Self {
-        self.on_open = handler;
+    pub fn on_open(mut self, handler: impl IntoClickHandler) -> Self {
+        self.on_open = handler.into_click_handler();
         self
     }
 
-    pub fn on_close(mut self, f: impl Fn() + 'static) -> Self {
-        self.on_close = Some(Rc::new(f));
-        self
-    }
-
-    pub fn opt_on_close(mut self, f: Option<Rc<dyn Fn()>>) -> Self {
-        self.on_close = f;
+    pub fn on_close(mut self, f: impl IntoClickHandler) -> Self {
+        self.on_close = f.into_click_handler();
         self
     }
 }
@@ -296,44 +258,64 @@ impl IntoNode for PressableElement {
     }
 }
 
+/// Converts a click callback, or an optional one, into the stored handler.
+///
+/// Accepting `Option` here lets components forward an optional handler prop
+/// with the same setter (`on_click=props.on_click`) instead of needing a
+/// second, `Option`-only setter.
 pub trait IntoClickHandler {
-    fn into_click_handler(self) -> Rc<dyn Fn()>;
+    fn into_click_handler(self) -> Option<Rc<dyn Fn()>>;
 }
 impl<F: Fn() + 'static> IntoClickHandler for F {
-    fn into_click_handler(self) -> Rc<dyn Fn()> {
-        Rc::new(self)
+    fn into_click_handler(self) -> Option<Rc<dyn Fn()>> {
+        Some(Rc::new(self))
     }
 }
 impl IntoClickHandler for Rc<dyn Fn()> {
-    fn into_click_handler(self) -> Rc<dyn Fn()> {
+    fn into_click_handler(self) -> Option<Rc<dyn Fn()>> {
+        Some(self)
+    }
+}
+impl IntoClickHandler for Option<Rc<dyn Fn()>> {
+    fn into_click_handler(self) -> Option<Rc<dyn Fn()>> {
         self
     }
 }
 
 pub trait IntoClickHandlerAt {
-    fn into_click_handler_at(self) -> Rc<dyn Fn(u16, u16)>;
+    fn into_click_handler_at(self) -> Option<Rc<dyn Fn(u16, u16)>>;
 }
 impl<F: Fn(u16, u16) + 'static> IntoClickHandlerAt for F {
-    fn into_click_handler_at(self) -> Rc<dyn Fn(u16, u16)> {
-        Rc::new(self)
+    fn into_click_handler_at(self) -> Option<Rc<dyn Fn(u16, u16)>> {
+        Some(Rc::new(self))
     }
 }
 impl IntoClickHandlerAt for Rc<dyn Fn(u16, u16)> {
-    fn into_click_handler_at(self) -> Rc<dyn Fn(u16, u16)> {
+    fn into_click_handler_at(self) -> Option<Rc<dyn Fn(u16, u16)>> {
+        Some(self)
+    }
+}
+impl IntoClickHandlerAt for Option<Rc<dyn Fn(u16, u16)>> {
+    fn into_click_handler_at(self) -> Option<Rc<dyn Fn(u16, u16)>> {
         self
     }
 }
 
 pub trait IntoKeyHandler {
-    fn into_key_handler(self) -> KeyHandler;
+    fn into_key_handler(self) -> Option<KeyHandler>;
 }
 impl<F: Fn(KeyEvent, &mut EventContext) -> EventResult + 'static> IntoKeyHandler for F {
-    fn into_key_handler(self) -> KeyHandler {
-        Rc::new(self)
+    fn into_key_handler(self) -> Option<KeyHandler> {
+        Some(Rc::new(self))
     }
 }
 impl IntoKeyHandler for KeyHandler {
-    fn into_key_handler(self) -> KeyHandler {
+    fn into_key_handler(self) -> Option<KeyHandler> {
+        Some(self)
+    }
+}
+impl IntoKeyHandler for Option<KeyHandler> {
+    fn into_key_handler(self) -> Option<KeyHandler> {
         self
     }
 }
@@ -474,43 +456,23 @@ impl ViewElement {
         self
     }
 
-    pub fn min_width(mut self, mw: impl IntoDimension) -> Self {
-        self.min_width = Some(mw.into_dimension());
+    pub fn min_width(mut self, mw: impl IntoPropOption<Dimension>) -> Self {
+        self.min_width = mw.into_prop_option();
         self
     }
 
-    pub fn opt_min_width(mut self, mw: Option<Dimension>) -> Self {
-        self.min_width = mw;
+    pub fn max_width(mut self, mw: impl IntoPropOption<Dimension>) -> Self {
+        self.max_width = mw.into_prop_option();
         self
     }
 
-    pub fn max_width(mut self, mw: impl IntoDimension) -> Self {
-        self.max_width = Some(mw.into_dimension());
+    pub fn min_height(mut self, mh: impl IntoPropOption<Dimension>) -> Self {
+        self.min_height = mh.into_prop_option();
         self
     }
 
-    pub fn opt_max_width(mut self, mw: Option<Dimension>) -> Self {
-        self.max_width = mw;
-        self
-    }
-
-    pub fn min_height(mut self, mh: impl IntoDimension) -> Self {
-        self.min_height = Some(mh.into_dimension());
-        self
-    }
-
-    pub fn opt_min_height(mut self, mh: Option<Dimension>) -> Self {
-        self.min_height = mh;
-        self
-    }
-
-    pub fn max_height(mut self, mh: impl IntoDimension) -> Self {
-        self.max_height = Some(mh.into_dimension());
-        self
-    }
-
-    pub fn opt_max_height(mut self, mh: Option<Dimension>) -> Self {
-        self.max_height = mh;
+    pub fn max_height(mut self, mh: impl IntoPropOption<Dimension>) -> Self {
+        self.max_height = mh.into_prop_option();
         self
     }
 
@@ -519,8 +481,8 @@ impl ViewElement {
         self
     }
 
-    pub fn align_self(mut self, a: impl Into<AlignSelf>) -> Self {
-        self.align_self = Some(a.into());
+    pub fn align_self(mut self, a: impl IntoPropOption<AlignSelf>) -> Self {
+        self.align_self = a.into_prop_option();
         self
     }
 
@@ -549,43 +511,23 @@ impl ViewElement {
         self
     }
 
-    pub fn border_color(mut self, c: Color) -> Self {
-        self.visual_mut().border_color = Some(c);
+    pub fn border_color(mut self, c: impl IntoPropOption<Color>) -> Self {
+        self.visual_mut().border_color = c.into_prop_option();
         self
     }
 
-    pub fn opt_border_color(mut self, c: Option<Color>) -> Self {
-        self.visual_mut().border_color = c;
+    pub fn title(mut self, t: impl IntoPropOption<String>) -> Self {
+        self.visual_mut().title = t.into_prop_option();
         self
     }
 
-    pub fn title(mut self, t: impl Into<String>) -> Self {
-        self.visual_mut().title = Some(t.into());
+    pub fn cursor_offset(mut self, co: impl IntoPropOption<(u16, u16)>) -> Self {
+        self.visual_mut().cursor_offset = co.into_prop_option();
         self
     }
 
-    pub fn opt_title(mut self, t: Option<String>) -> Self {
-        self.visual_mut().title = t;
-        self
-    }
-
-    pub fn cursor_offset(mut self, co: (u16, u16)) -> Self {
-        self.visual_mut().cursor_offset = Some(co);
-        self
-    }
-
-    pub fn opt_cursor_offset(mut self, co: Option<(u16, u16)>) -> Self {
-        self.visual_mut().cursor_offset = co;
-        self
-    }
-
-    pub fn cursor_style(mut self, cs: CursorStyle) -> Self {
-        self.visual_mut().cursor_style = Some(cs);
-        self
-    }
-
-    pub fn opt_cursor_style(mut self, cs: Option<CursorStyle>) -> Self {
-        self.visual_mut().cursor_style = cs;
+    pub fn cursor_style(mut self, cs: impl IntoPropOption<CursorStyle>) -> Self {
+        self.visual_mut().cursor_style = cs.into_prop_option();
         self
     }
 
@@ -619,23 +561,23 @@ impl ViewElement {
         self
     }
 
-    pub fn align_items(mut self, align: impl Into<AlignItems>) -> Self {
-        self.align_items = Some(align.into());
+    pub fn align_items(mut self, align: impl IntoPropOption<AlignItems>) -> Self {
+        self.align_items = align.into_prop_option();
         self
     }
 
-    pub fn justify_content(mut self, justify: impl Into<JustifyContent>) -> Self {
-        self.justify_content = Some(justify.into());
+    pub fn justify_content(mut self, justify: impl IntoPropOption<JustifyContent>) -> Self {
+        self.justify_content = justify.into_prop_option();
         self
     }
 
-    pub fn background_color(mut self, color: Color) -> Self {
-        self.visual_mut().background_color = Some(color);
+    pub fn background_color(mut self, color: impl IntoPropOption<Color>) -> Self {
+        self.visual_mut().background_color = color.into_prop_option();
         self
     }
 
-    pub fn foreground_color(mut self, color: Color) -> Self {
-        self.visual_mut().foreground_color = Some(color);
+    pub fn foreground_color(mut self, color: impl IntoPropOption<Color>) -> Self {
+        self.visual_mut().foreground_color = color.into_prop_option();
         self
     }
 
@@ -655,13 +597,13 @@ impl ViewElement {
         self
     }
 
-    pub fn scroll_id(mut self, id: FocusId) -> Self {
-        self.scroll_mut().id = Some(id);
+    pub fn scroll_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.scroll_mut().id = id.into_prop_option();
         self
     }
 
-    pub fn focus_id(mut self, id: FocusId) -> Self {
-        self.scroll_mut().id = Some(id);
+    pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.scroll_mut().id = id.into_prop_option();
         self
     }
 
@@ -765,43 +707,23 @@ impl ViewPropsBuilder {
         self
     }
 
-    pub fn min_width(mut self, min_width: impl IntoDimension) -> Self {
-        self.props.min_width = Some(min_width.into_dimension());
+    pub fn min_width(mut self, min_width: impl IntoPropOption<Dimension>) -> Self {
+        self.props.min_width = min_width.into_prop_option();
         self
     }
 
-    pub fn opt_min_width(mut self, min_width: Option<Dimension>) -> Self {
-        self.props.min_width = min_width;
+    pub fn max_width(mut self, max_width: impl IntoPropOption<Dimension>) -> Self {
+        self.props.max_width = max_width.into_prop_option();
         self
     }
 
-    pub fn max_width(mut self, max_width: impl IntoDimension) -> Self {
-        self.props.max_width = Some(max_width.into_dimension());
+    pub fn min_height(mut self, min_height: impl IntoPropOption<Dimension>) -> Self {
+        self.props.min_height = min_height.into_prop_option();
         self
     }
 
-    pub fn opt_max_width(mut self, max_width: Option<Dimension>) -> Self {
-        self.props.max_width = max_width;
-        self
-    }
-
-    pub fn min_height(mut self, min_height: impl IntoDimension) -> Self {
-        self.props.min_height = Some(min_height.into_dimension());
-        self
-    }
-
-    pub fn opt_min_height(mut self, min_height: Option<Dimension>) -> Self {
-        self.props.min_height = min_height;
-        self
-    }
-
-    pub fn max_height(mut self, max_height: impl IntoDimension) -> Self {
-        self.props.max_height = Some(max_height.into_dimension());
-        self
-    }
-
-    pub fn opt_max_height(mut self, max_height: Option<Dimension>) -> Self {
-        self.props.max_height = max_height;
+    pub fn max_height(mut self, max_height: impl IntoPropOption<Dimension>) -> Self {
+        self.props.max_height = max_height.into_prop_option();
         self
     }
 
@@ -825,33 +747,18 @@ impl ViewPropsBuilder {
         self
     }
 
-    pub fn align_items(mut self, align: impl Into<AlignItems>) -> Self {
-        self.props.align_items = Some(align.into());
+    pub fn align_items(mut self, align: impl IntoPropOption<AlignItems>) -> Self {
+        self.props.align_items = align.into_prop_option();
         self
     }
 
-    pub fn opt_align_items(mut self, align: Option<AlignItems>) -> Self {
-        self.props.align_items = align;
+    pub fn justify_content(mut self, justify: impl IntoPropOption<JustifyContent>) -> Self {
+        self.props.justify_content = justify.into_prop_option();
         self
     }
 
-    pub fn justify_content(mut self, justify: impl Into<JustifyContent>) -> Self {
-        self.props.justify_content = Some(justify.into());
-        self
-    }
-
-    pub fn opt_justify_content(mut self, justify: Option<JustifyContent>) -> Self {
-        self.props.justify_content = justify;
-        self
-    }
-
-    pub fn align_self(mut self, align: impl Into<AlignSelf>) -> Self {
-        self.props.align_self = Some(align.into());
-        self
-    }
-
-    pub fn opt_align_self(mut self, align: Option<AlignSelf>) -> Self {
-        self.props.align_self = align;
+    pub fn align_self(mut self, align: impl IntoPropOption<AlignSelf>) -> Self {
+        self.props.align_self = align.into_prop_option();
         self
     }
 
@@ -915,13 +822,13 @@ impl ViewPropsBuilder {
         self
     }
 
-    pub fn scroll_id(mut self, id: FocusId) -> Self {
-        self.scroll_mut().id = Some(id);
+    pub fn scroll_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.scroll_mut().id = id.into_prop_option();
         self
     }
 
-    pub fn focus_id(mut self, id: FocusId) -> Self {
-        self.scroll_mut().id = Some(id);
+    pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.scroll_mut().id = id.into_prop_option();
         self
     }
 
@@ -940,40 +847,22 @@ impl ViewPropsBuilder {
         self
     }
 
-    pub fn background_color(mut self, color: Color) -> Self {
-        self.visual_mut().background_color = Some(color);
+    pub fn background_color(mut self, color: impl IntoPropOption<Color>) -> Self {
+        self.visual_mut().background_color = color.into_prop_option();
         self
     }
 
-    pub fn opt_background_color(mut self, color: Option<Color>) -> Self {
-        self.visual_mut().background_color = color;
+    pub fn foreground_color(mut self, color: impl IntoPropOption<Color>) -> Self {
+        self.visual_mut().foreground_color = color.into_prop_option();
         self
     }
 
-    pub fn foreground_color(mut self, color: Color) -> Self {
-        self.visual_mut().foreground_color = Some(color);
-        self
-    }
-
-    pub fn opt_foreground_color(mut self, color: Option<Color>) -> Self {
-        self.visual_mut().foreground_color = color;
-        self
-    }
-
-    pub fn bg(self, color: Color) -> Self {
+    pub fn bg(self, color: impl IntoPropOption<Color>) -> Self {
         self.background_color(color)
     }
 
-    pub fn opt_bg(self, color: Option<Color>) -> Self {
-        self.opt_background_color(color)
-    }
-
-    pub fn fg(self, color: Color) -> Self {
+    pub fn fg(self, color: impl IntoPropOption<Color>) -> Self {
         self.foreground_color(color)
-    }
-
-    pub fn opt_fg(self, color: Option<Color>) -> Self {
-        self.opt_foreground_color(color)
     }
 
     pub fn border(mut self, border: BorderStyle) -> Self {
@@ -981,43 +870,23 @@ impl ViewPropsBuilder {
         self
     }
 
-    pub fn border_color(mut self, color: Color) -> Self {
-        self.visual_mut().border_color = Some(color);
+    pub fn border_color(mut self, color: impl IntoPropOption<Color>) -> Self {
+        self.visual_mut().border_color = color.into_prop_option();
         self
     }
 
-    pub fn opt_border_color(mut self, color: Option<Color>) -> Self {
-        self.visual_mut().border_color = color;
+    pub fn title(mut self, title: impl IntoPropOption<String>) -> Self {
+        self.visual_mut().title = title.into_prop_option();
         self
     }
 
-    pub fn title(mut self, title: impl Into<String>) -> Self {
-        self.visual_mut().title = Some(title.into());
+    pub fn cursor_offset(mut self, offset: impl IntoPropOption<(u16, u16)>) -> Self {
+        self.visual_mut().cursor_offset = offset.into_prop_option();
         self
     }
 
-    pub fn opt_title(mut self, title: Option<String>) -> Self {
-        self.visual_mut().title = title;
-        self
-    }
-
-    pub fn cursor_offset(mut self, offset: (u16, u16)) -> Self {
-        self.visual_mut().cursor_offset = Some(offset);
-        self
-    }
-
-    pub fn opt_cursor_offset(mut self, offset: Option<(u16, u16)>) -> Self {
-        self.visual_mut().cursor_offset = offset;
-        self
-    }
-
-    pub fn cursor_style(mut self, style: CursorStyle) -> Self {
-        self.visual_mut().cursor_style = Some(style);
-        self
-    }
-
-    pub fn opt_cursor_style(mut self, style: Option<CursorStyle>) -> Self {
-        self.visual_mut().cursor_style = style;
+    pub fn cursor_style(mut self, style: impl IntoPropOption<CursorStyle>) -> Self {
+        self.visual_mut().cursor_style = style.into_prop_option();
         self
     }
 
@@ -1113,28 +982,18 @@ impl PressableElement {
         Self::default()
     }
 
-    pub fn focus_id(mut self, id: impl Into<FocusId>) -> Self {
-        self.focus_id = Some(id.into());
+    pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.focus_id = id.into_prop_option();
         self
     }
 
-    pub fn focus_group(mut self, group: FocusGroup) -> Self {
-        self.focus_group = Some(group);
+    pub fn focus_group(mut self, group: impl IntoPropOption<FocusGroup>) -> Self {
+        self.focus_group = group.into_prop_option();
         self
     }
 
-    pub fn opt_focus_group(mut self, group: Option<FocusGroup>) -> Self {
-        self.focus_group = group;
-        self
-    }
-
-    pub fn focus_scope(mut self, scope: FocusScope) -> Self {
-        self.focus_scope = Some(scope);
-        self
-    }
-
-    pub fn opt_focus_scope(mut self, scope: Option<FocusScope>) -> Self {
-        self.focus_scope = scope;
+    pub fn focus_scope(mut self, scope: impl IntoPropOption<FocusScope>) -> Self {
+        self.focus_scope = scope.into_prop_option();
         self
     }
 
@@ -1158,33 +1017,28 @@ impl PressableElement {
         self
     }
 
-    pub fn semantics(mut self, semantics: Semantics) -> Self {
-        self.semantics = Some(semantics);
+    pub fn semantics(mut self, semantics: impl IntoPropOption<Semantics>) -> Self {
+        self.semantics = semantics.into_prop_option();
         self
     }
 
     pub fn on_click(mut self, handler: impl IntoClickHandler) -> Self {
-        self.on_click = Some(handler.into_click_handler());
+        self.on_click = handler.into_click_handler();
         self
     }
 
     pub fn on_click_at(mut self, handler: impl IntoClickHandlerAt) -> Self {
-        self.on_click_at = Some(handler.into_click_handler_at());
+        self.on_click_at = handler.into_click_handler_at();
         self
     }
 
     pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
-        self.on_key = Some(handler.into_key_handler());
+        self.on_key = handler.into_key_handler();
         self
     }
 
-    pub fn interaction(mut self, i: Interaction) -> Self {
-        self.interaction = Some(Box::new(i));
-        self
-    }
-
-    pub fn opt_interaction(mut self, i: Option<Interaction>) -> Self {
-        self.interaction = i.map(Box::new);
+    pub fn interaction(mut self, i: impl IntoPropOption<Interaction>) -> Self {
+        self.interaction = i.into_prop_option().map(Box::new);
         self
     }
 
@@ -1227,33 +1081,18 @@ impl PressableProps {
 }
 
 impl PressablePropsBuilder {
-    pub fn focus_id(mut self, id: impl Into<FocusId>) -> Self {
-        self.props.focus_id = Some(id.into());
+    pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.props.focus_id = id.into_prop_option();
         self
     }
 
-    pub fn opt_focus_id(mut self, id: Option<FocusId>) -> Self {
-        self.props.focus_id = id;
+    pub fn focus_group(mut self, group: impl IntoPropOption<FocusGroup>) -> Self {
+        self.props.focus_group = group.into_prop_option();
         self
     }
 
-    pub fn focus_group(mut self, group: FocusGroup) -> Self {
-        self.props.focus_group = Some(group);
-        self
-    }
-
-    pub fn opt_focus_group(mut self, group: Option<FocusGroup>) -> Self {
-        self.props.focus_group = group;
-        self
-    }
-
-    pub fn focus_scope(mut self, scope: FocusScope) -> Self {
-        self.props.focus_scope = Some(scope);
-        self
-    }
-
-    pub fn opt_focus_scope(mut self, scope: Option<FocusScope>) -> Self {
-        self.props.focus_scope = scope;
+    pub fn focus_scope(mut self, scope: impl IntoPropOption<FocusScope>) -> Self {
+        self.props.focus_scope = scope.into_prop_option();
         self
     }
 
@@ -1277,53 +1116,28 @@ impl PressablePropsBuilder {
         self
     }
 
-    pub fn semantics(mut self, semantics: Semantics) -> Self {
-        self.props.semantics = Some(semantics);
-        self
-    }
-
-    pub fn opt_semantics(mut self, semantics: Option<Semantics>) -> Self {
-        self.props.semantics = semantics;
+    pub fn semantics(mut self, semantics: impl IntoPropOption<Semantics>) -> Self {
+        self.props.semantics = semantics.into_prop_option();
         self
     }
 
     pub fn on_click(mut self, handler: impl IntoClickHandler) -> Self {
-        self.props.on_click = Some(handler.into_click_handler());
-        self
-    }
-
-    pub fn opt_on_click(mut self, handler: Option<Rc<dyn Fn()>>) -> Self {
-        self.props.on_click = handler;
+        self.props.on_click = handler.into_click_handler();
         self
     }
 
     pub fn on_click_at(mut self, handler: impl IntoClickHandlerAt) -> Self {
-        self.props.on_click_at = Some(handler.into_click_handler_at());
-        self
-    }
-
-    pub fn opt_on_click_at(mut self, handler: Option<Rc<dyn Fn(u16, u16)>>) -> Self {
-        self.props.on_click_at = handler;
+        self.props.on_click_at = handler.into_click_handler_at();
         self
     }
 
     pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
-        self.props.on_key = Some(handler.into_key_handler());
+        self.props.on_key = handler.into_key_handler();
         self
     }
 
-    pub fn opt_on_key(mut self, handler: Option<KeyHandler>) -> Self {
-        self.props.on_key = handler;
-        self
-    }
-
-    pub fn interaction(mut self, i: Interaction) -> Self {
-        self.props.interaction = Some(Box::new(i));
-        self
-    }
-
-    pub fn opt_interaction(mut self, i: Option<Interaction>) -> Self {
-        self.props.interaction = i.map(Box::new);
+    pub fn interaction(mut self, i: impl IntoPropOption<Interaction>) -> Self {
+        self.props.interaction = i.into_prop_option().map(Box::new);
         self
     }
 
@@ -1387,24 +1201,16 @@ impl TextSpanProps {
 }
 
 impl TextSpanPropsBuilder {
-    pub fn content(mut self, content: impl Into<String>) -> Self {
-        self.props.content = Some(content.into());
+    pub fn content(mut self, content: impl IntoPropOption<String>) -> Self {
+        self.props.content = content.into_prop_option();
         self
     }
-    pub fn foreground_color(mut self, fg: Color) -> Self {
-        self.props.foreground_color = Some(fg);
+    pub fn foreground_color(mut self, fg: impl IntoPropOption<Color>) -> Self {
+        self.props.foreground_color = fg.into_prop_option();
         self
     }
-    pub fn opt_foreground_color(mut self, fg: Option<Color>) -> Self {
-        self.props.foreground_color = fg;
-        self
-    }
-    pub fn background_color(mut self, bg: Color) -> Self {
-        self.props.background_color = Some(bg);
-        self
-    }
-    pub fn opt_background_color(mut self, bg: Option<Color>) -> Self {
-        self.props.background_color = bg;
+    pub fn background_color(mut self, bg: impl IntoPropOption<Color>) -> Self {
+        self.props.background_color = bg.into_prop_option();
         self
     }
     pub fn bold(mut self, bold: bool) -> Self {
@@ -1499,8 +1305,8 @@ impl ParagraphProps {
 }
 
 impl ParagraphPropsBuilder {
-    pub fn content(mut self, content: impl Into<String>) -> Self {
-        self.props.content = Some(content.into());
+    pub fn content(mut self, content: impl IntoPropOption<String>) -> Self {
+        self.props.content = content.into_prop_option();
         self
     }
     pub fn max_lines(mut self, max_lines: usize) -> Self {
@@ -1511,20 +1317,12 @@ impl ParagraphPropsBuilder {
         self.props.fill = Some(fill);
         self
     }
-    pub fn foreground_color(mut self, fg: Color) -> Self {
-        self.props.foreground_color = Some(fg);
+    pub fn foreground_color(mut self, fg: impl IntoPropOption<Color>) -> Self {
+        self.props.foreground_color = fg.into_prop_option();
         self
     }
-    pub fn opt_foreground_color(mut self, fg: Option<Color>) -> Self {
-        self.props.foreground_color = fg;
-        self
-    }
-    pub fn background_color(mut self, bg: Color) -> Self {
-        self.props.background_color = Some(bg);
-        self
-    }
-    pub fn opt_background_color(mut self, bg: Option<Color>) -> Self {
-        self.props.background_color = bg;
+    pub fn background_color(mut self, bg: impl IntoPropOption<Color>) -> Self {
+        self.props.background_color = bg.into_prop_option();
         self
     }
     pub fn bold(mut self, bold: bool) -> Self {
@@ -1633,36 +1431,32 @@ impl OverlayProps {
 }
 
 impl OverlayPropsBuilder {
-    pub fn id(mut self, id: FocusId) -> Self {
-        self.props.id = Some(id);
+    pub fn id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.props.id = id.into_prop_option();
         self
     }
-    pub fn opener(mut self, opener: FocusId) -> Self {
-        self.props.opener = Some(opener);
+    pub fn opener(mut self, opener: impl IntoPropOption<FocusId>) -> Self {
+        self.props.opener = opener.into_prop_option();
         self
     }
-    pub fn opt_opener(mut self, opener: Option<FocusId>) -> Self {
-        self.props.opener = opener;
-        self
-    }
-    pub fn anchor(mut self, id: FocusId) -> Self {
-        self.props.anchor = Some(id);
+    pub fn anchor(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+        self.props.anchor = id.into_prop_option();
         self
     }
     pub fn layer(mut self, layer: DismissLayer) -> Self {
         self.props.layer = Some(layer);
         self
     }
-    pub fn focus_group(mut self, group: FocusGroup) -> Self {
-        self.props.focus_group = Some(group);
+    pub fn focus_group(mut self, group: impl IntoPropOption<FocusGroup>) -> Self {
+        self.props.focus_group = group.into_prop_option();
         self
     }
     pub fn managed(mut self, managed: bool) -> Self {
         self.props.managed = managed;
         self
     }
-    pub fn semantics(mut self, semantics: Semantics) -> Self {
-        self.props.semantics = Some(semantics);
+    pub fn semantics(mut self, semantics: impl IntoPropOption<Semantics>) -> Self {
+        self.props.semantics = semantics.into_prop_option();
         self
     }
     pub fn open(mut self, open: bool) -> Self {
@@ -1681,47 +1475,25 @@ impl OverlayPropsBuilder {
         self.props.modal = modal;
         self
     }
-    pub fn on_key(
-        mut self,
-        handler: impl Fn(KeyEvent, &mut EventContext) -> EventResult + 'static,
-    ) -> Self {
-        self.props.on_key = Some(Rc::new(handler));
+    pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
+        self.props.on_key = handler.into_key_handler();
         self
     }
-    pub fn opt_on_key(mut self, handler: Option<KeyHandler>) -> Self {
-        self.props.on_key = handler;
+    pub fn on_close(mut self, handler: impl IntoClickHandler) -> Self {
+        self.props.on_close = handler.into_click_handler();
         self
     }
-    pub fn on_close(mut self, handler: impl Fn() + 'static) -> Self {
-        self.props.on_close = Some(Rc::new(handler));
-        self
-    }
-    pub fn opt_on_close(mut self, handler: Option<Rc<dyn Fn()>>) -> Self {
-        self.props.on_close = handler;
-        self
-    }
-    pub fn on_open(mut self, handler: impl Fn() + 'static) -> Self {
-        self.props.on_open = Some(Rc::new(handler));
-        self
-    }
-    pub fn opt_on_open(mut self, handler: Option<Rc<dyn Fn()>>) -> Self {
-        self.props.on_open = handler;
+    pub fn on_open(mut self, handler: impl IntoClickHandler) -> Self {
+        self.props.on_open = handler.into_click_handler();
         self
     }
     pub fn trigger(mut self, trigger: impl IntoNode) -> Self {
-        self.props.trigger = Some(trigger.into_node());
+        let node = trigger.into_node();
+        self.props.trigger = (!matches!(node, VNode::Empty)).then_some(node);
         self
     }
-    pub fn opt_trigger(mut self, trigger: Option<VNode>) -> Self {
-        self.props.trigger = trigger;
-        self
-    }
-    pub fn slot_trigger(mut self, trigger: impl IntoNode) -> Self {
-        self.props.slot_trigger = Some(Snippet::from(trigger.into_node()));
-        self
-    }
-    pub fn opt_slot_trigger(mut self, trigger: Option<Snippet<()>>) -> Self {
-        self.props.slot_trigger = trigger;
+    pub fn slot_trigger(mut self, trigger: impl IntoPropOption<Snippet<()>>) -> Self {
+        self.props.slot_trigger = trigger.into_prop_option();
         self
     }
     pub fn slot_children(mut self, node: impl IntoNode) -> Self {
@@ -1767,13 +1539,13 @@ pub fn Overlay(props: OverlayProps) -> OverlayElement {
         el = el.modal(true);
     }
     if let Some(ok) = props.on_key {
-        el = el.opt_on_key(Some(ok));
+        el = el.on_key(ok);
     }
     if let Some(oc) = props.on_close {
-        el = el.opt_on_close(Some(oc));
+        el = el.on_close(oc);
     }
     if let Some(oo) = props.on_open {
-        el = el.opt_on_open(Some(oo));
+        el = el.on_open(oo);
     }
     if let Some(trigger) = props.trigger {
         el = el.trigger(trigger);

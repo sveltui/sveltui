@@ -157,9 +157,9 @@ pub fn TextArea(props: TextAreaProps) -> impl IntoNode {
                 align_items=AlignItems::FlexStart
                 justify_content=JustifyContent::FlexStart
                 on_scroll=on_scroll
-                opt_title=props.title
-                opt_cursor_offset=cursor_offset
-                opt_cursor_style=cursor_style
+                title=props.title
+                cursor_offset=cursor_offset
+                cursor_style=cursor_style
             >
                 {#if is_empty}
                     {#if show_line_numbers}

@@ -187,7 +187,7 @@ pub fn CodePreview(props: CodePreviewProps) -> impl IntoNode {
                 overflow_y=Overflow::Scroll
                 scroll_id=id
                 on_scroll=on_scroll
-                opt_title=props.title
+                title=props.title
             >
                 {#each rendered_line_nodes as line_node}
                     {line_node}

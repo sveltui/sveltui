@@ -22,10 +22,10 @@ pub fn Dialog(props: DialogProps) -> impl IntoNode {
             layer=layer
             backdrop=props.backdrop
             modal=true
-            opt_opener=props.opener
-            opt_on_close=props.on_close
-            opt_on_open=props.on_open
-            opt_on_key=props.on_key
+            opener=props.opener
+            on_close=props.on_close
+            on_open=props.on_open
+            on_key=props.on_key
             semantics=semantics
         >
             <View
@@ -34,7 +34,7 @@ pub fn Dialog(props: DialogProps) -> impl IntoNode {
                 width=props.width
                 height=props.height
                 padding=props.padding
-                opt_title={if title_str.is_empty() { None } else { Some(title_str) }}
+                title={(!title_str.is_empty()).then_some(title_str)}
             >
                 {#if props.children.is_some()}
                     {@render props.children}
