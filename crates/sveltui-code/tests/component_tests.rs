@@ -20,20 +20,16 @@ fn test_code_preview_renders() {
     };
 
     let vnode = node.into_node();
+    // The pressable attaches to the framed view instead of wrapping it.
     match vnode {
-        VNode::Pressable(p) => {
-            let child = &p.children[0];
-            match child {
-                VNode::View(v) => {
-                    assert_eq!(
-                        v.visual.as_ref().and_then(|vis| vis.title.as_deref()),
-                        Some("test.rs")
-                    );
-                }
-                _ => panic!("Expected child of Pressable to be View"),
-            }
+        VNode::View(v) => {
+            assert_eq!(v.pressables.len(), 1);
+            assert_eq!(
+                v.visual.as_ref().and_then(|vis| vis.title.as_deref()),
+                Some("test.rs")
+            );
         }
-        _ => panic!("Expected CodePreview root to be Pressable"),
+        _ => panic!("Expected CodePreview root to be a pressable View"),
     }
 }
 
@@ -54,20 +50,14 @@ fn test_code_editor_renders() {
 
     let vnode = node.into_node();
     match vnode {
-        VNode::Pressable(p) => {
-            assert!(p.on_key.is_some());
-            let child = &p.children[0];
-            match child {
-                VNode::View(v) => {
-                    assert_eq!(
-                        v.visual.as_ref().and_then(|vis| vis.title.as_deref()),
-                        Some("Editor")
-                    );
-                }
-                _ => panic!("Expected child of Pressable to be View"),
-            }
+        VNode::View(v) => {
+            assert!(v.pressables.iter().any(|p| p.on_key.is_some()));
+            assert_eq!(
+                v.visual.as_ref().and_then(|vis| vis.title.as_deref()),
+                Some("Editor")
+            );
         }
-        _ => panic!("Expected CodeEditor root to be Pressable"),
+        _ => panic!("Expected CodeEditor root to be a pressable View"),
     }
 }
 
@@ -84,5 +74,5 @@ fn test_code_binding_from_state() {
     };
 
     let vnode = node.into_node();
-    assert!(matches!(vnode, VNode::Pressable(_)));
+    assert!(matches!(vnode, VNode::View(v) if !v.pressables.is_empty()));
 }

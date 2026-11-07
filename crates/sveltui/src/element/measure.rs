@@ -89,9 +89,5 @@ pub(crate) fn measure(node: &VNode, bounds: Bounds) -> (u16, u16) {
             );
             (layout.rect.width, layout.rect.height)
         }
-        VNode::Pressable(p) => {
-            let sizes: Vec<_> = p.children.iter().map(|n| measure(n, bounds)).collect();
-            content_size(FlexDirection::Column, &sizes, 0)
-        }
     }
 }

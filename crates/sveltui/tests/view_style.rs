@@ -133,3 +133,24 @@ fn nested_fragments_join_their_parent_row() {
     let positions: Vec<_> = root.children.iter().map(|c| (c.rect.x, c.rect.y)).collect();
     assert_eq!(positions, [(0, 0), (2, 0), (4, 0)]);
 }
+
+#[test]
+fn a_row_keeps_its_gaps_next_to_an_auto_margin() {
+    let root = layout(
+        view! {
+            <View width=30 flex_direction=FlexDirection::Row gap=2>
+                <View width=4 height=1 />
+                <View width=4 height=1 />
+                <View width=5 height=1 margin=Margin { left: MarginEdge::Auto, ..Margin::zero() } />
+            </View>
+        },
+        30,
+        1,
+    );
+    let xs: Vec<_> = root.children.iter().map(|c| c.rect.x).collect();
+    assert_eq!(
+        xs,
+        [0, 6, 25],
+        "gap between the first two, the last flush right"
+    );
+}

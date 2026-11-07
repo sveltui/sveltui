@@ -267,33 +267,26 @@ fn render_node_offset_internal(
     height: u16,
     ctx: &mut RenderContext,
 ) {
-    if let VNode::Pressable(p) = node
-        && let Some(id) = p.focus_id
-    {
-        ctx.hit_map.layouts.insert(
-            id,
-            LayoutTarget {
-                x,
-                y,
-                width,
-                height,
-                scrolls: ctx.scrolls.clone(),
-            },
-        );
-    }
-    if let VNode::View(v) = node
-        && let Some(id) = v.scroll.as_ref().and_then(|s| s.id)
-    {
-        ctx.hit_map.layouts.insert(
-            id,
-            LayoutTarget {
-                x,
-                y,
-                width,
-                height,
-                scrolls: ctx.scrolls.clone(),
-            },
-        );
+    if let VNode::View(v) = node {
+        // Remember where every identified view landed, so overlays can
+        // anchor to it and focus can scroll it into view.
+        let ids = v
+            .pressables
+            .iter()
+            .filter_map(|p| p.focus_id)
+            .chain(v.scroll.as_ref().and_then(|s| s.id));
+        for id in ids {
+            ctx.hit_map.layouts.insert(
+                id,
+                LayoutTarget {
+                    x,
+                    y,
+                    width,
+                    height,
+                    scrolls: ctx.scrolls.clone(),
+                },
+            );
+        }
     }
     if let VNode::Overlay(overlay) = node {
         let anchor_rect = if let Some(ref trigger) = overlay.trigger {
@@ -328,7 +321,6 @@ fn render_node_offset_internal(
         }
         let children = match node {
             VNode::View(v) => Some(&v.children),
-            VNode::Pressable(p) => Some(&p.children),
             VNode::Fragment(children) => Some(children),
             _ => None,
         };
@@ -344,10 +336,7 @@ fn render_node_offset_internal(
         || y >= ctx.buffer.height as i32
         || x + width as i32 <= 0
         || y + height as i32 <= 0)
-        && !matches!(
-            node,
-            VNode::View(_) | VNode::Pressable(_) | VNode::Fragment(_)
-        )
+        && !matches!(node, VNode::View(_) | VNode::Fragment(_))
     {
         return;
     }
@@ -400,13 +389,8 @@ fn render_node_offset_internal(
                 curr_y = curr_y.saturating_add(ch as i32);
             }
         }
-        VNode::Pressable(p) => {
-            if p.focus_id.is_some()
-                || p.on_click.is_some()
-                || p.on_key.is_some()
-                || p.on_pointer_enter.is_some()
-                || p.tab_stop
-            {
+        VNode::View(v) => {
+            for p in v.pressables.iter().filter(|p| p.is_hit_target()) {
                 let target = HitTarget {
                     rect: Rect::new(x.max(0) as u16, y.max(0) as u16, width, height),
                     layer: ctx.layer,
@@ -420,16 +404,6 @@ fn render_node_offset_internal(
                 };
                 register_target(ctx, x, y, target);
             }
-            if p.children.len() == 1 {
-                render_node_offset_internal(&p.children[0], layout, x, y, width, height, ctx);
-            } else {
-                for (idx, child) in p.children.iter().enumerate() {
-                    let child_layout = layout.and_then(|l| l.children.get(idx));
-                    render_node_offset_internal(child, child_layout, x, y, width, height, ctx);
-                }
-            }
-        }
-        VNode::View(v) => {
             let prev_fg = ctx.active_fg;
             let prev_bg = ctx.active_bg;
             if let Some(vis) = &v.visual {

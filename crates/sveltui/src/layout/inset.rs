@@ -55,8 +55,8 @@ impl Inset {
 
     pub(crate) fn to_taffy(self) -> taffy::geometry::Rect<LengthPercentageAuto> {
         let side = |cells: Option<u16>| {
-            cells.map_or(LengthPercentageAuto::Auto, |c| {
-                LengthPercentageAuto::Length(f32::from(c))
+            cells.map_or(LengthPercentageAuto::auto(), |c| {
+                LengthPercentageAuto::length(f32::from(c))
             })
         };
         taffy::geometry::Rect {

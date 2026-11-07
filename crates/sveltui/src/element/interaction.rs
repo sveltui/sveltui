@@ -351,75 +351,74 @@ impl InteractionTree {
         ) {
             match node {
                 VNode::View(v) => {
+                    // Each pressable wrapped around the view nests inside the
+                    // one before it, so each becomes the next one's parent.
+                    let depth = ancestry.len();
+                    let mut parent = parent;
+                    for p in &v.pressables {
+                        if p.hidden || p.interaction.as_ref().is_some_and(|i| i.hidden) {
+                            ancestry.truncate(depth);
+                            return;
+                        }
+                        let id = p
+                            .focus_id
+                            .unwrap_or_else(crate::element::focus::next_render_focus_id);
+                        let has_interaction = p.interaction.is_some();
+                        let registered = p.tab_stop
+                            || p.on_key.is_some()
+                            || p.focus_group.is_some()
+                            || p.focus_scope.is_some()
+                            || p.semantics.is_some()
+                            || p.disabled
+                            || has_interaction;
+                        if registered {
+                            let mut interaction =
+                                p.interaction.as_deref().cloned().unwrap_or_default();
+                            if p.tab_stop {
+                                interaction.focusability = Focusability::TabStop;
+                            } else if p.disabled {
+                                interaction.focusability = Focusability::None;
+                            }
+                            if p.disabled {
+                                interaction.disabled = true;
+                            }
+                            if p.hidden {
+                                interaction.hidden = true;
+                            }
+                            if p.activation != Activation::default() {
+                                interaction.activation = p.activation;
+                            }
+                            if let Some(sem) = &p.semantics {
+                                interaction.semantics = sem.clone();
+                            }
+                            if let Some(grp) = &p.focus_group {
+                                interaction.group = Some(*grp);
+                            }
+                            if let Some(scope) = &p.focus_scope {
+                                interaction.scope = Some(*scope);
+                                if interaction.focusability == Focusability::None {
+                                    interaction.focusability = Focusability::Programmatic;
+                                }
+                            }
+
+                            tree.push(InteractionNode {
+                                id,
+                                parent,
+                                ancestors: ancestry.clone(),
+                                interaction,
+                                on_key: p.on_key.clone(),
+                                on_activate: p.on_click.clone(),
+                                on_focus: p.on_focus.clone(),
+                                on_scroll: None,
+                            });
+                            parent = Some(id);
+                        }
+                        ancestry.push(id);
+                    }
                     for child in &v.children {
                         visit(child, parent, ancestry, tree);
                     }
-                }
-                VNode::Pressable(p) => {
-                    if p.hidden || p.interaction.as_ref().is_some_and(|i| i.hidden) {
-                        return;
-                    }
-                    let id = p
-                        .focus_id
-                        .unwrap_or_else(crate::element::focus::next_render_focus_id);
-                    let has_interaction = p.interaction.is_some();
-                    let registered = p.tab_stop
-                        || p.on_key.is_some()
-                        || p.focus_group.is_some()
-                        || p.focus_scope.is_some()
-                        || p.semantics.is_some()
-                        || p.disabled
-                        || has_interaction;
-                    if registered {
-                        let mut interaction = p.interaction.as_deref().cloned().unwrap_or_default();
-                        if p.tab_stop {
-                            interaction.focusability = Focusability::TabStop;
-                        } else if p.disabled {
-                            interaction.focusability = Focusability::None;
-                        }
-                        if p.disabled {
-                            interaction.disabled = true;
-                        }
-                        if p.hidden {
-                            interaction.hidden = true;
-                        }
-                        if p.activation != Activation::default() {
-                            interaction.activation = p.activation;
-                        }
-                        if let Some(sem) = &p.semantics {
-                            interaction.semantics = sem.clone();
-                        }
-                        if let Some(grp) = &p.focus_group {
-                            interaction.group = Some(*grp);
-                        }
-                        if let Some(scope) = &p.focus_scope {
-                            interaction.scope = Some(*scope);
-                            if interaction.focusability == Focusability::None {
-                                interaction.focusability = Focusability::Programmatic;
-                            }
-                        }
-
-                        tree.push(InteractionNode {
-                            id,
-                            parent,
-                            ancestors: ancestry.clone(),
-                            interaction,
-                            on_key: p.on_key.clone(),
-                            on_activate: p.on_click.clone(),
-                            on_focus: p.on_focus.clone(),
-                            on_scroll: None,
-                        });
-                    }
-                    ancestry.push(id);
-                    for child in &p.children {
-                        visit(
-                            child,
-                            if registered { Some(id) } else { parent },
-                            ancestry,
-                            tree,
-                        );
-                    }
-                    ancestry.pop();
+                    ancestry.truncate(depth);
                 }
                 VNode::Overlay(o) => {
                     if let Some(trigger) = &o.trigger {
@@ -567,16 +566,18 @@ impl InteractionTree {
 
 fn first_focus(node: &VNode) -> Option<FocusId> {
     match node {
-        VNode::Pressable(p) => p
-            .focus_id
-            .filter(|_| {
-                p.tab_stop
-                    || p.interaction
-                        .as_ref()
-                        .is_some_and(|i| i.focusability != Focusability::None)
+        VNode::View(v) => v
+            .pressables
+            .iter()
+            .find_map(|p| {
+                p.focus_id.filter(|_| {
+                    p.tab_stop
+                        || p.interaction
+                            .as_ref()
+                            .is_some_and(|i| i.focusability != Focusability::None)
+                })
             })
-            .or_else(|| p.children.iter().find_map(first_focus)),
-        VNode::View(v) => v.children.iter().find_map(first_focus),
+            .or_else(|| v.children.iter().find_map(first_focus)),
         VNode::Fragment(items) => items.iter().find_map(first_focus),
         VNode::Overlay(o) => o.trigger.as_deref().and_then(first_focus),
         _ => None,

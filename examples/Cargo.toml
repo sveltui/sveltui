@@ -66,6 +66,11 @@ path = "layout/flex/main.rs"
 test = true
 
 [[example]]
+name = "layout_grid"
+path = "layout/grid/main.rs"
+test = true
+
+[[example]]
 name = "layout_centering"
 path = "layout/centering/main.rs"
 test = true

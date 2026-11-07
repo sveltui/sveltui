@@ -17,8 +17,8 @@ impl Default for MarginEdge {
 impl MarginEdge {
     pub(crate) fn to_taffy(self) -> LengthPercentageAuto {
         match self {
-            Self::Cells(cells) => LengthPercentageAuto::Length(f32::from(cells)),
-            Self::Auto => LengthPercentageAuto::Auto,
+            Self::Cells(cells) => LengthPercentageAuto::length(f32::from(cells)),
+            Self::Auto => LengthPercentageAuto::auto(),
         }
     }
 }

@@ -257,6 +257,36 @@ fn Banner() -> impl IntoNode {
 }
 ```
 
+### Grid Layout
+
+`display=Display::Grid` lays a view's children out in columns and rows.
+Tracks are sized with `length(cells)`, `fr(share)`, `auto()`,
+`min_content()`, `max_content()`, `fit_content(cells)`, `minmax(min, max)`
+and `repeat(count, [..])`. Children are placed with `grid_column` and
+`grid_row`, using `span(n)`, `line(n)` or `lines(start, end)`; without
+them they fill the next free cell.
+
+```rust
+#[component]
+fn Dashboard() -> impl IntoNode {
+    view! {
+        <View display=Display::Grid width=Dimension::Percent(1.0) height=Dimension::Percent(1.0)
+            grid_template_columns=[length(22), fr(1.0)]
+            grid_template_rows=[length(3), fr(1.0)]
+            column_gap=1>
+            <View grid_column=span(2)><TextSpan>"Header"</TextSpan></View>
+            <View><TextSpan>"Sidebar"</TextSpan></View>
+            // As many 18-cell columns as fit, sharing what's left.
+            <View display=Display::Grid row_gap=1
+                grid_template_columns=[repeat(Repeat::AutoFill, [minmax(length(18), fr(1.0))])]>
+                <TextSpan>"api"</TextSpan>
+                <TextSpan>"worker"</TextSpan>
+            </View>
+        </View>
+    }
+}
+```
+
 ### Children & Snippets
 
 Component children and snippets share a unified syntax via [`Snippet`](file:///Users/themosthigh/Projects/experimental/sveltui/crates/sveltui-element/src/snippet.rs), governed by the **One-Way Rule**:

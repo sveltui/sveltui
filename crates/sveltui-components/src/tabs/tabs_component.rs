@@ -167,8 +167,9 @@ pub fn Content(props: ContentProps) -> VNode {
 
 fn has_tab_stop(node: &VNode) -> bool {
     match node {
-        VNode::Pressable(p) => p.tab_stop || p.children.iter().any(has_tab_stop),
-        VNode::View(v) => v.children.iter().any(has_tab_stop),
+        VNode::View(v) => {
+            v.pressables.iter().any(|p| p.tab_stop) || v.children.iter().any(has_tab_stop)
+        }
         VNode::Fragment(items) => items.iter().any(has_tab_stop),
         VNode::Overlay(o) => o.trigger.as_deref().is_some_and(has_tab_stop),
         _ => false,

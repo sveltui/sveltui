@@ -301,7 +301,6 @@ pub(crate) fn text_of(node: &VNode) -> String {
     match node {
         VNode::Text(t) => t.content.clone(),
         VNode::View(v) => v.children.iter().map(text_of).collect(),
-        VNode::Pressable(p) => p.children.iter().map(text_of).collect(),
         VNode::Fragment(items) => items.iter().map(text_of).collect(),
         _ => String::new(),
     }

@@ -103,6 +103,10 @@ pub mod prelude {
         Overflow, OverflowExt, Padding, Placement, Point, Position, ScrollbarChars, ScrollbarStyle,
         ScrollbarVisibility,
     };
+    pub use crate::layout::{
+        GridAutoFlow, GridLine, GridLines, Repeat, Track, auto, evenly, fit_content, fr, length,
+        line, lines, max_content, min_content, minmax, percent, repeat, span,
+    };
     pub use crate::reactive::{
         AsyncState, Bindable, BlockingFuture, ComponentScope, Derived, ReadSignal, State,
         TaskHandle, WriteSignal, batch, begin_frame, create_effect, create_signal, derived, effect,

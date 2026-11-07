@@ -52,7 +52,7 @@ fn test_whitespace_only_children_does_not_suppress_label_fallback() {
         <Button label="Fallback Label">"   "</Button>
     };
 
-    assert!(matches!(btn, VNode::Pressable(_)));
+    assert!(matches!(btn, VNode::View(v) if !v.pressables.is_empty()));
 }
 
 #[test]

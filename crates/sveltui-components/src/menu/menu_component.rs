@@ -126,11 +126,6 @@ fn style_text(node: &mut VNode, fg: Color, bold: bool, disabled: bool) {
                 style_text(child, fg, bold, disabled);
             }
         }
-        VNode::Pressable(p) => {
-            for child in &mut p.children {
-                style_text(child, fg, bold, disabled);
-            }
-        }
         VNode::Fragment(items) => {
             for child in items {
                 style_text(child, fg, bold, disabled);
@@ -144,7 +139,6 @@ fn text(node: &VNode) -> String {
     match node {
         VNode::Text(t) => t.content.clone(),
         VNode::View(v) => v.children.iter().map(text).collect::<Vec<_>>().join(""),
-        VNode::Pressable(p) => p.children.iter().map(text).collect::<Vec<_>>().join(""),
         VNode::Fragment(items) => items.iter().map(text).collect::<Vec<_>>().join(""),
         _ => String::new(),
     }
@@ -248,11 +242,12 @@ pub fn Trigger(props: TriggerProps) -> VNode {
             .child(children)
     };
 
-    let mut pressable = PressableElement::new();
-    pressable.focus_id = Some(id);
-    pressable.interaction = Some(Box::new(interaction));
-    pressable.on_key = Some(Rc::new(move |key, ctx| on_key(key, ctx)));
-    pressable.child(inner_view).into_node()
+    PressableElement::new()
+        .focus_id(id)
+        .interaction(interaction)
+        .on_key(move |key, ctx: &mut EventContext| on_key(key, ctx))
+        .child(inner_view)
+        .into_node()
 }
 
 pub use Trigger as SubTrigger;
@@ -354,21 +349,24 @@ pub fn Item(props: ItemProps) -> VNode {
         .padding(Padding::symmetric(1, 0))
         .child(children);
 
-    let mut pressable = PressableElement::new();
-    pressable.focus_id = Some(id);
-    pressable.interaction = Some(Box::new(interaction));
-    pressable.on_key = Some(on_key);
-    pressable.child(v).into_node()
+    PressableElement::new()
+        .focus_id(id)
+        .interaction(interaction)
+        .on_key(on_key)
+        .child(v)
+        .into_node()
 }
 
 #[component]
 pub fn Group(props: GroupProps) -> VNode {
     fn heading(node: &VNode) -> Option<String> {
         match node {
-            VNode::Pressable(p)
-                if p.semantics
-                    .as_ref()
-                    .is_some_and(|s| s.role == Role::Heading) =>
+            VNode::View(v)
+                if v.pressables.iter().any(|p| {
+                    p.semantics
+                        .as_ref()
+                        .is_some_and(|s| s.role == Role::Heading)
+                }) =>
             {
                 Some(text(node))
             }

@@ -41,11 +41,12 @@ fn CenteringDemo() -> impl IntoNode {
                 </Frame>
             </View>
 
-            // One auto edge pushes everything after it to the far end. (No
-            // `gap` here: taffy 0.7 drops gaps on a row that has auto margins.)
-            <View flex_direction=FlexDirection::Row border=BorderStyle::Single
+            // One auto edge pushes everything after it to the far end.
+            <View flex_direction=FlexDirection::Row gap=2 border=BorderStyle::Single
                 border_color=Color::DarkGrey padding=(1, 0) title="One auto edge">
-                <TextSpan>"File  Edit  View"</TextSpan>
+                <TextSpan>"File"</TextSpan>
+                <TextSpan>"Edit"</TextSpan>
+                <TextSpan>"View"</TextSpan>
                 <View margin=Margin { left: MarginEdge::Auto, ..Margin::zero() }>
                     <TextSpan foreground_color=Color::DarkGrey>"Esc: quit"</TextSpan>
                 </View>

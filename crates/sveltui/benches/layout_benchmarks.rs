@@ -89,5 +89,51 @@ fn bench_capped_fill_alignment(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_layout_scaling, bench_capped_fill_alignment);
+/// The same cells laid out as a 4-column grid and as wrapped flex rows of
+/// fixed-width cells, to keep grid within reach of flex.
+fn bench_grid_vs_flex(c: &mut Criterion) {
+    use sveltui::prelude::{Display, FlexWrap, fr, repeat};
+    let mut group = c.benchmark_group("grid_vs_flex");
+    for &cells in &[10, 100, 1_000] {
+        let grid = View(
+            ViewProps::builder()
+                .display(Display::Grid)
+                .width(120)
+                .grid_template_columns([repeat(4, [fr(1.0)])])
+                .children((0..cells).map(|i| TextElement::new(format!("Cell {i}"))))
+                .build(),
+        )
+        .into_node();
+        let flex = View(
+            ViewProps::builder()
+                .width(120)
+                .flex_direction(FlexDirection::Row)
+                .flex_wrap(FlexWrap::Wrap)
+                .children((0..cells).map(|i| {
+                    View(
+                        ViewProps::builder()
+                            .width(30)
+                            .child(TextElement::new(format!("Cell {i}")))
+                            .build(),
+                    )
+                }))
+                .build(),
+        )
+        .into_node();
+        group.bench_with_input(BenchmarkId::new("grid", cells), &grid, |b, tree| {
+            b.iter(|| black_box(LayoutEngine::new().compute_layout(black_box(tree), 120, 40)));
+        });
+        group.bench_with_input(BenchmarkId::new("flex", cells), &flex, |b, tree| {
+            b.iter(|| black_box(LayoutEngine::new().compute_layout(black_box(tree), 120, 40)));
+        });
+    }
+    group.finish();
+}
+
+criterion_group!(
+    benches,
+    bench_layout_scaling,
+    bench_capped_fill_alignment,
+    bench_grid_vs_flex
+);
 criterion_main!(benches);

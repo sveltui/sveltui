@@ -4,6 +4,8 @@ use crate::element::interaction::{
     KeyHandler, Semantics,
 };
 use crate::element::snippet::{IntoPropOption, Snippet};
+use crate::layout::grid::{GridAutoFlow, GridLines, IntoTracks, to_auto_tracks, to_template};
+use crate::layout::{AlignContent, AlignItems, AlignSelf, JustifyContent};
 use crate::layout::{
     BorderStyle, Dimension, FlexDirection, Inset, IntoDimension, Margin, Overflow, Padding,
     Placement, ScrollbarStyle, ScrollbarVisibility,
@@ -13,9 +15,7 @@ use crossterm::event::KeyEvent;
 use crossterm::style::Color;
 use std::fmt;
 use std::rc::Rc;
-use taffy::style::{
-    AlignContent, AlignItems, AlignSelf, Display, FlexWrap, JustifyContent, Position,
-};
+use taffy::style::{Display, FlexWrap, Position};
 
 #[derive(Clone, Debug, Default)]
 pub struct TextElement {
@@ -231,7 +231,6 @@ impl OverlayElement {
 #[derive(Clone, Debug)]
 pub enum VNode {
     View(Box<ViewElement>),
-    Pressable(Box<PressableElement>),
     Text(TextElement),
     Overlay(OverlayElement),
     Fragment(Vec<VNode>),
@@ -256,7 +255,7 @@ impl IntoNode for ViewElement {
 
 impl IntoNode for PressableElement {
     fn into_node(self) -> VNode {
-        VNode::Pressable(Box::new(self))
+        VNode::View(Box::new(self.into_view()))
     }
 }
 
@@ -375,36 +374,36 @@ macro_rules! view_setters {
         // Size
 
         pub fn width(mut self, width: impl IntoDimension) -> Self {
-            self.view_mut().style.size.width = width.into_dimension();
+            self.view_mut().style.size.width = width.into_dimension().to_taffy();
             self
         }
 
         pub fn height(mut self, height: impl IntoDimension) -> Self {
-            self.view_mut().style.size.height = height.into_dimension();
+            self.view_mut().style.size.height = height.into_dimension().to_taffy();
             self
         }
 
         pub fn min_width(mut self, width: impl IntoPropOption<Dimension>) -> Self {
             self.view_mut().style.min_size.width =
-                width.into_prop_option().unwrap_or(Dimension::Auto);
+                width.into_prop_option().unwrap_or_default().to_taffy();
             self
         }
 
         pub fn max_width(mut self, width: impl IntoPropOption<Dimension>) -> Self {
             self.view_mut().style.max_size.width =
-                width.into_prop_option().unwrap_or(Dimension::Auto);
+                width.into_prop_option().unwrap_or_default().to_taffy();
             self
         }
 
         pub fn min_height(mut self, height: impl IntoPropOption<Dimension>) -> Self {
             self.view_mut().style.min_size.height =
-                height.into_prop_option().unwrap_or(Dimension::Auto);
+                height.into_prop_option().unwrap_or_default().to_taffy();
             self
         }
 
         pub fn max_height(mut self, height: impl IntoPropOption<Dimension>) -> Self {
             self.view_mut().style.max_size.height =
-                height.into_prop_option().unwrap_or(Dimension::Auto);
+                height.into_prop_option().unwrap_or_default().to_taffy();
             self
         }
 
@@ -429,7 +428,7 @@ macro_rules! view_setters {
 
         /// Space between children, both along and across the main axis.
         pub fn gap(mut self, gap: u16) -> Self {
-            let gap = taffy::style::LengthPercentage::Length(f32::from(gap));
+            let gap = taffy::style::LengthPercentage::length(f32::from(gap));
             self.view_mut().style.gap = taffy::geometry::Size {
                 width: gap,
                 height: gap,
@@ -441,7 +440,7 @@ macro_rules! view_setters {
         /// a column).
         pub fn row_gap(mut self, gap: u16) -> Self {
             self.view_mut().style.gap.height =
-                taffy::style::LengthPercentage::Length(f32::from(gap));
+                taffy::style::LengthPercentage::length(f32::from(gap));
             self
         }
 
@@ -449,7 +448,7 @@ macro_rules! view_setters {
         /// lines in a column).
         pub fn column_gap(mut self, gap: u16) -> Self {
             self.view_mut().style.gap.width =
-                taffy::style::LengthPercentage::Length(f32::from(gap));
+                taffy::style::LengthPercentage::length(f32::from(gap));
             self
         }
 
@@ -481,28 +480,87 @@ macro_rules! view_setters {
         }
 
         pub fn flex_basis(mut self, basis: impl IntoDimension) -> Self {
-            self.view_mut().style.flex_basis = basis.into_dimension();
+            self.view_mut().style.flex_basis = basis.into_dimension().to_taffy();
             self
         }
 
         pub fn align_items(mut self, align: impl IntoPropOption<AlignItems>) -> Self {
-            self.view_mut().style.align_items = align.into_prop_option();
+            self.view_mut().style.align_items = align.into_prop_option().map(|a| a.to_taffy());
             self
         }
 
         pub fn align_self(mut self, align: impl IntoPropOption<AlignSelf>) -> Self {
-            self.view_mut().style.align_self = align.into_prop_option();
+            self.view_mut().style.align_self = align.into_prop_option().map(|a| a.to_taffy());
             self
         }
 
         /// How wrapped lines share the space across the main axis.
         pub fn align_content(mut self, align: impl IntoPropOption<AlignContent>) -> Self {
-            self.view_mut().style.align_content = align.into_prop_option();
+            self.view_mut().style.align_content = align.into_prop_option().map(|a| a.to_taffy());
             self
         }
 
         pub fn justify_content(mut self, justify: impl IntoPropOption<JustifyContent>) -> Self {
-            self.view_mut().style.justify_content = justify.into_prop_option();
+            self.view_mut().style.justify_content =
+                justify.into_prop_option().map(|a| a.to_taffy());
+            self
+        }
+
+        // Grid (with `display=Display::Grid`)
+
+        /// The grid's columns, left to right, e.g. `[length(20), fr(1.0)]`.
+        pub fn grid_template_columns(mut self, tracks: impl IntoTracks) -> Self {
+            self.view_mut().style.grid_template_columns = to_template(&tracks.into_tracks());
+            self
+        }
+
+        /// The grid's rows, top to bottom.
+        pub fn grid_template_rows(mut self, tracks: impl IntoTracks) -> Self {
+            self.view_mut().style.grid_template_rows = to_template(&tracks.into_tracks());
+            self
+        }
+
+        /// The size of columns the grid adds beyond its template. Several
+        /// tracks are used in turn.
+        pub fn grid_auto_columns(mut self, tracks: impl IntoTracks) -> Self {
+            self.view_mut().style.grid_auto_columns = to_auto_tracks(&tracks.into_tracks());
+            self
+        }
+
+        /// The size of rows the grid adds beyond its template, such as the
+        /// rows of a list laid out in a grid.
+        pub fn grid_auto_rows(mut self, tracks: impl IntoTracks) -> Self {
+            self.view_mut().style.grid_auto_rows = to_auto_tracks(&tracks.into_tracks());
+            self
+        }
+
+        /// Whether children without a place fill rows or columns first.
+        pub fn grid_auto_flow(mut self, flow: GridAutoFlow) -> Self {
+            self.view_mut().style.grid_auto_flow = flow;
+            self
+        }
+
+        /// Where children sit across their grid area's width.
+        pub fn justify_items(mut self, justify: impl IntoPropOption<AlignItems>) -> Self {
+            self.view_mut().style.justify_items = justify.into_prop_option().map(|a| a.to_taffy());
+            self
+        }
+
+        /// Where this child sits across its grid area's width.
+        pub fn justify_self(mut self, justify: impl IntoPropOption<AlignSelf>) -> Self {
+            self.view_mut().style.justify_self = justify.into_prop_option().map(|a| a.to_taffy());
+            self
+        }
+
+        /// The columns this child covers, e.g. `span(2)` or `lines(1, 3)`.
+        pub fn grid_column(mut self, lines: impl Into<GridLines>) -> Self {
+            self.view_mut().style.grid_column = lines.into().to_taffy();
+            self
+        }
+
+        /// The rows this child covers.
+        pub fn grid_row(mut self, lines: impl Into<GridLines>) -> Self {
+            self.view_mut().style.grid_row = lines.into().to_taffy();
             self
         }
 
@@ -648,6 +706,9 @@ pub struct ViewElement {
     pub(crate) style: taffy::Style,
     pub visual: Option<Box<VisualData>>,
     pub scroll: Option<Box<ScrollData>>,
+    /// The interactions of the `Pressable`s wrapped around this view,
+    /// outermost first. Empty for a plain view.
+    pub pressables: Vec<PressableData>,
     pub children: Vec<VNode>,
 }
 
@@ -662,8 +723,19 @@ impl Default for ViewElement {
             },
             visual: None,
             scroll: None,
+            pressables: Vec::new(),
             children: Vec::new(),
         }
+    }
+}
+
+/// Adds `child` to `children`. Fragments never become boxes: their items
+/// join `children` directly, however deeply they're nested.
+fn push_flat(children: &mut Vec<VNode>, child: VNode) {
+    match child {
+        VNode::Fragment(items) => items.into_iter().for_each(|item| push_flat(children, item)),
+        VNode::Empty => {}
+        other => children.push(other),
     }
 }
 
@@ -707,13 +779,7 @@ impl ViewElement {
     }
 
     fn push_child(&mut self, child: VNode) {
-        match child {
-            // Fragments never become boxes. Their items join our children,
-            // however deeply they're nested.
-            VNode::Fragment(items) => items.into_iter().for_each(|item| self.push_child(item)),
-            VNode::Empty => {}
-            other => self.children.push(other),
-        }
+        push_flat(&mut self.children, child);
     }
 
     view_setters!();
@@ -736,8 +802,12 @@ pub fn View(props: ViewProps) -> ViewElement {
     props
 }
 
+/// What makes a view interactive: its focus identity and how it takes
+/// focus, what it means to assistive tech, and its click, key, focus and
+/// pointer handlers. A view carries one of these per `Pressable` wrapped
+/// around it, outermost first.
 #[derive(Clone, Default)]
-pub struct PressableElement {
+pub struct PressableData {
     pub focus_id: Option<FocusId>,
     pub focus_group: Option<FocusGroup>,
     pub focus_scope: Option<FocusScope>,
@@ -754,247 +824,192 @@ pub struct PressableElement {
     /// Called when the pointer moves onto this element.
     pub on_pointer_enter: Option<Rc<dyn Fn()>>,
     pub interaction: Option<Box<Interaction>>,
-    pub children: Vec<VNode>,
 }
 
-impl fmt::Debug for PressableElement {
+impl fmt::Debug for PressableData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PressableElement")
+        f.debug_struct("PressableData")
             .field("focus_id", &self.focus_id)
             .field("tab_stop", &self.tab_stop)
             .field("disabled", &self.disabled)
             .field("activation", &self.activation)
             .field("has_click", &self.on_click.is_some())
-            .field("children", &self.children)
             .finish()
     }
 }
+
+impl PressableData {
+    /// Whether the pointer or keyboard can reach this, so it needs a hit
+    /// target on screen.
+    pub(crate) fn is_hit_target(&self) -> bool {
+        self.focus_id.is_some()
+            || self.on_click.is_some()
+            || self.on_key.is_some()
+            || self.on_pointer_enter.is_some()
+            || self.tab_stop
+    }
+}
+
+/// Every `Pressable` prop, written once for both `PressableElement` and its
+/// builder (see `view_setters!`).
+macro_rules! pressable_setters {
+    () => {
+        pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
+            self.pressable_mut().data.focus_id = id.into_prop_option();
+            self
+        }
+
+        pub fn focus_group(mut self, group: impl IntoPropOption<FocusGroup>) -> Self {
+            self.pressable_mut().data.focus_group = group.into_prop_option();
+            self
+        }
+
+        pub fn focus_scope(mut self, scope: impl IntoPropOption<FocusScope>) -> Self {
+            self.pressable_mut().data.focus_scope = scope.into_prop_option();
+            self
+        }
+
+        pub fn tab_stop(mut self, value: bool) -> Self {
+            self.pressable_mut().data.tab_stop = value;
+            self
+        }
+
+        pub fn disabled(mut self, value: bool) -> Self {
+            self.pressable_mut().data.disabled = value;
+            self
+        }
+
+        pub fn hidden(mut self, value: bool) -> Self {
+            self.pressable_mut().data.hidden = value;
+            self
+        }
+
+        pub fn activation(mut self, value: Activation) -> Self {
+            self.pressable_mut().data.activation = value;
+            self
+        }
+
+        pub fn semantics(mut self, semantics: impl IntoPropOption<Semantics>) -> Self {
+            self.pressable_mut().data.semantics = semantics.into_prop_option();
+            self
+        }
+
+        pub fn on_click(mut self, handler: impl IntoClickHandler) -> Self {
+            self.pressable_mut().data.on_click = handler.into_click_handler();
+            self
+        }
+
+        pub fn on_click_at(mut self, handler: impl IntoClickHandlerAt) -> Self {
+            self.pressable_mut().data.on_click_at = handler.into_click_handler_at();
+            self
+        }
+
+        pub fn on_focus(mut self, handler: impl IntoClickHandler) -> Self {
+            self.pressable_mut().data.on_focus = handler.into_click_handler();
+            self
+        }
+
+        pub fn on_pointer_enter(mut self, handler: impl IntoClickHandler) -> Self {
+            self.pressable_mut().data.on_pointer_enter = handler.into_click_handler();
+            self
+        }
+
+        pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
+            self.pressable_mut().data.on_key = handler.into_key_handler();
+            self
+        }
+
+        pub fn interaction(mut self, interaction: impl IntoPropOption<Interaction>) -> Self {
+            self.pressable_mut().data.interaction = interaction.into_prop_option().map(Box::new);
+            self
+        }
+
+        pub fn child(mut self, child: impl IntoNode) -> Self {
+            push_flat(&mut self.pressable_mut().children, child.into_node());
+            self
+        }
+
+        pub fn slot_children(self, child: impl IntoNode) -> Self {
+            self.child(child)
+        }
+    };
+}
+
+/// Makes what it wraps interactive. It isn't a box of its own: wrapping a
+/// single view attaches the interaction to that view, so layout doesn't
+/// change. Anything else (text, several children) is put in a plain view to
+/// carry it.
+#[derive(Clone, Default, Debug)]
+pub struct PressableElement {
+    pub data: PressableData,
+    pub children: Vec<VNode>,
+}
+
+/// The props `Pressable` takes; like `ViewProps`, they're the element itself.
+pub type PressableProps = PressableElement;
+
+/// Builds a `Pressable`. `view!` uses this; it has the same setters as
+/// `PressableElement`.
+#[derive(Clone, Default)]
+pub struct PressablePropsBuilder(PressableElement);
 
 impl PressableElement {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
-        self.focus_id = id.into_prop_option();
-        self
-    }
-
-    pub fn focus_group(mut self, group: impl IntoPropOption<FocusGroup>) -> Self {
-        self.focus_group = group.into_prop_option();
-        self
-    }
-
-    pub fn focus_scope(mut self, scope: impl IntoPropOption<FocusScope>) -> Self {
-        self.focus_scope = scope.into_prop_option();
-        self
-    }
-
-    pub fn tab_stop(mut self, value: bool) -> Self {
-        self.tab_stop = value;
-        self
-    }
-
-    pub fn disabled(mut self, value: bool) -> Self {
-        self.disabled = value;
-        self
-    }
-
-    pub fn hidden(mut self, value: bool) -> Self {
-        self.hidden = value;
-        self
-    }
-
-    pub fn activation(mut self, value: Activation) -> Self {
-        self.activation = value;
-        self
-    }
-
-    pub fn semantics(mut self, semantics: impl IntoPropOption<Semantics>) -> Self {
-        self.semantics = semantics.into_prop_option();
-        self
-    }
-
-    pub fn on_click(mut self, handler: impl IntoClickHandler) -> Self {
-        self.on_click = handler.into_click_handler();
-        self
-    }
-
-    pub fn on_click_at(mut self, handler: impl IntoClickHandlerAt) -> Self {
-        self.on_click_at = handler.into_click_handler_at();
-        self
-    }
-
-    pub fn on_focus(mut self, handler: impl IntoClickHandler) -> Self {
-        self.on_focus = handler.into_click_handler();
-        self
-    }
-
-    pub fn on_pointer_enter(mut self, handler: impl IntoClickHandler) -> Self {
-        self.on_pointer_enter = handler.into_click_handler();
-        self
-    }
-
-    pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
-        self.on_key = handler.into_key_handler();
-        self
-    }
-
-    pub fn interaction(mut self, i: impl IntoPropOption<Interaction>) -> Self {
-        self.interaction = i.into_prop_option().map(Box::new);
-        self
-    }
-
-    pub fn child(mut self, child: impl IntoNode) -> Self {
-        match child.into_node() {
-            VNode::Fragment(items) => self.children.extend(items),
-            VNode::Empty => {}
-            other => self.children.push(other),
-        }
-        self
-    }
-}
-
-#[derive(Clone, Default)]
-pub struct PressableProps {
-    pub focus_id: Option<FocusId>,
-    pub focus_group: Option<FocusGroup>,
-    pub focus_scope: Option<FocusScope>,
-    pub tab_stop: bool,
-    pub disabled: bool,
-    pub hidden: bool,
-    pub activation: Activation,
-    pub semantics: Option<Semantics>,
-    pub on_click: Option<Rc<dyn Fn()>>,
-    pub on_click_at: Option<Rc<dyn Fn(u16, u16)>>,
-    pub on_key: Option<KeyHandler>,
-    /// Called when a key press or click moves focus onto this element.
-    pub on_focus: Option<Rc<dyn Fn()>>,
-    /// Called when the pointer moves onto this element.
-    pub on_pointer_enter: Option<Rc<dyn Fn()>>,
-    pub interaction: Option<Box<Interaction>>,
-    pub children: Vec<VNode>,
-}
-
-#[derive(Clone, Default)]
-pub struct PressablePropsBuilder {
-    props: PressableProps,
-}
-
-impl PressableProps {
     pub fn builder() -> PressablePropsBuilder {
         PressablePropsBuilder::default()
+    }
+
+    fn pressable_mut(&mut self) -> &mut PressableElement {
+        self
+    }
+
+    pressable_setters!();
+
+    /// The view that carries this interaction.
+    pub fn into_view(self) -> ViewElement {
+        let PressableElement { data, mut children } = self;
+        if let [VNode::View(_)] = children.as_slice()
+            && let Some(VNode::View(view)) = children.pop()
+        {
+            let mut view = *view;
+            // We wrap whatever was wrapped before us, so we go first.
+            view.pressables.insert(0, data);
+            return view;
+        }
+        let mut view = ViewElement::default();
+        if let [VNode::Text(text)] = children.as_slice() {
+            // A lone text sizes the way it would without us: it doesn't
+            // shrink, and filled text grows to its line.
+            view.style.flex_shrink = 0.0;
+            if text.fill.is_some() {
+                view.style.flex_grow = 1.0;
+                view.style.align_self = Some(AlignSelf::Stretch.to_taffy());
+            }
+        }
+        view.pressables.push(data);
+        view.children = children;
+        view
     }
 }
 
 impl PressablePropsBuilder {
-    pub fn focus_id(mut self, id: impl IntoPropOption<FocusId>) -> Self {
-        self.props.focus_id = id.into_prop_option();
-        self
-    }
-
-    pub fn focus_group(mut self, group: impl IntoPropOption<FocusGroup>) -> Self {
-        self.props.focus_group = group.into_prop_option();
-        self
-    }
-
-    pub fn focus_scope(mut self, scope: impl IntoPropOption<FocusScope>) -> Self {
-        self.props.focus_scope = scope.into_prop_option();
-        self
-    }
-
-    pub fn tab_stop(mut self, value: bool) -> Self {
-        self.props.tab_stop = value;
-        self
-    }
-
-    pub fn disabled(mut self, value: bool) -> Self {
-        self.props.disabled = value;
-        self
-    }
-
-    pub fn hidden(mut self, value: bool) -> Self {
-        self.props.hidden = value;
-        self
-    }
-
-    pub fn activation(mut self, value: Activation) -> Self {
-        self.props.activation = value;
-        self
-    }
-
-    pub fn semantics(mut self, semantics: impl IntoPropOption<Semantics>) -> Self {
-        self.props.semantics = semantics.into_prop_option();
-        self
-    }
-
-    pub fn on_click(mut self, handler: impl IntoClickHandler) -> Self {
-        self.props.on_click = handler.into_click_handler();
-        self
-    }
-
-    pub fn on_click_at(mut self, handler: impl IntoClickHandlerAt) -> Self {
-        self.props.on_click_at = handler.into_click_handler_at();
-        self
-    }
-
-    pub fn on_focus(mut self, handler: impl IntoClickHandler) -> Self {
-        self.props.on_focus = handler.into_click_handler();
-        self
-    }
-
-    pub fn on_pointer_enter(mut self, handler: impl IntoClickHandler) -> Self {
-        self.props.on_pointer_enter = handler.into_click_handler();
-        self
-    }
-
-    pub fn on_key(mut self, handler: impl IntoKeyHandler) -> Self {
-        self.props.on_key = handler.into_key_handler();
-        self
-    }
-
-    pub fn interaction(mut self, i: impl IntoPropOption<Interaction>) -> Self {
-        self.props.interaction = i.into_prop_option().map(Box::new);
-        self
-    }
-
-    pub fn slot_children(mut self, node: impl IntoNode) -> Self {
-        match node.into_node() {
-            VNode::Fragment(items) => self.props.children.extend(items),
-            VNode::Empty => {}
-            other => self.props.children.push(other),
-        }
-        self
-    }
-
-    pub fn child(self, node: impl IntoNode) -> Self {
-        self.slot_children(node)
+    fn pressable_mut(&mut self) -> &mut PressableElement {
+        &mut self.0
     }
 
     pub fn build(self) -> PressableProps {
-        self.props
+        self.0
     }
+
+    pressable_setters!();
 }
 
 #[allow(non_snake_case)]
 pub fn Pressable(props: PressableProps) -> PressableElement {
-    PressableElement {
-        focus_id: props.focus_id,
-        focus_group: props.focus_group,
-        focus_scope: props.focus_scope,
-        tab_stop: props.tab_stop,
-        disabled: props.disabled,
-        hidden: props.hidden,
-        activation: props.activation,
-        semantics: props.semantics,
-        on_click: props.on_click,
-        on_click_at: props.on_click_at,
-        on_key: props.on_key,
-        on_focus: props.on_focus,
-        on_pointer_enter: props.on_pointer_enter,
-        interaction: props.interaction,
-        children: props.children,
-    }
+    props
 }
 
 #[derive(Clone, Default)]

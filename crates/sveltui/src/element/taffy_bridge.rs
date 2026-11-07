@@ -37,13 +37,13 @@ impl TextSizes {
 /// scrollbar).
 pub fn view_to_taffy_style(view: &ViewElement) -> taffy::style::Style {
     let mut style = view.style.clone();
-    style.align_items = style.align_items.or(Some(AlignItems::Stretch));
+    style.align_items = style.align_items.or(Some(AlignItems::STRETCH));
 
     let border = view
         .visual
         .as_ref()
         .is_some_and(|v| v.border != BorderStyle::None);
-    let inset = LengthPercentage::Length(if border { 1.0 } else { 0.0 });
+    let inset = LengthPercentage::length(if border { 1.0 } else { 0.0 });
     style.border = taffy::geometry::Rect {
         left: inset,
         right: inset,
@@ -55,8 +55,7 @@ pub fn view_to_taffy_style(view: &ViewElement) -> taffy::style::Style {
     // on both axes; an unbounded view just grows to fit instead.
     let scrolls = style.overflow.x == taffy::style::Overflow::Scroll
         || style.overflow.y == taffy::style::Overflow::Scroll;
-    let bounded =
-        |size: Dimension, max: Dimension| size != Dimension::Auto || max != Dimension::Auto;
+    let bounded = |size: Dimension, max: Dimension| !size.is_auto() || !max.is_auto();
     let shows_scrollbar = view
         .scroll
         .as_ref()
@@ -181,45 +180,20 @@ impl LayoutEngine {
                     .new_with_children(style, &child_ids)
                     .unwrap_or_else(|_| self.tree.new_leaf(Style::default()).unwrap())
             }
-            VNode::Pressable(pressable) => {
-                if pressable.children.len() == 1 {
-                    self.build_node(&pressable.children[0], texts)
-                } else if pressable.children.is_empty() {
-                    self.tree.new_leaf(Style::default()).unwrap()
-                } else {
-                    let style = Style {
-                        display: Display::Flex,
-                        flex_direction: FlexDirection::Column,
-                        size: taffy::geometry::Size {
-                            width: Dimension::Auto,
-                            height: Dimension::Auto,
-                        },
-                        ..Default::default()
-                    };
-                    let child_ids: Vec<NodeId> = pressable
-                        .children
-                        .iter()
-                        .map(|c| self.build_node(c, texts))
-                        .collect();
-                    self.tree
-                        .new_with_children(style, &child_ids)
-                        .unwrap_or_else(|_| self.tree.new_leaf(Style::default()).unwrap())
-                }
-            }
             VNode::Text(text) => {
                 // Unwrapped text keeps its intrinsic minimum so stretching a
                 // narrow parent doesn't silently truncate visible overflow.
                 let min_size = if !text.wrap && text.fill.is_none() {
                     let lines = crate::element::text::lines(text, None);
                     taffy::geometry::Size {
-                        width: Dimension::Length(
+                        width: Dimension::length(
                             lines
                                 .iter()
                                 .map(|line| line.chars().count())
                                 .max()
                                 .unwrap_or(0) as f32,
                         ),
-                        height: Dimension::Length(lines.len() as f32),
+                        height: Dimension::length(lines.len() as f32),
                     }
                 } else {
                     taffy::geometry::Size::auto()
@@ -228,11 +202,11 @@ impl LayoutEngine {
                     display: Display::Flex,
                     min_size,
                     size: taffy::geometry::Size {
-                        width: Dimension::Auto,
-                        height: Dimension::Auto,
+                        width: Dimension::auto(),
+                        height: Dimension::auto(),
                     },
                     align_self: if text.fill.is_some() {
-                        Some(AlignSelf::Stretch)
+                        Some(AlignSelf::STRETCH)
                     } else {
                         // Inherit the container's align_items just like View
                         // children; forcing FlexStart disables center/end/stretch.
@@ -272,8 +246,8 @@ impl LayoutEngine {
                         display: Display::Flex,
                         flex_direction: FlexDirection::Column,
                         size: taffy::geometry::Size {
-                            width: Dimension::Auto,
-                            height: Dimension::Auto,
+                            width: Dimension::auto(),
+                            height: Dimension::auto(),
                         },
                         ..Default::default()
                     };
@@ -295,12 +269,6 @@ impl LayoutEngine {
     }
 
     fn extract_node_layout(&self, taffy_node: NodeId, vnode: &VNode) -> ComputedLayoutNode {
-        // A single-child Pressable shares its child's Taffy node and geometry.
-        if let VNode::Pressable(p) = vnode
-            && p.children.len() == 1
-        {
-            return self.extract_node_layout(taffy_node, &p.children[0]);
-        }
         let l = self.tree.layout(taffy_node).cloned().unwrap_or_default();
 
         let x = l.location.x.max(0.0).round() as u16;
@@ -324,10 +292,11 @@ impl LayoutEngine {
         };
 
         let (content_w, content_h, viewport_w, viewport_h) = if matches!(vnode, VNode::View(_)) {
-            // Taffy's content extent includes the leading border and both
-            // padding edges. Scroll offsets and clipping use content coordinates.
-            let leading_w = cells(l.border.left + l.padding.left + l.padding.right);
-            let leading_h = cells(l.border.top + l.padding.top + l.padding.bottom);
+            // Taffy measures content from inside the border, and its extent
+            // includes both padding edges. Scroll offsets and clipping use
+            // content coordinates, so we take the padding back off.
+            let leading_w = cells(l.padding.left + l.padding.right);
+            let leading_h = cells(l.padding.top + l.padding.bottom);
             (
                 content_w.saturating_sub(leading_w),
                 content_h.saturating_sub(leading_h),
@@ -348,17 +317,6 @@ impl LayoutEngine {
         let children_nodes = self.tree.children(taffy_node).unwrap_or_default();
         let child_vnodes = match vnode {
             VNode::View(view) => view.children.as_slice(),
-            VNode::Pressable(pressable) => {
-                if pressable.children.len() == 1 {
-                    if let VNode::View(v) = &pressable.children[0] {
-                        v.children.as_slice()
-                    } else {
-                        &[]
-                    }
-                } else {
-                    pressable.children.as_slice()
-                }
-            }
             VNode::Fragment(children) => children.as_slice(),
             _ => &[],
         };

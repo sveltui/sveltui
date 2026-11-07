@@ -147,9 +147,9 @@ fn native_dimensions_preserve_fractional_lengths_and_percentage_units() {
         .flex_grow(2.0)
         .flex_shrink(0.0);
     let style = view_to_taffy_style(&view);
-    assert_eq!(style.size.width, Dimension::Length(40.5));
-    assert_eq!(style.size.height, Dimension::Percent(0.5));
-    assert_eq!(style.flex_basis, Dimension::Length(10.25));
+    assert_eq!(style.size.width, Dimension::Length(40.5).into());
+    assert_eq!(style.size.height, Dimension::Percent(0.5).into());
+    assert_eq!(style.flex_basis, Dimension::Length(10.25).into());
     assert_eq!(style.flex_grow, 2.0);
     assert_eq!(style.flex_shrink, 0.0);
 

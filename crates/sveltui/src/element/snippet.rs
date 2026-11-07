@@ -279,14 +279,14 @@ impl IntoPropOption<crate::layout::Margin> for crate::layout::Margin {
     }
 }
 
-impl IntoPropOption<taffy::style::AlignItems> for taffy::style::AlignItems {
-    fn into_prop_option(self) -> Option<taffy::style::AlignItems> {
+impl IntoPropOption<crate::layout::AlignItems> for crate::layout::AlignItems {
+    fn into_prop_option(self) -> Option<crate::layout::AlignItems> {
         Some(self)
     }
 }
 
-impl IntoPropOption<taffy::style::JustifyContent> for taffy::style::JustifyContent {
-    fn into_prop_option(self) -> Option<taffy::style::JustifyContent> {
+impl IntoPropOption<crate::layout::JustifyContent> for crate::layout::JustifyContent {
+    fn into_prop_option(self) -> Option<crate::layout::JustifyContent> {
         Some(self)
     }
 }
