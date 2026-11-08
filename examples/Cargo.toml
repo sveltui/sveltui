@@ -149,6 +149,11 @@ path = "components/table/main.rs"
 test = true
 
 [[example]]
+name = "component_resizable"
+path = "components/resizable/main.rs"
+test = true
+
+[[example]]
 name = "component_tabs"
 path = "components/tabs/main.rs"
 test = true

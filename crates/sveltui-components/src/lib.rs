@@ -10,6 +10,7 @@ mod listbox;
 pub mod menu;
 pub mod popover;
 pub mod progress_bar;
+pub mod resizable;
 pub mod select;
 pub mod switch;
 pub mod table;
@@ -80,6 +81,14 @@ pub mod Select {
     pub use crate::select::{
         Content, ContentProps, Item, ItemProps, Root, RootProps, Trigger, TriggerProps, Value,
         ValueProps,
+    };
+}
+/// Resizable split panes: a `Resizable::PanelGroup` of `Resizable::Panel`s
+/// with a `Resizable::Handle` between each pair.
+#[allow(non_snake_case)]
+pub mod Resizable {
+    pub use crate::resizable::{
+        Handle, HandleProps, Panel, PanelGroup, PanelGroupProps, PanelProps,
     };
 }
 pub use switch::{Switch, SwitchProps};

@@ -14,9 +14,9 @@ Sveltui follows a declarative, reactive architecture built on top of `crossterm`
 | Metric | Count | Details |
 |---|:---:|---|
 | **Total Component Patterns Tracked** | **42** | Covering standard ARIA APG, Bits-UI, and Base UI component suites |
-| **Implemented (Ready for Use)** | **19** | Production-ready in [`sveltui-components`](./crates/sveltui-components/src/lib.rs) and [`sveltui`](./crates/sveltui/src/lib.rs) core |
+| **Implemented (Ready for Use)** | **20** | Production-ready in [`sveltui-components`](./crates/sveltui-components/src/lib.rs) and [`sveltui`](./crates/sveltui/src/lib.rs) core |
 | **Partial / Core Primitives Ready** | **2** | Selection models and layout primitives available in core for widget composition |
-| **Planned / Future Roadmap** | **21** | Scheduled for subsequent releases |
+| **Planned / Future Roadmap** | **20** | Scheduled for subsequent releases |
 
 ### Interaction & Theming Foundations
 - **Focus & Keyboard Navigation**: Managed via [`FocusId`](./crates/sveltui/src/element/focus.rs), [`use_focus`](./crates/sveltui/src/element/focus.rs), explicit `tab_stop=true`, and [`FocusGroup`](./crates/sveltui/src/element/interaction.rs) roving tabindex.
@@ -47,14 +47,16 @@ Sveltui follows a declarative, reactive architecture built on top of `crossterm`
 17. [`Table`](./crates/sveltui-components/src/table/table_component.rs) — Table laid out as one grid (`Root`, `Header`, `Body`, `Row`, `Cell`, `HeaderCell`) so columns line up across rows; column spans, cell alignment, and ruled lines (`TableRules::{Header, Rows, Columns, All, None}`) joined to an optional border.
 18. [`DataGrid`](./crates/sveltui-components/src/data_grid/data_grid_component.rs) — Interactive, virtualized data grid: only the rows on screen are built, so a frame costs the same for a thousand rows or a million. Typed columns (`GridColumn::new(header, accessor)` with `width`, `align`, `sortable`/`sort_by`, `render`), header sorting cached between frames, row selection kept by data index across sorts, and APG grid keyboard navigation.
 
+19. [`Resizable`](./crates/sveltui-components/src/resizable/resizable_component.rs) — Split panes (`PanelGroup`, `Panel`, `Handle`) with percentage sizes, min/max and collapsible panels, keyboard and mouse-drag resizing, and nested horizontal or vertical groups.
+
 ### Core Framework Layout & Element Primitives (`crates/sveltui`)
-19. [`View`](./crates/sveltui/src/element/node.rs) — Unified Taffy-powered layout container: flexbox and grid layout (`display=Display::Grid`, track templates, spans, ruled lines with `grid_rules`), sizing, scrollbars, borders, padding, and visual styling.
-20. [`Paragraph`](./crates/sveltui/src/element/text/mod.rs) — Word-wrapped formatted text block with scrolling.
-21. [`TextSpan`](./crates/sveltui/src/element/text/mod.rs) / [`TextElement`](./crates/sveltui/src/element/text/mod.rs) — Text runs with `fg`, `bg`, `bold`, `dim`, `italic`, `underline`.
-22. [`Overlay`](./crates/sveltui/src/element/boundary.rs) — Root floating layer primitive with modal/non-modal policies and backdrop rendering.
-23. [`ErrorBoundary`](./crates/sveltui/src/element/boundary.rs) — Declarative panic catcher with fallback snippets.
-24. [`ContextProvider`](./crates/sveltui/src/element/provider.rs) — Scoped context dependency injection.
-25. [`Collection` / Selection Primitives](./crates/sveltui/src/element/collection.rs) — Headless selection models (`Selection`, `GridSelection`, `TreeSelection`, `Typeahead`).
+20. [`View`](./crates/sveltui/src/element/node.rs) — Unified Taffy-powered layout container: flexbox and grid layout (`display=Display::Grid`, track templates, spans, ruled lines with `grid_rules`), sizing, scrollbars, borders, padding, and visual styling.
+21. [`Paragraph`](./crates/sveltui/src/element/text/mod.rs) — Word-wrapped formatted text block with scrolling.
+22. [`TextSpan`](./crates/sveltui/src/element/text/mod.rs) / [`TextElement`](./crates/sveltui/src/element/text/mod.rs) — Text runs with `fg`, `bg`, `bold`, `dim`, `italic`, `underline`.
+23. [`Overlay`](./crates/sveltui/src/element/boundary.rs) — Root floating layer primitive with modal/non-modal policies and backdrop rendering.
+24. [`ErrorBoundary`](./crates/sveltui/src/element/boundary.rs) — Declarative panic catcher with fallback snippets.
+25. [`ContextProvider`](./crates/sveltui/src/element/provider.rs) — Scoped context dependency injection.
+26. [`Collection` / Selection Primitives](./crates/sveltui/src/element/collection.rs) — Headless selection models (`Selection`, `GridSelection`, `TreeSelection`, `Typeahead`).
 
 ---
 
@@ -107,7 +109,7 @@ The table below catalogs components across **WCAG ARIA**, **Bits-UI**, and **Bas
 | `[ ]` | **Pagination** | Navigation | Bits-UI | <kbd>Tab</kbd> between previous/next and page buttons; <kbd>Enter</kbd>/<kbd>Space</kbd> activates | Click page number or arrow | Current page signal, total pages, sibling count, boundary count, ellipsis | Planned |
 | `[ ]` | **Pin Input / OTP** | Form / Input | Bits-UI / Base UI | Typing digit fills active slot and moves focus to next slot; <kbd>Backspace</kbd> clears and moves to previous slot; <kbd>←</kbd>/<kbd>→</kbd> navigates | Click slot focuses that specific cell | Length (e.g. 4 or 6), mask character, box border style, separator slots | Planned |
 | `[ ]` | **Meter** | Feedback | WCAG APG / Base UI | Non-interactive visual indicator of a scalar measurement | None | `value`, `min`, `max`, `low`, `high`, `optimum`, segmented track colors | Planned |
-| `[ ]` | **Resizable / Splitter** | Layout | WCAG APG Window Splitter / Bits-UI | Focus splitter handle; <kbd>←</kbd>/<kbd>→</kbd> or <kbd>↑</kbd>/<kbd>↓</kbd> resizes panes; <kbd>Home</kbd>/<kbd>End</kbd> min/max | Drag splitter handle with mouse to resize panes | Horizontal / vertical split, min/max pane constraints, drag handle character (`│`, `─`, `⋮`) | Planned |
+| `[x]` | **Resizable / Splitter** | Layout | WCAG APG Window Splitter / Shadcn | Handle is a single <kbd>Tab</kbd> stop (`separator` with value, min, max, orientation); <kbd>←</kbd>/<kbd>→</kbd> (or <kbd>↑</kbd>/<kbd>↓</kbd> in a vertical group) resizes by `keyboard_step`; <kbd>Shift</kbd> takes 5× steps; <kbd>Home</kbd>/<kbd>End</kbd> go to the min/max; <kbd>Enter</kbd> collapses or restores a collapsible panel | Drag the handle (the pointer is captured, so dragging continues outside it); resize pointer shape while hovering, grabbing while dragging | `direction`, `default_size`, `min_size`, `max_size`, `collapsible`, `collapsed_size`, `on_collapse` / `on_expand`, controlled `bind:layout` / `on_layout_change`, `with_handle`; handle glyph `│` / `─`, double (`║` / `═`) when focused or dragged | [`Resizable`](./crates/sveltui-components/src/resizable/resizable_component.rs) |
 | `[ ]` | **Aspect Ratio** | Layout | Bits-UI | Governed by child contents | Pointer events forwarded to child | `ratio` (e.g. 16:9, 4:3, 1:1), clamps or fits terminal grid cells | Planned |
 | `[ ]` | **Avatar** | Data Display | Bits-UI / Base UI | Non-interactive display (or focusable if wrapped in button) | Pointer events forwarded to container | Fallback text/initials, border style, shape, border color | Planned |
 | `[ ]` | **Calendar & Date Picker**| Form / Selection | Bits-UI | <kbd>Tab</kbd> to grid; <kbd>←</kbd><kbd>→</kbd> days; <kbd>↑</kbd><kbd>↓</kbd> weeks; <kbd>PageUp</kbd>/<kbd>PageDown</kbd> months; <kbd>Home</kbd>/<kbd>End</kbd> month bounds; <kbd>Enter</kbd> selects | Click date cell selects; click header buttons changes month | Month grid layout, weekday headers, selected date highlight, min/max dates | Planned |
