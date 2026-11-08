@@ -206,6 +206,8 @@ fn render_single_overlay(
         on_key: None,
         on_scroll: None,
         on_pointer_enter: None,
+        on_pointer: None,
+        pointer: None,
     });
 
     if let Some(content) = overlay.content {
@@ -229,6 +231,8 @@ fn render_single_overlay(
             on_key: None,
             on_scroll: None,
             on_pointer_enter: None,
+            on_pointer: None,
+            pointer: None,
         });
 
         for cy in popover_rect.y..(popover_rect.y + popover_rect.height) {
@@ -404,6 +408,8 @@ fn render_node_offset_internal(
                     on_key: p.on_key.clone(),
                     on_scroll: None,
                     on_pointer_enter: p.on_pointer_enter.clone(),
+                    on_pointer: p.on_pointer.clone(),
+                    pointer: p.pointer,
                 };
                 register_target(ctx, x, y, target);
             }
@@ -624,6 +630,8 @@ fn render_node_offset_internal(
                             on_key: None,
                             on_scroll: Some(on_scroll),
                             on_pointer_enter: None,
+                            on_pointer: None,
+                            pointer: None,
                         };
                         register_target(ctx, x, y, target);
                     }

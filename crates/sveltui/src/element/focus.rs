@@ -1,6 +1,8 @@
 use crate::element::interaction::InteractionTree;
+use crate::layout::Rect;
 use std::cell::{Cell, RefCell};
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 // Allocated identities use the upper half; frame-local and conventional
@@ -45,6 +47,7 @@ struct ViewContext {
     ancestors: HashSet<FocusId>,
     open: HashSet<FocusId>,
     anchors: HashMap<FocusId, (u16, u16)>,
+    layouts: Rc<HashMap<FocusId, Rect>>,
 }
 struct RestoreContext(Option<ViewContext>);
 impl Drop for RestoreContext {
@@ -70,6 +73,7 @@ pub(crate) fn with_context<T>(
             ancestors,
             open: open.clone(),
             anchors: anchors.clone(),
+            layouts: tree.layouts.clone(),
         }))
     });
     let _restore = RestoreContext(previous);
@@ -149,6 +153,17 @@ impl Default for FocusHandle {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Where the view with this identity landed in the last frame, in screen
+/// cells. `None` before its first paint or outside a bound App.
+pub fn use_layout(id: FocusId) -> Option<Rect> {
+    VIEW_CONTEXT.with(|context| {
+        context
+            .borrow()
+            .as_ref()
+            .and_then(|view| view.layouts.get(&id).copied())
+    })
 }
 
 /// Last pointer anchor for an open context menu in the currently bound App.

@@ -854,6 +854,10 @@ pub struct PressableData {
     pub on_focus: Option<Rc<dyn Fn()>>,
     /// Called when the pointer moves onto this element.
     pub on_pointer_enter: Option<Rc<dyn Fn()>>,
+    /// Press, drag and release in screen cells; a press captures the pointer.
+    pub on_pointer: Option<crate::element::PointerHandler>,
+    /// The mouse pointer's shape while over this element.
+    pub pointer: Option<crate::terminal::PointerShape>,
     pub interaction: Option<Box<Interaction>>,
 }
 
@@ -877,6 +881,8 @@ impl PressableData {
             || self.on_click.is_some()
             || self.on_key.is_some()
             || self.on_pointer_enter.is_some()
+            || self.on_pointer.is_some()
+            || self.pointer.is_some()
             || self.tab_stop
     }
 }
@@ -937,6 +943,20 @@ macro_rules! pressable_setters {
 
         pub fn on_focus(mut self, handler: impl IntoClickHandler) -> Self {
             self.pressable_mut().data.on_focus = handler.into_click_handler();
+            self
+        }
+
+        pub fn on_pointer(
+            mut self,
+            handler: impl Fn(crate::element::PointerEvent) + 'static,
+        ) -> Self {
+            self.pressable_mut().data.on_pointer = Some(Rc::new(handler));
+            self
+        }
+
+        /// The mouse pointer shape over this element, like CSS `cursor`.
+        pub fn pointer(mut self, shape: crate::terminal::PointerShape) -> Self {
+            self.pressable_mut().data.pointer = Some(shape);
             self
         }
 

@@ -1,5 +1,6 @@
 use crate::terminal::buffer::Buffer;
 use crate::terminal::cell::Cell;
+use crate::terminal::pointer::{PointerDialect, PointerShape, write_pointer_shape};
 use crossterm::{
     cursor::{self, MoveTo},
     event::{DisableMouseCapture, EnableMouseCapture},
@@ -13,6 +14,8 @@ use std::io::{self, Stdout, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static CLEANED_UP: AtomicBool = AtomicBool::new(false);
+// Set once a non-default pointer shape is sent, so exit resets it only then.
+static POINTER_SHAPE_USED: AtomicBool = AtomicBool::new(false);
 
 pub struct Terminal {
     stdout: Stdout,
@@ -21,6 +24,9 @@ pub struct Terminal {
     width: u16,
     height: u16,
     needs_full_repaint: bool,
+    pointer_shape: PointerShape,
+    pointer_shapes: bool,
+    pointer_dialect: PointerDialect,
 }
 
 impl Terminal {
@@ -53,6 +59,11 @@ impl Terminal {
             width,
             height,
             needs_full_repaint: true,
+            pointer_shape: PointerShape::Default,
+            pointer_dialect: PointerDialect::detect(),
+            pointer_shapes: std::env::var("SVELTUI_POINTER_SHAPES")
+                .map(|v| v != "0")
+                .unwrap_or(true),
         })
     }
 
@@ -62,6 +73,29 @@ impl Terminal {
             Self::restore_terminal();
             default_hook(panic_info);
         }));
+    }
+
+    /// Turns mouse pointer shapes on or off. They are on by default;
+    /// `SVELTUI_POINTER_SHAPES=0` starts them off.
+    pub fn set_pointer_shapes(&mut self, enabled: bool) {
+        self.pointer_shapes = enabled;
+    }
+
+    /// Overrides the pointer shape names detected for this terminal.
+    pub fn set_pointer_dialect(&mut self, dialect: PointerDialect) {
+        self.pointer_dialect = dialect;
+    }
+
+    /// Shows `shape` over the terminal, writing only when it changes.
+    pub fn set_pointer_shape(&mut self, shape: PointerShape) -> io::Result<()> {
+        if !self.pointer_shapes || shape == self.pointer_shape {
+            return Ok(());
+        }
+        self.pointer_shape = shape;
+        if shape != PointerShape::Default {
+            POINTER_SHAPE_USED.store(true, Ordering::SeqCst);
+        }
+        write_pointer_shape(&mut self.stdout, shape, self.pointer_dialect)
     }
 
     pub fn size(&self) -> (u16, u16) {
@@ -100,6 +134,13 @@ impl Terminal {
                 DisableMouseCapture,
                 LeaveAlternateScreen
             );
+            if POINTER_SHAPE_USED.load(Ordering::SeqCst) {
+                let _ = write_pointer_shape(
+                    &mut stdout,
+                    PointerShape::Default,
+                    PointerDialect::detect(),
+                );
+            }
             let _ = stdout.flush();
             let _ = terminal::disable_raw_mode();
         }

@@ -67,7 +67,7 @@ pub use element::{
     IntoPropOption, IntoScrollHandler, OptionSnippetExt, Overlay, OverlayElement, OverlayProps,
     Paragraph, ParagraphProps, Pressable, PressableElement, PressableProps, Snippet, TextElement,
     TextSpan, TextSpanProps, VNode, View, ViewElement, ViewProps, is_focused, is_layer_open,
-    use_focus,
+    use_focus, use_layout,
 };
 pub use layout::{
     AlignContent, AlignItems, AlignSelf, Display, FlexWrap, JustifyContent, Point, Position,
@@ -82,7 +82,9 @@ pub use reactive::{
     end_frame, on_destroy, on_mount, provide_context, reset_hook_counter, spawn_blocking,
     spawn_task, state, state_with, use_async_state, use_context, use_hook,
 };
-pub use terminal::{Buffer, Cell, CursorStyle, Terminal, TerminalColor as Color, hex_color};
+pub use terminal::{
+    Buffer, Cell, CursorStyle, PointerShape, Terminal, TerminalColor as Color, hex_color,
+};
 
 pub mod prelude {
     pub use crate::app::App;
@@ -95,7 +97,7 @@ pub mod prelude {
         IntoNode, IntoPropOption, IntoScrollHandler, OptionSnippetExt, Overlay, OverlayElement,
         OverlayProps, Paragraph, ParagraphProps, Pressable, PressableElement, PressableProps,
         Snippet, TextElement, TextSpan, TextSpanProps, VNode, View, ViewElement, ViewProps,
-        is_focused, is_layer_open, use_focus,
+        is_focused, is_layer_open, use_focus, use_layout,
     };
     pub use crate::layout::{
         AlignContent, AlignItems, AlignSelf, BorderStyle, Dimension, Display, FlexDirection,
@@ -114,6 +116,8 @@ pub mod prelude {
         end_frame, on_destroy, on_mount, provide_context, reset_hook_counter, spawn_blocking,
         spawn_task, state, state_with, use_async_state, use_context, use_hook,
     };
-    pub use crate::terminal::{CursorStyle, TerminalColor as Color, hex_color};
+    pub use crate::terminal::{
+        CursorStyle, PointerDialect, PointerShape, TerminalColor as Color, hex_color,
+    };
     pub use crate::{Props, component, view};
 }

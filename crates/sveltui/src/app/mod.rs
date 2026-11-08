@@ -124,6 +124,7 @@ where
         let mut watcher = FileWatcher::new(&self.watch_paths).ok();
         let mut hit_map = HitMap::new();
         let mut focus = FocusManager::new();
+        let mut pointer_at: Option<(u16, u16)> = None;
 
         // Initial render
         Runtime::set_dirty(true);
@@ -171,6 +172,12 @@ where
                 terminal.flush()?;
             }
 
+            // Follow the pointer between frames too: moving onto another
+            // target needn't repaint anything.
+            if let Some((x, y)) = pointer_at {
+                terminal.set_pointer_shape(focus.pointer_shape(&hit_map, x, y))?;
+            }
+
             // Poll for terminal events with 16ms timeout (~60 FPS)
             if event::poll(Duration::from_millis(16))? {
                 let events = read_event_batch(event::read()?, || {
@@ -183,6 +190,7 @@ where
                 for event in events {
                     match event {
                         Event::Mouse(mouse) => {
+                            pointer_at = Some((mouse.column, mouse.row));
                             let outcome = match mouse.kind {
                                 MouseEventKind::Moved => {
                                     Some(focus.pointer_move(&hit_map, mouse.column, mouse.row))
@@ -190,9 +198,18 @@ where
                                 MouseEventKind::Down(MouseButton::Right) => {
                                     Some(focus.context_menu(&hit_map, mouse.column, mouse.row))
                                 }
-                                MouseEventKind::Down(MouseButton::Left)
-                                | MouseEventKind::Drag(MouseButton::Left) => {
+                                MouseEventKind::Down(MouseButton::Left) => {
                                     Some(focus.pointer_down_at(&hit_map, mouse.column, mouse.row))
+                                }
+                                MouseEventKind::Drag(MouseButton::Left) => Some(
+                                    focus
+                                        .pointer_drag(&hit_map, mouse.column, mouse.row)
+                                        .unwrap_or_else(|| {
+                                            focus.pointer_down_at(&hit_map, mouse.column, mouse.row)
+                                        }),
+                                ),
+                                MouseEventKind::Up(MouseButton::Left) => {
+                                    focus.pointer_up(&hit_map, mouse.column, mouse.row)
                                 }
                                 MouseEventKind::ScrollDown
                                 | MouseEventKind::ScrollUp

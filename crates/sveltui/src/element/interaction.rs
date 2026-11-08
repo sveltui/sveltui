@@ -130,6 +130,11 @@ pub struct Semantics {
     pub row: Option<usize>,
     pub column: Option<usize>,
     pub value: Option<f64>,
+    /// Bounds for `value` (`aria-valuemin`, `aria-valuemax`).
+    pub value_min: Option<f64>,
+    pub value_max: Option<f64>,
+    /// Axis of a separator or slider (`aria-orientation`).
+    pub orientation: Option<Orientation>,
 }
 
 impl Semantics {
@@ -340,6 +345,8 @@ pub struct InteractionTree {
     pub(crate) nodes: Vec<InteractionNode>,
     pub(crate) layers: Vec<LayerNode>,
     index: HashMap<FocusId, usize>,
+    /// Where each identified view landed in the frame this tree came from.
+    pub(crate) layouts: Rc<HashMap<FocusId, crate::layout::Rect>>,
 }
 
 impl InteractionTree {

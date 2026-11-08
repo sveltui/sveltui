@@ -28,6 +28,8 @@ fn test_hit_map() {
         on_key: None,
         on_scroll: None,
         on_pointer_enter: None,
+        on_pointer: None,
+        pointer: None,
     });
 
     assert!(hit_map.hit_test(6, 6).is_some());

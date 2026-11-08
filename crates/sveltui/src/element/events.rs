@@ -4,6 +4,24 @@ use crate::layout::Rect;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+/// Where a pointer gesture is in its life.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PointerPhase {
+    Down,
+    Drag,
+    Up,
+}
+
+/// A pointer press, drag step or release, in absolute screen cells.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PointerEvent {
+    pub phase: PointerPhase,
+    pub x: u16,
+    pub y: u16,
+}
+
+pub type PointerHandler = Rc<dyn Fn(PointerEvent)>;
+
 #[derive(Clone)]
 pub struct HitTarget {
     pub rect: Rect,
@@ -16,6 +34,12 @@ pub struct HitTarget {
     pub on_scroll: Option<Rc<dyn Fn(i16, i16)>>,
     /// Called when the pointer moves onto this target.
     pub on_pointer_enter: Option<Rc<dyn Fn()>>,
+    /// Press, drag and release. A press on a target with this handler
+    /// captures the pointer, so drags and the release reach it even once the
+    /// pointer has left its rect.
+    pub on_pointer: Option<PointerHandler>,
+    /// The mouse pointer's shape while over this target.
+    pub pointer: Option<crate::terminal::PointerShape>,
 }
 
 #[derive(Default, Clone)]
@@ -99,6 +123,15 @@ pub struct LayoutTarget {
 
 impl HitMap {
     pub fn finish_interactions(&mut self) {
+        let layouts = self
+            .layouts
+            .iter()
+            .map(|(&id, l)| {
+                let clamp = |v: i32| v.clamp(0, i32::from(u16::MAX)) as u16;
+                (id, Rect::new(clamp(l.x), clamp(l.y), l.width, l.height))
+            })
+            .collect();
+        self.interactions.layouts = Rc::new(layouts);
         for target in &self.targets {
             if let Some(id) = target.focus_id
                 && let Some(node) = self.interactions.node_mut(id)

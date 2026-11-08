@@ -61,3 +61,61 @@ fn a_frame_flushes_terminal_output_once() {
         400
     );
 }
+
+#[test]
+fn pointer_shape_is_sent_as_osc_22() {
+    let mut out = Vec::new();
+    write_pointer_shape(&mut out, PointerShape::ColResize, PointerDialect::Css).unwrap();
+    assert_eq!(out, b"\x1b]22;col-resize\x1b\\");
+}
+
+#[test]
+fn kitty_gets_its_own_resize_names() {
+    let mut out = Vec::new();
+    write_pointer_shape(&mut out, PointerShape::ColResize, PointerDialect::Kitty).unwrap();
+    assert_eq!(out, b"\x1b]22;ew-resize\x1b\\");
+    let mut out = Vec::new();
+    write_pointer_shape(&mut out, PointerShape::RowResize, PointerDialect::Kitty).unwrap();
+    assert_eq!(out, b"\x1b]22;ns-resize\x1b\\");
+}
+
+#[test]
+fn the_terminal_is_recognised_from_its_environment() {
+    let env = |pairs: &'static [(&'static str, &'static str)]| {
+        move |key: &str| {
+            pairs
+                .iter()
+                .find(|(k, _)| *k == key)
+                .map(|(_, v)| (*v).to_owned())
+        }
+    };
+    assert_eq!(
+        PointerDialect::from_env(env(&[("TERM", "xterm-kitty")])),
+        PointerDialect::Kitty
+    );
+    assert_eq!(
+        PointerDialect::from_env(env(&[("KITTY_WINDOW_ID", "3"), ("TERM", "xterm-256color")])),
+        PointerDialect::Kitty
+    );
+    assert_eq!(
+        PointerDialect::from_env(env(&[
+            ("TERM", "xterm-ghostty"),
+            ("TERM_PROGRAM", "ghostty")
+        ])),
+        PointerDialect::Css
+    );
+    assert_eq!(
+        PointerDialect::from_env(env(&[
+            ("XTERM_VERSION", "XTerm(390)"),
+            ("TERM", "xterm-256color")
+        ])),
+        PointerDialect::Xterm
+    );
+    assert_eq!(
+        PointerDialect::from_env(env(&[
+            ("TERM", "xterm-kitty"),
+            ("SVELTUI_POINTER_DIALECT", "css")
+        ])),
+        PointerDialect::Css
+    );
+}

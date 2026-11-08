@@ -1,9 +1,10 @@
 //! Per-application focus and keyboard dispatch; no component or terminal runtime dependencies.
-use crate::element::FocusId;
 use crate::element::interaction::{
     Activation, EventCommand, EventContext, EventResult, Focusability, InitialFocus,
     InteractionTree, MenuInteraction, MenuTriggerKind, Orientation, Role, TabDismiss,
 };
+use crate::element::{FocusId, PointerEvent, PointerPhase};
+use crate::terminal::PointerShape;
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::collections::{HashMap, HashSet};
 
@@ -34,6 +35,8 @@ pub struct FocusManager {
     /// The target the pointer is over. We only call `on_pointer_enter` when
     /// this changes, so it fires once per visit instead of on every mouse move.
     entered: Option<FocusId>,
+    /// The target that took the pointer on press, until release.
+    captured: Option<FocusId>,
 }
 
 impl FocusManager {
@@ -760,6 +763,24 @@ impl FocusManager {
             outcome.changed |= before != self.focused;
             return outcome;
         }
+        if let Some(id) = target.focus_id
+            && let Some(handler) = target.on_pointer.clone()
+            && !self.tree.node(id).is_some_and(|n| n.interaction.disabled)
+        {
+            self.focus(id);
+            self.captured = Some(id);
+            let event = PointerEvent {
+                phase: PointerPhase::Down,
+                x,
+                y,
+            };
+            self.with_context(|| handler(event));
+            return DispatchOutcome {
+                handled: true,
+                changed: true,
+                exit: false,
+            };
+        }
         let mut outcome = DispatchOutcome {
             handled: true,
             ..DispatchOutcome::default()
@@ -922,6 +943,83 @@ impl FocusManager {
         hits.hit_test(x, y)
             .map(|target| self.pointer_down(target, x, y))
             .unwrap_or_default()
+    }
+
+    /// Whether a press is holding the pointer, so drags and the release
+    /// belong to its target wherever the pointer goes.
+    pub fn pointer_captured(&self) -> bool {
+        self.captured.is_some()
+    }
+
+    /// Delivers a drag step to the capturing target. `None` when nothing
+    /// holds the pointer, so the caller can fall back to a plain press.
+    pub fn pointer_drag(
+        &mut self,
+        hits: &crate::element::HitMap,
+        x: u16,
+        y: u16,
+    ) -> Option<DispatchOutcome> {
+        self.pointer_phase(hits, PointerPhase::Drag, x, y)
+    }
+
+    /// Delivers the release to the capturing target and ends the capture.
+    pub fn pointer_up(
+        &mut self,
+        hits: &crate::element::HitMap,
+        x: u16,
+        y: u16,
+    ) -> Option<DispatchOutcome> {
+        let outcome = self.pointer_phase(hits, PointerPhase::Up, x, y);
+        self.captured = None;
+        outcome
+    }
+
+    fn pointer_phase(
+        &mut self,
+        hits: &crate::element::HitMap,
+        phase: PointerPhase,
+        x: u16,
+        y: u16,
+    ) -> Option<DispatchOutcome> {
+        let id = self.captured?;
+        // The handler comes from the latest frame, so it sees current state.
+        let handler = hits
+            .targets
+            .iter()
+            .rev()
+            .find(|t| t.focus_id == Some(id))
+            .and_then(|t| t.on_pointer.clone());
+        if let Some(handler) = handler {
+            self.with_context(|| handler(PointerEvent { phase, x, y }));
+        }
+        Some(DispatchOutcome {
+            handled: true,
+            changed: true,
+            exit: false,
+        })
+    }
+
+    /// The pointer shape to show at (x, y): the capturing target's while a
+    /// drag holds the pointer, else the topmost target's, `NotAllowed` over
+    /// a disabled one, and the default over anything without a shape.
+    pub fn pointer_shape(&self, hits: &crate::element::HitMap, x: u16, y: u16) -> PointerShape {
+        let target = match self.captured {
+            Some(id) => hits.targets.iter().rev().find(|t| t.focus_id == Some(id)),
+            None => hits.hit_test(x, y).filter(|t| t.dismiss.is_none()),
+        };
+        let Some(target) = target else {
+            return PointerShape::Default;
+        };
+        let disabled = target
+            .focus_id
+            .and_then(|id| self.tree.node(id))
+            .is_some_and(|n| n.interaction.disabled);
+        match target.pointer {
+            Some(_) if disabled => PointerShape::NotAllowed,
+            Some(shape) => shape,
+            None if disabled => PointerShape::NotAllowed,
+            None => PointerShape::Default,
+        }
     }
 
     pub fn pointer_move(
