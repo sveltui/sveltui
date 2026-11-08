@@ -349,6 +349,18 @@ pub struct VisualData {
     pub grid_rule_axes: RuleAxes,
     /// This view is a line across its parent grid (see `separator`).
     pub separator: bool,
+    /// An image drawn over the view's cells, beside the cell grid.
+    pub image: Option<ImageSlot>,
+}
+
+/// An [`ImagePaint`] a view carries.
+#[derive(Clone)]
+pub struct ImageSlot(pub Rc<dyn crate::terminal::ImagePaint>);
+
+impl fmt::Debug for ImageSlot {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ImageSlot").field(&self.0.key()).finish()
+    }
 }
 
 #[derive(Clone, Default)]
@@ -701,6 +713,13 @@ macro_rules! view_setters {
 
         pub fn cursor_offset(mut self, offset: impl IntoPropOption<(u16, u16)>) -> Self {
             self.view_mut().visual_mut().cursor_offset = offset.into_prop_option();
+            self
+        }
+
+        /// Draws `paint` over this view's cells as an image. The view should
+        /// have no children of its own, since the image covers them.
+        pub fn image(mut self, paint: Rc<dyn crate::terminal::ImagePaint>) -> Self {
+            self.view_mut().visual_mut().image = Some(ImageSlot(paint));
             self
         }
 

@@ -1,6 +1,7 @@
 use crate::layout::{BorderChars, Rect};
 use crate::terminal::cell::Cell;
 use crate::terminal::cursor::CursorStyle;
+use crate::terminal::image::ImagePlacement;
 use crossterm::style::Color;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -10,6 +11,8 @@ pub struct Buffer {
     pub cells: Vec<Cell>,
     pub cursor: Option<(u16, u16)>,
     pub cursor_style: Option<CursorStyle>,
+    /// Images drawn after the cells, in the order they were placed.
+    pub images: Vec<ImagePlacement>,
     clip_stack: Vec<Rect>,
 }
 
@@ -22,6 +25,7 @@ impl Buffer {
             cells: vec![Cell::default(); size],
             cursor: None,
             cursor_style: None,
+            images: Vec::new(),
             clip_stack: Vec::new(),
         }
     }
@@ -33,6 +37,7 @@ impl Buffer {
         self.cells = vec![Cell::default(); size];
         self.cursor = None;
         self.cursor_style = None;
+        self.images.clear();
         self.clip_stack.clear();
     }
 
@@ -42,7 +47,39 @@ impl Buffer {
         }
         self.cursor = None;
         self.cursor_style = None;
+        self.images.clear();
         self.clip_stack.clear();
+    }
+
+    /// Forgets what the cells in `rect` hold, so the next flush paints them
+    /// again.
+    pub fn invalidate(&mut self, rect: Rect) {
+        for y in rect.y..rect.y.saturating_add(rect.height).min(self.height) {
+            for x in rect.x..rect.x.saturating_add(rect.width).min(self.width) {
+                if let Some(cell) = self.get_mut(x, y) {
+                    cell.ch = '\u{0}';
+                }
+            }
+        }
+    }
+
+    /// Whether any cell in `rect` differs from the same cell in `other`.
+    pub fn differs_in(&self, other: &Buffer, rect: Rect) -> bool {
+        (rect.y..rect.y.saturating_add(rect.height)).any(|y| {
+            (rect.x..rect.x.saturating_add(rect.width)).any(|x| self.get(x, y) != other.get(x, y))
+        })
+    }
+
+    /// Places an image over the cells it covers.
+    pub fn place_image(&mut self, placement: ImagePlacement) {
+        self.images.push(placement);
+    }
+
+    /// Drops the images that `rect` would cover, since whatever is drawn
+    /// there now (a menu, a dialog) belongs on top of them.
+    pub fn occlude(&mut self, rect: Rect) {
+        self.images
+            .retain(|image| image.screen_rect().intersect(&rect).is_none());
     }
 
     pub fn set_cursor(&mut self, x: u16, y: u16) {

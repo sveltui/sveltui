@@ -5,7 +5,7 @@ use crate::element::scroll::get_scroll;
 use crate::element::taffy_bridge::ComputedLayoutNode;
 use crate::element::taffy_bridge::layout;
 use crate::layout::{BorderStyle, Rect, compute_popover_rect};
-use crate::terminal::Buffer;
+use crate::terminal::{Buffer, ImagePlacement};
 use crossterm::style::Color;
 use std::rc::Rc;
 
@@ -190,6 +190,7 @@ fn render_single_overlay(
         })
         .or(anchor_rect);
     if overlay.backdrop {
+        buffer.occlude(screen);
         for cell in &mut buffer.cells {
             cell.fg = Some(Color::DarkGrey);
             cell.bold = false;
@@ -235,6 +236,7 @@ fn render_single_overlay(
             pointer: None,
         });
 
+        buffer.occlude(popover_rect);
         for cy in popover_rect.y..(popover_rect.y + popover_rect.height) {
             for cx in popover_rect.x..(popover_rect.x + popover_rect.width) {
                 buffer.set_char(cx, cy, ' ', None, None, false);
@@ -450,6 +452,24 @@ fn render_node_offset_internal(
                             );
                         }
                     }
+                }
+            }
+
+            // An image goes over the cells, clipped to what shows.
+            if let Some(slot) = v.visual.as_ref().and_then(|vis| vis.image.as_ref()) {
+                let visible = visible_rect(x, y, width, height, ctx.buffer.active_clip());
+                if visible.width > 0 && visible.height > 0 {
+                    ctx.buffer.place_image(ImagePlacement {
+                        at: (visible.x, visible.y),
+                        size: (width, height),
+                        visible: Rect::new(
+                            (i32::from(visible.x) - x).max(0) as u16,
+                            (i32::from(visible.y) - y).max(0) as u16,
+                            visible.width,
+                            visible.height,
+                        ),
+                        paint: slot.0.clone(),
+                    });
                 }
             }
 

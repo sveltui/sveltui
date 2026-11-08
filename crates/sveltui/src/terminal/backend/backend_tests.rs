@@ -119,3 +119,114 @@ fn the_terminal_is_recognised_from_its_environment() {
         PointerDialect::Css
     );
 }
+
+mod images {
+    use super::*;
+    use crate::layout::Rect;
+    use crate::terminal::image::{ImagePaint, ImagePlacement, plan_images};
+    use std::rc::Rc;
+
+    struct Paint {
+        key: u64,
+        erasable: bool,
+    }
+
+    impl ImagePaint for Paint {
+        fn key(&self) -> u64 {
+            self.key
+        }
+
+        fn draw(&self, size: (u16, u16), visible: Rect, _: (u16, u16)) -> Vec<u8> {
+            format!("<{}:{}x{}@{}>", self.key, size.0, size.1, visible.x).into_bytes()
+        }
+
+        fn erase(&self) -> Option<Vec<u8>> {
+            self.erasable
+                .then(|| format!("<erase {}>", self.key).into_bytes())
+        }
+    }
+
+    fn placed(key: u64, at: (u16, u16), erasable: bool) -> ImagePlacement {
+        ImagePlacement {
+            at,
+            size: (4, 2),
+            visible: Rect::new(0, 0, 4, 2),
+            paint: Rc::new(Paint { key, erasable }),
+        }
+    }
+
+    #[test]
+    fn a_new_image_is_drawn_and_an_unchanged_one_is_left_alone() {
+        let image = placed(1, (2, 1), false);
+        let plan = plan_images(&[], std::slice::from_ref(&image), |_| false, false);
+        assert_eq!(plan.draw, [0]);
+        let plan = plan_images(
+            std::slice::from_ref(&image),
+            std::slice::from_ref(&image),
+            |_| false,
+            false,
+        );
+        assert!(plan.draw.is_empty() && plan.erase.is_empty() && plan.repaint.is_empty());
+    }
+
+    #[test]
+    fn cells_changing_under_an_image_draw_it_again() {
+        let image = placed(1, (2, 1), false);
+        let plan = plan_images(
+            std::slice::from_ref(&image),
+            std::slice::from_ref(&image),
+            |rect| rect == Rect::new(2, 1, 4, 2),
+            false,
+        );
+        assert_eq!(plan.draw, [0]);
+    }
+
+    #[test]
+    fn a_full_repaint_draws_every_image() {
+        let image = placed(1, (0, 0), false);
+        let plan = plan_images(
+            std::slice::from_ref(&image),
+            std::slice::from_ref(&image),
+            |_| false,
+            true,
+        );
+        assert_eq!(plan.draw, [0]);
+    }
+
+    #[test]
+    fn a_moved_image_is_removed_where_it_was() {
+        let before = placed(1, (0, 0), false);
+        let after = placed(1, (5, 0), false);
+        let plan = plan_images(&[before], std::slice::from_ref(&after), |_| false, false);
+        assert_eq!(plan.repaint, [Rect::new(0, 0, 4, 2)]);
+        assert_eq!(plan.draw, [0]);
+
+        let before = placed(2, (0, 0), true);
+        let plan = plan_images(&[before], &[], |_| false, false);
+        assert_eq!(plan.erase, [b"<erase 2>".to_vec()]);
+        assert!(plan.repaint.is_empty());
+    }
+
+    #[test]
+    fn drawing_moves_to_the_image_then_writes_its_bytes() {
+        let images = [placed(7, (3, 2), false)];
+        let mut out = Vec::new();
+        write_images(&mut out, &images, &[0], (8, 16)).unwrap();
+        assert_eq!(
+            String::from_utf8(out).unwrap(),
+            format!("{}<7:4x2@0>", MoveTo(3, 2))
+        );
+    }
+
+    #[test]
+    fn a_buffer_drops_images_a_popover_covers() {
+        let mut buffer = Buffer::new(20, 10);
+        buffer.place_image(placed(1, (0, 0), false));
+        buffer.place_image(placed(2, (10, 5), false));
+        buffer.occlude(Rect::new(9, 4, 4, 4));
+        assert_eq!(buffer.images.len(), 1);
+        assert_eq!(buffer.images[0].paint.key(), 1);
+        buffer.clear();
+        assert!(buffer.images.is_empty());
+    }
+}

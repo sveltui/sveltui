@@ -109,6 +109,7 @@ pub enum Role {
     Radio,
     Separator,
     ProgressBar,
+    Image,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

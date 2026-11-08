@@ -1,5 +1,6 @@
 use crate::terminal::buffer::Buffer;
 use crate::terminal::cell::Cell;
+use crate::terminal::image::{cell_pixels, plan_images};
 use crate::terminal::pointer::{PointerDialect, PointerShape, write_pointer_shape};
 use crossterm::{
     cursor::{self, MoveTo},
@@ -52,6 +53,7 @@ impl Terminal {
 
         Self::set_cleanup_hook();
 
+        refresh_cell_pixels();
         Ok(Self {
             stdout,
             curr_buffer: Buffer::new(width, height),
@@ -107,18 +109,38 @@ impl Terminal {
         self.height = height;
         self.curr_buffer.resize(width, height);
         self.prev_buffer.resize(width, height);
+        refresh_cell_pixels();
         self.needs_full_repaint = true;
     }
 
     pub fn flush(&mut self) -> io::Result<()> {
+        let plan = plan_images(
+            &self.prev_buffer.images,
+            &self.curr_buffer.images,
+            |rect| self.curr_buffer.differs_in(&self.prev_buffer, rect),
+            self.needs_full_repaint,
+        );
+        for rect in &plan.repaint {
+            self.prev_buffer.invalidate(*rect);
+        }
+        for bytes in &plan.erase {
+            self.stdout.write_all(bytes)?;
+        }
         write_buffer_diff(
             &mut self.stdout,
             &self.curr_buffer,
             &self.prev_buffer,
             self.needs_full_repaint,
         )?;
+        write_images(
+            &mut self.stdout,
+            &self.curr_buffer.images,
+            &plan.draw,
+            cell_pixels().unwrap_or((8, 16)),
+        )?;
         self.needs_full_repaint = false;
         self.prev_buffer.cells.clone_from(&self.curr_buffer.cells);
+        self.prev_buffer.images.clone_from(&self.curr_buffer.images);
         Ok(())
     }
 
@@ -151,6 +173,31 @@ impl Drop for Terminal {
     fn drop(&mut self) {
         Self::restore_terminal();
     }
+}
+
+/// Draws the placements at `draw`, each at its own cell.
+/// Asks the terminal how big a cell is, in pixels.
+fn refresh_cell_pixels() {
+    if let Ok(size) = terminal::window_size()
+        && size.columns > 0
+        && size.rows > 0
+    {
+        crate::terminal::set_cell_pixels(size.width / size.columns, size.height / size.rows);
+    }
+}
+
+fn write_images(
+    mut stdout: impl Write,
+    images: &[crate::terminal::image::ImagePlacement],
+    draw: &[usize],
+    cell_px: (u16, u16),
+) -> io::Result<()> {
+    for &i in draw {
+        let image = &images[i];
+        queue!(stdout, MoveTo(image.at.0, image.at.1))?;
+        stdout.write_all(&image.paint.draw(image.size, image.visible, cell_px))?;
+    }
+    stdout.flush()
 }
 
 // Keep terminal output independent of raw-mode setup so the actual emitted
