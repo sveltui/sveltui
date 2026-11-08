@@ -1,0 +1,38 @@
+[package]
+name = "sveltui-image"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords = ["tui", "terminal", "image", "kitty", "sixel"]
+categories.workspace = true
+description = "Image components for sveltui: half-block rendering today, terminal graphics protocols as opt-in features"
+
+[dependencies]
+sveltui = { workspace = true }
+sveltui-macros = { workspace = true }
+crossterm = { workspace = true }
+image = { workspace = true }
+ureq = { version = "3", default-features = false, features = ["rustls"], optional = true }
+
+[features]
+default = ["png", "jpeg"]
+# Decoders for the formats an `Image` can load.
+png = ["image/png"]
+jpeg = ["image/jpeg"]
+gif = ["image/gif"]
+webp = ["image/webp"]
+# Terminal graphics protocols. Without any of them, images are drawn as
+# half-block cells, which works everywhere there is color.
+kitty = []
+iterm2 = ["image/png"]
+sixel = []
+# `NetworkImage`, which loads images over http(s) on a background thread.
+network = ["dep:ureq"]
+
+# Lets this crate's own tests exercise every protocol.
+[dev-dependencies]
+sveltui-image = { path = ".", features = ["kitty", "iterm2", "sixel", "gif", "webp", "network"] }
