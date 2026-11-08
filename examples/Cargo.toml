@@ -13,7 +13,9 @@ autoexamples = false
 sveltui.workspace = true
 sveltui-components.workspace = true
 sveltui-code.workspace = true
+sveltui-image = { workspace = true, features = ["kitty", "iterm2", "sixel", "network"] }
 crossterm.workspace = true
+image = { workspace = true, features = ["png"] }
 
 [[example]]
 name = "hello_world"
@@ -151,6 +153,11 @@ test = true
 [[example]]
 name = "component_resizable"
 path = "components/resizable/main.rs"
+test = true
+
+[[example]]
+name = "component_image"
+path = "components/image/main.rs"
 test = true
 
 [[example]]

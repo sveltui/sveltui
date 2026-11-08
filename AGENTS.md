@@ -51,6 +51,7 @@ sveltui/
 │   ├── sveltui/                  # Core crate (App, reactive, layout, terminal, element)
 │   ├── sveltui-components/       # Built-in components (Button, TextInput, Dialog, etc.)
 │   ├── sveltui-code/             # Syntax-highlighted code preview & editor
+│   ├── sveltui-image/            # Image components (half-blocks; graphics protocols as features)
 │   └── sveltui-macros/           # Declarative JSX macro (`view! { ... }`, `#[component]`)
 └── examples/                   # `sveltui-examples` package (publish = false)
     ├── Cargo.toml                # Registers every example with an explicit [[example]]
