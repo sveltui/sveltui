@@ -7,6 +7,7 @@ pub mod inset;
 pub mod margin;
 pub mod padding;
 pub mod placement;
+pub mod positioner;
 pub mod scrollbar;
 
 pub use alignment::{AlignContent, AlignItems, AlignSelf, FlexDirectionExt, JustifyContent};
@@ -21,6 +22,7 @@ pub use inset::Inset;
 pub use margin::{Margin, MarginEdge};
 pub use padding::Padding;
 pub use placement::{Placement, compute_popover_rect};
+pub use positioner::{Anchor, Positioner};
 pub use scrollbar::{OverflowExt, ScrollbarChars, ScrollbarStyle, ScrollbarVisibility};
 
 // Direct Taffy re-exports

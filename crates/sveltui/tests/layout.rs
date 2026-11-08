@@ -65,3 +65,74 @@ fn test_compute_popover_rect_clamping() {
     let rect = compute_popover_rect(Placement::Anchor { x: 75, y: 22 }, (20, 10), None, screen);
     assert_eq!(rect, Rect::new(60, 14, 20, 10));
 }
+
+#[test]
+fn positioner_gap_and_skid_offset_the_content() {
+    use sveltui::layout::{Anchor, Positioner};
+    let screen = Rect::new(0, 0, 80, 24);
+    let anchor = Rect::new(10, 5, 8, 1);
+    let rect = Positioner::new(Placement::BottomStart)
+        .gap(1)
+        .skid(2)
+        .position(Anchor::Rect(anchor), (20, 4), screen);
+    assert_eq!((rect.x, rect.y), (12, 7));
+}
+
+#[test]
+fn positioner_flip_can_be_disabled() {
+    use sveltui::layout::{Anchor, Positioner};
+    let screen = Rect::new(0, 0, 80, 24);
+    let anchor = Rect::new(10, 20, 8, 1);
+    let flipped =
+        Positioner::new(Placement::BottomStart).position(Anchor::Rect(anchor), (20, 8), screen);
+    assert_eq!(flipped.y, 12);
+    let pinned = Positioner::new(Placement::BottomStart)
+        .flip(false)
+        .position(Anchor::Rect(anchor), (20, 8), screen);
+    assert_eq!(pinned.y, 16);
+}
+
+#[test]
+fn positioner_point_anchor_flips_at_the_screen_edge() {
+    use sveltui::layout::{Anchor, Positioner};
+    let screen = Rect::new(0, 0, 80, 24);
+    let rect =
+        Positioner::new(Placement::BottomStart).position(Anchor::Point(70, 22), (20, 6), screen);
+    assert_eq!((rect.x, rect.y), (60, 16));
+}
+
+#[test]
+fn positioner_shift_off_lets_content_overflow_the_edge() {
+    use sveltui::layout::{Anchor, Positioner};
+    let screen = Rect::new(0, 0, 80, 24);
+    let anchor = Rect::new(70, 2, 8, 1);
+    let shifted =
+        Positioner::new(Placement::BottomStart).position(Anchor::Rect(anchor), (20, 3), screen);
+    assert_eq!(shifted.x, 60);
+    let free = Positioner::new(Placement::BottomStart)
+        .shift(false)
+        .position(Anchor::Rect(anchor), (20, 3), screen);
+    assert_eq!(free.x, 70);
+}
+
+#[test]
+fn positioner_matches_anchor_width_and_caps_size() {
+    use sveltui::layout::{Anchor, Positioner};
+    let screen = Rect::new(0, 0, 80, 24);
+    let anchor = Rect::new(4, 2, 12, 1);
+    let rect = Positioner::new(Placement::BottomStart)
+        .match_anchor_width(true)
+        .max_size(40, 5)
+        .position(Anchor::Rect(anchor), (30, 9), screen);
+    assert_eq!((rect.width, rect.height), (12, 5));
+}
+
+#[test]
+fn positioner_to_inset_is_relative_to_the_parent() {
+    use sveltui::layout::{Anchor, Inset, Positioner};
+    let parent = Rect::new(10, 4, 40, 10);
+    let anchor = Rect::new(14, 5, 6, 1);
+    let inset =
+        Positioner::new(Placement::BottomStart).to_inset(Anchor::Rect(anchor), parent, (8, 3));
+    assert_eq!(inset, Inset::new().left(4).top(2));
+}
