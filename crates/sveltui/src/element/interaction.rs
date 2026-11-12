@@ -156,6 +156,8 @@ pub struct Semantics {
     pub row: Option<usize>,
     pub column: Option<usize>,
     pub value: Option<f64>,
+    /// How deep an item sits in a tree, from 1 (`aria-level`).
+    pub level: Option<usize>,
     /// Bounds for `value` (`aria-valuemin`, `aria-valuemax`).
     pub value_min: Option<f64>,
     pub value_max: Option<f64>,
@@ -198,6 +200,10 @@ impl Semantics {
     }
     pub fn described_by(mut self, id: FocusId) -> Self {
         self.described_by = Some(id);
+        self
+    }
+    pub fn level(mut self, level: usize) -> Self {
+        self.level = Some(level);
         self
     }
     pub fn active_descendant(mut self, id: Option<FocusId>) -> Self {
