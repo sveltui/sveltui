@@ -135,6 +135,8 @@ impl Harness {
 
     fn render(&mut self) -> InteractionTree {
         for _ in 0..10 {
+            // Cleared so this thread's writes don't keep other tests'
+            // harnesses waiting; we settle on what we see, not on the flag.
             Runtime::set_dirty(false);
             reset_focus_counter();
             begin_frame();
@@ -148,12 +150,16 @@ impl Harness {
                 render_node_interactive(&node, Rect::new(0, 0, WIDTH, HEIGHT), &mut buffer, hits)
             });
             let changed = self.focus.reconcile(self.hits.interactions.clone());
-            if !changed && !Runtime::is_dirty() {
-                self.rows = (0..HEIGHT)
-                    .map(|y| (0..WIDTH).map(|x| buffer.get(x, y).unwrap().ch).collect())
-                    .collect();
+            let rows: Vec<String> = (0..HEIGHT)
+                .map(|y| (0..WIDTH).map(|x| buffer.get(x, y).unwrap().ch).collect())
+                .collect();
+            // Settled once focus holds still and two frames look the same.
+            // The dirty flag is shared by every test thread, so other tests
+            // keep setting it; we don't wait on it.
+            if !changed && rows == self.rows {
                 return tree;
             }
+            self.rows = rows;
         }
         panic!("the toasts did not settle");
     }

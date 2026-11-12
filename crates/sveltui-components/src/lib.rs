@@ -1,4 +1,5 @@
 pub mod alert;
+pub mod alert_dialog;
 pub mod badge;
 pub mod button;
 pub mod checkbox;
@@ -23,6 +24,16 @@ pub mod text_input;
 pub mod toast;
 
 pub use alert::{Alert, AlertKind, AlertProps};
+pub use alert_dialog::OutsidePress;
+/// A modal dialog that asks for an answer: `AlertDialog::Root`, `Trigger`,
+/// `Content`, `Title`, `Description`, `Cancel` and `Action`.
+#[allow(non_snake_case)]
+pub mod AlertDialog {
+    pub use crate::alert_dialog::{
+        Action, ActionProps, Cancel, CancelProps, Content, ContentProps, Description,
+        DescriptionProps, Root, RootProps, Title, TitleProps, Trigger, TriggerProps,
+    };
+}
 pub use badge::{Badge, BadgeProps};
 pub use button::{Button, ButtonProps};
 pub use checkbox::{Checkbox, CheckboxProps};
