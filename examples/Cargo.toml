@@ -146,6 +146,11 @@ path = "components/data_grid/main.rs"
 test = true
 
 [[example]]
+name = "component_toast"
+path = "components/toast/main.rs"
+test = true
+
+[[example]]
 name = "component_table"
 path = "components/table/main.rs"
 test = true

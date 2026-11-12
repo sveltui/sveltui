@@ -1,3 +1,4 @@
+pub mod alert;
 pub mod badge;
 pub mod button;
 pub mod checkbox;
@@ -6,6 +7,7 @@ mod controllable;
 pub mod data_grid;
 pub mod dialog;
 pub mod divider;
+mod inline_button;
 mod listbox;
 pub mod menu;
 pub mod popover;
@@ -18,7 +20,9 @@ pub mod tabs;
 pub mod text_area;
 pub mod text_buffer;
 pub mod text_input;
+pub mod toast;
 
+pub use alert::{Alert, AlertKind, AlertProps};
 pub use badge::{Badge, BadgeProps};
 pub use button::{Button, ButtonProps};
 pub use checkbox::{Checkbox, CheckboxProps};
@@ -113,3 +117,15 @@ pub use table::{CellAlign, TableRules};
 pub use text_area::{TextArea, TextAreaProps};
 pub use text_buffer::*;
 pub use text_input::{TextInput, TextInputProps, get_cursor, set_cursor};
+pub use toast::{
+    ToastAction, ToastId, ToastManager, ToastObject, ToastOptions, ToastPriority, use_toast_manager,
+};
+/// Toast notifications: `Toast::Provider`, `Toast::Viewport`, `Toast::Root`,
+/// `Toast::Title`, `Toast::Description`, `Toast::Action` and `Toast::Close`.
+#[allow(non_snake_case)]
+pub mod Toast {
+    pub use crate::toast::{
+        Action, ActionProps, Close, CloseProps, Description, DescriptionProps, Provider,
+        ProviderProps, Root, RootProps, Title, TitleProps, Viewport, ViewportProps,
+    };
+}
