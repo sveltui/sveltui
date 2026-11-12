@@ -8,6 +8,8 @@ mod controllable;
 pub mod data_grid;
 pub mod dialog;
 pub mod divider;
+pub mod hover_card;
+mod hover_popup;
 mod inline_button;
 mod listbox;
 pub mod menu;
@@ -22,6 +24,7 @@ pub mod text_area;
 pub mod text_buffer;
 pub mod text_input;
 pub mod toast;
+pub mod tooltip;
 
 pub use alert::{Alert, AlertKind, AlertProps};
 pub use alert_dialog::OutsidePress;
@@ -139,4 +142,17 @@ pub mod Toast {
         Action, ActionProps, Close, CloseProps, Description, DescriptionProps, Provider,
         ProviderProps, Root, RootProps, Title, TitleProps, Viewport, ViewportProps,
     };
+}
+/// A short description of its trigger, on hover or focus:
+/// `Tooltip::Root`, `Tooltip::Trigger` and `Tooltip::Content`.
+#[allow(non_snake_case)]
+pub mod Tooltip {
+    pub use crate::tooltip::{Content, ContentProps, Root, RootProps, Trigger, TriggerProps};
+}
+/// A card about its trigger, on hover or focus, that stays while the
+/// pointer is on it: `HoverCard::Root`, `HoverCard::Trigger` and
+/// `HoverCard::Content`.
+#[allow(non_snake_case)]
+pub mod HoverCard {
+    pub use crate::hover_card::{Content, ContentProps, Root, RootProps, Trigger, TriggerProps};
 }

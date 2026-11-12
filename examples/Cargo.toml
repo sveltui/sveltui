@@ -151,6 +151,11 @@ path = "components/alert_dialog/main.rs"
 test = true
 
 [[example]]
+name = "component_tooltip"
+path = "components/tooltip/main.rs"
+test = true
+
+[[example]]
 name = "component_toast"
 path = "components/toast/main.rs"
 test = true
