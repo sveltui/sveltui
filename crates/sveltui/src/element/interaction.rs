@@ -116,6 +116,9 @@ pub enum Role {
     Status,
     /// A landmark the user may want to jump to, like a notification area.
     Region,
+    /// A modal dialog that interrupts to ask for an answer
+    /// (`role="alertdialog"`).
+    AlertDialog,
 }
 
 /// How assistive tech announces changes inside an element (`aria-live`).
@@ -140,6 +143,8 @@ pub struct Semantics {
     pub controls: Option<FocusId>,
     /// The element that labels this one (`aria-labelledby`).
     pub labelled_by: Option<FocusId>,
+    /// The element that describes this one (`aria-describedby`).
+    pub described_by: Option<FocusId>,
     /// The descendant that has virtual focus (`aria-activedescendant`).
     pub active_descendant: Option<FocusId>,
     pub has_popup: Option<Role>,
@@ -186,6 +191,10 @@ impl Semantics {
     }
     pub fn labelled_by(mut self, id: FocusId) -> Self {
         self.labelled_by = Some(id);
+        self
+    }
+    pub fn described_by(mut self, id: FocusId) -> Self {
+        self.described_by = Some(id);
         self
     }
     pub fn active_descendant(mut self, id: Option<FocusId>) -> Self {
@@ -267,6 +276,9 @@ pub struct DismissLayer {
     pub tab: TabDismiss,
     pub dismiss_on_left: bool,
     pub chain: bool,
+    /// Whether pressing outside the layer (on the backdrop, say) dismisses
+    /// it. When it doesn't, the overlay's `on_outside_press` runs instead.
+    pub dismiss_on_outside_press: bool,
 }
 
 impl Default for DismissLayer {
@@ -282,6 +294,7 @@ impl DismissLayer {
             tab: TabDismiss::None,
             dismiss_on_left: false,
             chain: false,
+            dismiss_on_outside_press: true,
         }
     }
     pub fn popover() -> Self {
@@ -290,6 +303,7 @@ impl DismissLayer {
             tab: TabDismiss::None,
             dismiss_on_left: false,
             chain: false,
+            dismiss_on_outside_press: true,
         }
     }
     pub fn menu() -> Self {
@@ -298,6 +312,7 @@ impl DismissLayer {
             tab: TabDismiss::Any,
             dismiss_on_left: false,
             chain: true,
+            dismiss_on_outside_press: true,
         }
     }
     pub fn submenu() -> Self {

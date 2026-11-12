@@ -197,11 +197,17 @@ fn render_single_overlay(
         }
     }
 
+    // A press outside the layer either dismisses it or runs its handler.
+    let dismisses = overlay.layer.dismiss_on_outside_press;
     hit_map.register(HitTarget {
         rect: screen,
         layer: Some(overlay.id),
-        dismiss: Some(overlay.id),
-        on_click: None,
+        dismiss: dismisses.then_some(overlay.id),
+        on_click: if dismisses {
+            None
+        } else {
+            overlay.on_outside_press.clone()
+        },
         on_click_at: None,
         focus_id: None,
         on_key: None,

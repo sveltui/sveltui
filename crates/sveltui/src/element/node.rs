@@ -112,6 +112,9 @@ pub struct OverlayElement {
     pub modal: bool,
     pub on_close: Option<Rc<dyn Fn()>>,
     pub on_open: Option<Rc<dyn Fn()>>,
+    /// Runs on a press outside the layer when its `DismissLayer` doesn't
+    /// dismiss on one.
+    pub on_outside_press: Option<Rc<dyn Fn()>>,
 }
 
 impl fmt::Debug for OverlayElement {
@@ -225,6 +228,11 @@ impl OverlayElement {
 
     pub fn on_close(mut self, f: impl IntoClickHandler) -> Self {
         self.on_close = f.into_click_handler();
+        self
+    }
+
+    pub fn on_outside_press(mut self, f: impl IntoClickHandler) -> Self {
+        self.on_outside_press = f.into_click_handler();
         self
     }
 }
@@ -1331,6 +1339,7 @@ pub struct OverlayProps {
     pub on_key: Option<KeyHandler>,
     pub on_close: Option<Rc<dyn Fn()>>,
     pub on_open: Option<Rc<dyn Fn()>>,
+    pub on_outside_press: Option<Rc<dyn Fn()>>,
     pub trigger: Option<VNode>,
     pub slot_trigger: Option<Snippet<()>>,
     pub children: Option<Snippet<()>>,
@@ -1404,6 +1413,10 @@ impl OverlayPropsBuilder {
         self.props.on_open = handler.into_click_handler();
         self
     }
+    pub fn on_outside_press(mut self, handler: impl IntoClickHandler) -> Self {
+        self.props.on_outside_press = handler.into_click_handler();
+        self
+    }
     pub fn trigger(mut self, trigger: impl IntoNode) -> Self {
         let node = trigger.into_node();
         self.props.trigger = (!matches!(node, VNode::Empty)).then_some(node);
@@ -1437,6 +1450,11 @@ pub fn Overlay(props: OverlayProps) -> OverlayElement {
     if let Some(anchor) = props.anchor {
         el = el.anchor(anchor);
     }
+    // `modal` picks a preset layer, so it goes first and an explicit `layer`
+    // (a dialog's initial focus, say) replaces it rather than being lost.
+    if props.modal {
+        el = el.modal(true);
+    }
     if let Some(layer) = props.layer {
         el = el.layer(layer);
     }
@@ -1452,9 +1470,6 @@ pub fn Overlay(props: OverlayProps) -> OverlayElement {
     el = el.open(props.open);
     el = el.placement(props.placement);
     el = el.backdrop(props.backdrop);
-    if props.modal {
-        el = el.modal(true);
-    }
     if let Some(ok) = props.on_key {
         el = el.on_key(ok);
     }
@@ -1463,6 +1478,9 @@ pub fn Overlay(props: OverlayProps) -> OverlayElement {
     }
     if let Some(oo) = props.on_open {
         el = el.on_open(oo);
+    }
+    if let Some(press) = props.on_outside_press {
+        el = el.on_outside_press(press);
     }
     if let Some(trigger) = props.trigger {
         el = el.trigger(trigger);

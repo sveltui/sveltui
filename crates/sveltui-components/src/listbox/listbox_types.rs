@@ -317,5 +317,6 @@ pub(crate) fn listbox_layer() -> DismissLayer {
         tab: TabDismiss::None,
         dismiss_on_left: false,
         chain: false,
+        dismiss_on_outside_press: true,
     }
 }

@@ -30,6 +30,9 @@ pub(crate) static EFFECTS: LazyLock<RwLock<HashMap<ObserverId, EffectFn>>> =
 
 static DIRTY: AtomicBool = AtomicBool::new(true);
 
+/// Set when something asked for the terminal bell on the next frame.
+static BELL: AtomicBool = AtomicBool::new(false);
+
 /// The earliest moment something asked to be drawn again, if any.
 static WAKE_AT: Mutex<Option<Instant>> = Mutex::new(None);
 
@@ -84,6 +87,19 @@ impl Runtime {
             }
             _ => false,
         }
+    }
+
+    /// Rings the terminal bell with the next frame, to say "no" without
+    /// moving anything (a press outside a dialog that has to be answered).
+    pub fn bell() {
+        BELL.store(true, Ordering::SeqCst);
+        DIRTY.store(true, Ordering::SeqCst);
+    }
+
+    /// Whether a bell was asked for since the last call. The terminal asks
+    /// once per frame.
+    pub fn take_bell() -> bool {
+        BELL.swap(false, Ordering::SeqCst)
     }
 
     pub fn track(signal_id: SignalId) {

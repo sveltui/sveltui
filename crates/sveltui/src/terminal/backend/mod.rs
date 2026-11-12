@@ -138,6 +138,10 @@ impl Terminal {
             &plan.draw,
             cell_pixels().unwrap_or((8, 16)),
         )?;
+        if crate::reactive::Runtime::take_bell() {
+            self.stdout.write_all(b"\x07")?;
+            self.stdout.flush()?;
+        }
         self.needs_full_repaint = false;
         self.prev_buffer.cells.clone_from(&self.curr_buffer.cells);
         self.prev_buffer.images.clone_from(&self.curr_buffer.images);

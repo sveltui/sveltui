@@ -139,3 +139,12 @@ fn a_requested_frame_comes_due_once() {
     assert!(Runtime::wake_if_due(now + Duration::from_secs(61)));
     assert!(!Runtime::wake_if_due(now + Duration::from_secs(61)));
 }
+
+#[test]
+fn a_bell_is_asked_for_once() {
+    use sveltui::Runtime;
+
+    Runtime::bell();
+    assert!(Runtime::take_bell());
+    assert!(!Runtime::take_bell());
+}
