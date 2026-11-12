@@ -22,6 +22,10 @@ pub struct PointerEvent {
 
 pub type PointerHandler = Rc<dyn Fn(PointerEvent)>;
 
+/// Told `true` when the pointer moves onto an element or anything inside it,
+/// and `false` when it leaves.
+pub type HoverHandler = Rc<dyn Fn(bool)>;
+
 #[derive(Clone)]
 pub struct HitTarget {
     pub rect: Rect,
@@ -34,6 +38,9 @@ pub struct HitTarget {
     pub on_scroll: Option<Rc<dyn Fn(i16, i16)>>,
     /// Called when the pointer moves onto this target.
     pub on_pointer_enter: Option<Rc<dyn Fn()>>,
+    /// Called with `true` when the pointer moves onto this target or
+    /// anything inside it, and `false` when it leaves all of them.
+    pub on_hover: Option<HoverHandler>,
     /// Press, drag and release. A press on a target with this handler
     /// captures the pointer, so drags and the release reach it even once the
     /// pointer has left its rect.

@@ -873,6 +873,9 @@ pub struct PressableData {
     pub on_focus: Option<Rc<dyn Fn()>>,
     /// Called when the pointer moves onto this element.
     pub on_pointer_enter: Option<Rc<dyn Fn()>>,
+    /// Called with `true` when the pointer moves onto this element or
+    /// anything inside it, and `false` when it leaves, like CSS `:hover`.
+    pub on_hover: Option<crate::element::HoverHandler>,
     /// Press, drag and release in screen cells; a press captures the pointer.
     pub on_pointer: Option<crate::element::PointerHandler>,
     /// The mouse pointer's shape while over this element.
@@ -900,6 +903,7 @@ impl PressableData {
             || self.on_click.is_some()
             || self.on_key.is_some()
             || self.on_pointer_enter.is_some()
+            || self.on_hover.is_some()
             || self.on_pointer.is_some()
             || self.pointer.is_some()
             || self.tab_stop
@@ -981,6 +985,15 @@ macro_rules! pressable_setters {
 
         pub fn on_pointer_enter(mut self, handler: impl IntoClickHandler) -> Self {
             self.pressable_mut().data.on_pointer_enter = handler.into_click_handler();
+            self
+        }
+
+        /// Calls `handler(true)` when the pointer moves onto this element or
+        /// anything inside it, and `handler(false)` when it leaves. The
+        /// element needs a `focus_id`, since that's how we tell what's
+        /// inside it.
+        pub fn on_hover(mut self, handler: impl Fn(bool) + 'static) -> Self {
+            self.pressable_mut().data.on_hover = Some(Rc::new(handler));
             self
         }
 

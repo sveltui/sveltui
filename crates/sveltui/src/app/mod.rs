@@ -14,6 +14,8 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 const MAX_SCROLL_BATCH: usize = 4096;
+/// The longest the loop waits for input before checking again (~60 FPS).
+const FRAME: Duration = Duration::from_millis(16);
 
 fn read_event_batch(
     first: Event,
@@ -141,6 +143,8 @@ where
                 Runtime::set_dirty(true);
             }
 
+            Runtime::wake_if_due(Instant::now());
+
             // Re-render if dirty
             if Runtime::is_dirty() {
                 // Clear before construction so writes during rendering survive.
@@ -178,8 +182,12 @@ where
                 terminal.set_pointer_shape(focus.pointer_shape(&hit_map, x, y))?;
             }
 
-            // Poll for terminal events with 16ms timeout (~60 FPS)
-            if event::poll(Duration::from_millis(16))? {
+            // Poll no longer than until the next requested frame, so timers
+            // fire on time.
+            let wait = Runtime::next_wake().map_or(FRAME, |at| {
+                at.saturating_duration_since(Instant::now()).min(FRAME)
+            });
+            if event::poll(wait)? {
                 let events = read_event_batch(event::read()?, || {
                     if event::poll(Duration::ZERO)? {
                         event::read().map(Some)

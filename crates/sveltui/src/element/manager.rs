@@ -35,6 +35,9 @@ pub struct FocusManager {
     /// The target the pointer is over. We only call `on_pointer_enter` when
     /// this changes, so it fires once per visit instead of on every mouse move.
     entered: Option<FocusId>,
+    /// The targets with `on_hover` that the pointer is inside, counting
+    /// their descendants.
+    hovering: Vec<FocusId>,
     /// The target that took the pointer on press, until release.
     captured: Option<FocusId>,
 }
@@ -840,6 +843,49 @@ impl FocusManager {
         }
     }
 
+    /// Works out which `on_hover` targets the pointer is inside now (the
+    /// topmost element under it that's in the interaction tree, and that
+    /// element's ancestors), calls `false`
+    /// on the ones it left and `true` on the ones it reached, and says
+    /// whether any handler ran.
+    fn pointer_hover(&mut self, hits: &crate::element::HitMap, x: u16, y: u16) -> bool {
+        let under = hits
+            .targets
+            .iter()
+            .rev()
+            .filter(|t| t.rect.contains(x, y))
+            .find_map(|t| t.focus_id.filter(|id| hits.ancestors.contains_key(id)));
+        let inside = |id: FocusId| {
+            under
+                .is_some_and(|u| u == id || hits.ancestors.get(&u).is_some_and(|a| a.contains(&id)))
+        };
+        // One handler per element, even when it registered several rects.
+        let mut handlers: Vec<(FocusId, crate::element::HoverHandler)> = Vec::new();
+        for target in &hits.targets {
+            if let (Some(id), Some(handler)) = (target.focus_id, &target.on_hover)
+                && !handlers.iter().any(|(seen, _)| *seen == id)
+            {
+                handlers.push((id, handler.clone()));
+            }
+        }
+        let now: Vec<FocusId> = handlers
+            .iter()
+            .map(|(id, _)| *id)
+            .filter(|&id| inside(id))
+            .collect();
+        let mut ran = false;
+        for (id, handler) in &handlers {
+            let was = self.hovering.contains(id);
+            let is = now.contains(id);
+            if was != is {
+                self.with_context(|| handler(is));
+                ran = true;
+            }
+        }
+        self.hovering = now;
+        ran
+    }
+
     fn switch_bar(&mut self, layer_id: FocusId, key: KeyEvent) -> bool {
         if key
             .modifiers
@@ -1028,7 +1074,7 @@ impl FocusManager {
         x: u16,
         y: u16,
     ) -> DispatchOutcome {
-        let entered = self.pointer_enter(hits, x, y);
+        let entered = self.pointer_enter(hits, x, y) | self.pointer_hover(hits, x, y);
         let idle = DispatchOutcome {
             handled: entered,
             changed: entered,

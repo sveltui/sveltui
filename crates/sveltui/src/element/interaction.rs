@@ -110,6 +110,23 @@ pub enum Role {
     Separator,
     ProgressBar,
     Image,
+    /// Important news that's announced right away (`role="alert"`).
+    Alert,
+    /// Advisory news that waits for a pause (`role="status"`).
+    Status,
+    /// A landmark the user may want to jump to, like a notification area.
+    Region,
+}
+
+/// How assistive tech announces changes inside an element (`aria-live`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Live {
+    #[default]
+    Off,
+    /// Announced when the user is idle.
+    Polite,
+    /// Announced right away, interrupting whatever is being read.
+    Assertive,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -136,6 +153,11 @@ pub struct Semantics {
     pub value_max: Option<f64>,
     /// Axis of a separator or slider (`aria-orientation`).
     pub orientation: Option<Orientation>,
+    /// How changes inside are announced (`aria-live`).
+    pub live: Option<Live>,
+    /// Whether a change announces the whole element rather than just the
+    /// part that changed (`aria-atomic`).
+    pub atomic: Option<bool>,
 }
 
 impl Semantics {
@@ -168,6 +190,14 @@ impl Semantics {
     }
     pub fn active_descendant(mut self, id: Option<FocusId>) -> Self {
         self.active_descendant = id;
+        self
+    }
+    pub fn live(mut self, live: Live) -> Self {
+        self.live = Some(live);
+        self
+    }
+    pub fn atomic(mut self, atomic: bool) -> Self {
+        self.atomic = Some(atomic);
         self
     }
 }
@@ -378,6 +408,7 @@ impl InteractionTree {
                             || p.focus_group.is_some()
                             || p.focus_scope.is_some()
                             || p.semantics.is_some()
+                            || p.on_hover.is_some()
                             || p.disabled
                             || has_interaction;
                         if registered {

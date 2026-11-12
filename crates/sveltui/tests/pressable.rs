@@ -88,3 +88,54 @@ fn a_lone_text_keeps_its_width_in_a_tight_row() {
         "the text doesn't shrink, just as it wouldn't unwrapped"
     );
 }
+
+#[test]
+fn hover_covers_what_is_inside_and_reports_leaving_once() {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use sveltui::element::{HitMap, render_node_interactive};
+
+    let area = FocusId(700_101);
+    let button = FocusId(700_102);
+    let log = Rc::new(RefCell::new(Vec::new()));
+    let sink = log.clone();
+    let node = view! {
+        <View flex_direction=FlexDirection::Column>
+            <Pressable focus_id=area on_hover={move |inside| sink.borrow_mut().push(inside)}>
+                <View width=10 height=3>
+                    <Pressable focus_id=button tab_stop=true on_click={|| {}}>
+                        <View width=4 height=1 />
+                    </Pressable>
+                </View>
+            </Pressable>
+        </View>
+    }
+    .into_node();
+    let mut buffer = Buffer::new(20, 6);
+    let mut hits = HitMap::new();
+    render_node_interactive(&node, Rect::new(0, 0, 20, 6), &mut buffer, &mut hits);
+    let mut manager = FocusManager::new();
+    manager.reconcile(hits.interactions.clone());
+
+    // Onto the button inside the area: that's inside the area too.
+    assert!(manager.pointer_move(&hits, 1, 0).changed);
+    // Across the area's own cells: still inside, nothing to report.
+    assert!(!manager.pointer_move(&hits, 8, 2).changed);
+    // Out of the area.
+    assert!(manager.pointer_move(&hits, 15, 5).changed);
+    assert_eq!(*log.borrow(), [true, false]);
+}
+
+#[test]
+fn a_requested_frame_comes_due_once() {
+    use std::time::{Duration, Instant};
+    use sveltui::Runtime;
+
+    let now = Instant::now();
+    Runtime::wake_at(now + Duration::from_secs(3600));
+    Runtime::wake_at(now + Duration::from_secs(60));
+    assert_eq!(Runtime::next_wake(), Some(now + Duration::from_secs(60)));
+    assert!(!Runtime::wake_if_due(now));
+    assert!(Runtime::wake_if_due(now + Duration::from_secs(61)));
+    assert!(!Runtime::wake_if_due(now + Duration::from_secs(61)));
+}

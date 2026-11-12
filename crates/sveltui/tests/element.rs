@@ -28,6 +28,7 @@ fn test_hit_map() {
         on_key: None,
         on_scroll: None,
         on_pointer_enter: None,
+        on_hover: None,
         on_pointer: None,
         pointer: None,
     });

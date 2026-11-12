@@ -2,7 +2,8 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, LazyLock, RwLock};
+use std::sync::{Arc, LazyLock, Mutex, RwLock};
+use std::time::Instant;
 
 /// A signal's value, and its version: a number that changes on every write.
 pub(crate) struct AnyVal(pub(crate) Box<dyn Any>, pub(crate) u64);
@@ -29,6 +30,9 @@ pub(crate) static EFFECTS: LazyLock<RwLock<HashMap<ObserverId, EffectFn>>> =
 
 static DIRTY: AtomicBool = AtomicBool::new(true);
 
+/// The earliest moment something asked to be drawn again, if any.
+static WAKE_AT: Mutex<Option<Instant>> = Mutex::new(None);
+
 thread_local! {
     static CURRENT_OBSERVER: RefCell<Option<ObserverId>> = const { RefCell::new(None) };
     static BATCH_DEPTH: RefCell<usize> = const { RefCell::new(0) };
@@ -50,6 +54,36 @@ impl Runtime {
 
     pub fn set_dirty(dirty: bool) {
         DIRTY.store(dirty, Ordering::SeqCst);
+    }
+
+    /// Asks for a frame once `at` has passed, for things that change with
+    /// time rather than input (a toast timing out). The earliest request
+    /// wins, so asking again every frame is fine.
+    pub fn wake_at(at: Instant) {
+        if let Ok(mut wake) = WAKE_AT.lock() {
+            *wake = Some(wake.map_or(at, |current| current.min(at)));
+        }
+    }
+
+    /// When the next requested frame is due, if one is.
+    pub fn next_wake() -> Option<Instant> {
+        WAKE_AT.lock().ok().and_then(|wake| *wake)
+    }
+
+    /// Marks the runtime dirty if the requested frame is due by `now`, and
+    /// says whether it was. A due request is used up.
+    pub fn wake_if_due(now: Instant) -> bool {
+        let Ok(mut wake) = WAKE_AT.lock() else {
+            return false;
+        };
+        match *wake {
+            Some(at) if at <= now => {
+                *wake = None;
+                DIRTY.store(true, Ordering::SeqCst);
+                true
+            }
+            _ => false,
+        }
     }
 
     pub fn track(signal_id: SignalId) {
