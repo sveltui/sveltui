@@ -198,25 +198,30 @@ fn render_single_overlay(
     }
 
     // A press outside the layer either dismisses it or runs its handler.
+    // When it does neither, there's nothing to catch, so presses go through
+    // to what's underneath (a modal layer still blocks them, since the
+    // manager refuses targets outside it).
     let dismisses = overlay.layer.dismiss_on_outside_press;
-    hit_map.register(HitTarget {
-        rect: screen,
-        layer: Some(overlay.id),
-        dismiss: dismisses.then_some(overlay.id),
-        on_click: if dismisses {
-            None
-        } else {
-            overlay.on_outside_press.clone()
-        },
-        on_click_at: None,
-        focus_id: None,
-        on_key: None,
-        on_scroll: None,
-        on_pointer_enter: None,
-        on_hover: None,
-        on_pointer: None,
-        pointer: None,
-    });
+    if dismisses || overlay.on_outside_press.is_some() {
+        hit_map.register(HitTarget {
+            rect: screen,
+            layer: Some(overlay.id),
+            dismiss: dismisses.then_some(overlay.id),
+            on_click: if dismisses {
+                None
+            } else {
+                overlay.on_outside_press.clone()
+            },
+            on_click_at: None,
+            focus_id: None,
+            on_key: None,
+            on_scroll: None,
+            on_pointer_enter: None,
+            on_hover: None,
+            on_pointer: None,
+            pointer: None,
+        });
+    }
 
     if let Some(content) = overlay.content {
         let mut content_layout = layout(&content, screen.width, screen.height);

@@ -119,6 +119,9 @@ pub enum Role {
     /// A modal dialog that interrupts to ask for an answer
     /// (`role="alertdialog"`).
     AlertDialog,
+    /// A short description of another element, shown on hover or focus
+    /// (`role="tooltip"`).
+    Tooltip,
 }
 
 /// How assistive tech announces changes inside an element (`aria-live`).
@@ -304,6 +307,21 @@ impl DismissLayer {
             dismiss_on_left: false,
             chain: false,
             dismiss_on_outside_press: true,
+        }
+    }
+    /// A layer that never takes focus, keeps Tab moving through the page,
+    /// and lets presses outside it through to whatever is underneath: a
+    /// tooltip or a hover card.
+    pub fn tooltip() -> Self {
+        Self {
+            scope: FocusScope {
+                contain_tab: false,
+                initial_focus: InitialFocus::Preserve,
+            },
+            tab: TabDismiss::None,
+            dismiss_on_left: false,
+            chain: false,
+            dismiss_on_outside_press: false,
         }
     }
     pub fn menu() -> Self {

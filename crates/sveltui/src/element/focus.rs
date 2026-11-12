@@ -44,6 +44,7 @@ pub fn next_render_focus_id() -> FocusId {
 
 struct ViewContext {
     focused: Option<FocusId>,
+    focus_visible: bool,
     ancestors: HashSet<FocusId>,
     open: HashSet<FocusId>,
     anchors: HashMap<FocusId, (u16, u16)>,
@@ -58,6 +59,7 @@ impl Drop for RestoreContext {
 
 pub(crate) fn with_context<T>(
     focused: Option<FocusId>,
+    focus_visible: bool,
     tree: &InteractionTree,
     open: &HashSet<FocusId>,
     anchors: &HashMap<FocusId, (u16, u16)>,
@@ -70,6 +72,7 @@ pub(crate) fn with_context<T>(
     let previous = VIEW_CONTEXT.with(|context| {
         context.replace(Some(ViewContext {
             focused,
+            focus_visible,
             ancestors,
             open: open.clone(),
             anchors: anchors.clone(),
@@ -84,6 +87,9 @@ pub(crate) fn with_context<T>(
 pub struct FocusState {
     pub is_focused: bool,
     pub has_focus_within: bool,
+    /// Whether focus got where it is from the keyboard rather than a
+    /// pointer press, like CSS `:focus-visible`.
+    pub focus_visible: bool,
 }
 impl FocusState {
     pub fn is_focused(&self) -> bool {
@@ -94,6 +100,12 @@ impl FocusState {
     }
     pub fn is_active(&self) -> bool {
         self.is_focused || self.has_focus_within
+    }
+    /// Focused, or containing focus, and the focus came from the keyboard.
+    /// What should show a focus ring or open a tooltip; a click that
+    /// happens to focus a button shouldn't.
+    pub fn is_active_visible(&self) -> bool {
+        self.is_active() && self.focus_visible
     }
 }
 
@@ -106,6 +118,7 @@ pub fn use_focus(id: FocusId) -> FocusState {
             .map(|view| FocusState {
                 is_focused: view.focused == Some(id),
                 has_focus_within: view.ancestors.contains(&id),
+                focus_visible: view.focus_visible,
             })
             .unwrap_or_default()
     })

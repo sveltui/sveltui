@@ -403,3 +403,28 @@ fn test_snippet_string_children() {
     assert!(none_snippet.is_none());
     assert!(matches!(none_snippet.render(()), VNode::Empty));
 }
+
+#[test]
+fn only_an_overlay_that_acts_on_outside_presses_catches_them() {
+    use sveltui::element::render_node_interactive;
+    use sveltui::prelude::*;
+    use sveltui::terminal::Buffer;
+
+    let screen = Rect::new(0, 0, 30, 10);
+    let catches = |layer: DismissLayer| {
+        let id = FocusId(710_001);
+        let node = view! {
+            <Overlay id=id open=true layer=layer backdrop=false>
+                <View width=5 height=1 />
+            </Overlay>
+        }
+        .into_node();
+        let mut hits = HitMap::new();
+        render_node_interactive(&node, screen, &mut Buffer::new(30, 10), &mut hits);
+        hits.targets
+            .iter()
+            .any(|t| t.rect == screen && t.layer == Some(id))
+    };
+    assert!(catches(DismissLayer::popover()));
+    assert!(!catches(DismissLayer::tooltip()));
+}

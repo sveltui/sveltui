@@ -148,3 +148,45 @@ fn a_bell_is_asked_for_once() {
     assert!(Runtime::take_bell());
     assert!(!Runtime::take_bell());
 }
+
+#[test]
+fn focus_from_a_click_is_not_visible_and_from_tab_it_is() {
+    use sveltui::element::{HitMap, render_node_interactive, use_focus};
+
+    let first = FocusId(700_201);
+    let second = FocusId(700_202);
+    let node = view! {
+        <View flex_direction=FlexDirection::Row gap=1>
+            <Pressable focus_id=first tab_stop=true on_click={|| {}}>
+                <View width=4 height=1 />
+            </Pressable>
+            <Pressable focus_id=second tab_stop=true on_click={|| {}}>
+                <View width=4 height=1 />
+            </Pressable>
+        </View>
+    }
+    .into_node();
+    let mut hits = HitMap::new();
+    render_node_interactive(
+        &node,
+        Rect::new(0, 0, 20, 2),
+        &mut Buffer::new(20, 2),
+        &mut hits,
+    );
+    let mut manager = FocusManager::new();
+    manager.reconcile(hits.interactions.clone());
+    let visible =
+        |manager: &FocusManager, id| manager.with_context(|| use_focus(id).is_active_visible());
+
+    let target = hits.hit_test(0, 0).unwrap().clone();
+    manager.pointer_down(&target, 0, 0);
+    assert_eq!(manager.focused(), Some(first));
+    assert!(!visible(&manager, first), "a click focuses without a ring");
+
+    manager.dispatch(crossterm::event::KeyEvent::new(
+        crossterm::event::KeyCode::Tab,
+        crossterm::event::KeyModifiers::NONE,
+    ));
+    assert_eq!(manager.focused(), Some(second));
+    assert!(visible(&manager, second), "Tab moves focus visibly");
+}

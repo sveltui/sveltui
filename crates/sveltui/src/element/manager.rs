@@ -40,6 +40,9 @@ pub struct FocusManager {
     hovering: Vec<FocusId>,
     /// The target that took the pointer on press, until release.
     captured: Option<FocusId>,
+    /// Whether focus last moved because of the keyboard. A pointer press
+    /// clears it, so a clicked button doesn't count as keyboard-focused.
+    focus_visible: bool,
 }
 
 impl FocusManager {
@@ -62,7 +65,14 @@ impl FocusManager {
         self.open.contains(&id)
     }
     pub fn with_context<T>(&self, f: impl FnOnce() -> T) -> T {
-        crate::element::focus::with_context(self.focused, &self.tree, &self.open, &self.anchors, f)
+        crate::element::focus::with_context(
+            self.focused,
+            self.focus_visible,
+            &self.tree,
+            &self.open,
+            &self.anchors,
+            f,
+        )
     }
     pub fn focus(&mut self, id: FocusId) -> bool {
         if self.eligible(id) && self.allowed(id) {
@@ -715,6 +725,7 @@ impl FocusManager {
         if !self.pointer_allowed(target) {
             return DispatchOutcome::default();
         }
+        self.focus_visible = false;
         if let Some(id) = target.dismiss {
             let mut context = EventContext::default();
             let root = self
@@ -1392,6 +1403,9 @@ impl FocusManager {
         }
         let mut outcome = self.apply(context);
         self.notify_focus(before);
+        if before != self.focused {
+            self.focus_visible = true;
+        }
         outcome.changed |= before != self.focused || handled;
         outcome.handled = handled;
         outcome

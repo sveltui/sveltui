@@ -101,9 +101,11 @@ impl Harness {
         self.key(code, KeyModifiers::NONE);
     }
 
-    /// Clicks the top-left cell, which is backdrop while the dialog is open.
+    /// Clicks the top-left cell, outside the dialog. That's the backdrop when
+    /// the dialog acts on outside presses, and the trigger underneath when
+    /// it ignores them (the modal layer keeps the click from reaching it).
     fn click_backdrop(&mut self) {
-        let target = self.hits.hit_test(0, 0).expect("the backdrop").clone();
+        let target = self.hits.hit_test(0, 0).expect("something outside").clone();
         self.focus.pointer_down(&target, 0, 0);
         self.render();
     }
@@ -184,6 +186,10 @@ fn a_press_outside_does_what_it_is_set_to() {
     let (mut harness, open, log) = opened(true, OutsidePress::Ignore);
     harness.click_backdrop();
     assert!(open.get());
+    assert!(
+        harness.focused_label().as_deref() == Some("Keep it"),
+        "the click didn't reach the trigger under the dialog"
+    );
 
     let (mut harness, open, _) = opened(true, OutsidePress::Bell);
     Runtime::take_bell();
