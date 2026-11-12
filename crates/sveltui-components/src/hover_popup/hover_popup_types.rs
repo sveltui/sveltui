@@ -4,26 +4,13 @@ use std::time::{Duration, Instant};
 use sveltui::Runtime;
 use sveltui::prelude::*;
 
+use crate::clock::now;
 use crate::controllable::{Controllable, use_controllable};
-
-#[cfg(test)]
-thread_local! {
-    /// A clock tests set by hand, so delays don't need real waiting.
-    pub(crate) static TEST_NOW: Cell<Option<Instant>> = const { Cell::new(None) };
-}
 
 thread_local! {
     /// The exclusive popup that's open, if any. Per thread, like the rest of
     /// what a frame reads.
     static OPEN_EXCLUSIVE: RefCell<Option<HoverPopup>> = const { RefCell::new(None) };
-}
-
-fn now() -> Instant {
-    #[cfg(test)]
-    if let Some(now) = TEST_NOW.with(Cell::get) {
-        return now;
-    }
-    Instant::now()
 }
 
 /// The stable ids the parts point at each other with.

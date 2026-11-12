@@ -1,4 +1,4 @@
-use super::TEST_NOW;
+use crate::clock::TEST_NOW;
 use crate::{Button, ButtonProps, HoverCard, Tooltip};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use std::time::{Duration, Instant};

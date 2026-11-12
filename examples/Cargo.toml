@@ -156,6 +156,11 @@ path = "components/tooltip/main.rs"
 test = true
 
 [[example]]
+name = "component_tree_view"
+path = "components/tree_view/main.rs"
+test = true
+
+[[example]]
 name = "component_toast"
 path = "components/toast/main.rs"
 test = true

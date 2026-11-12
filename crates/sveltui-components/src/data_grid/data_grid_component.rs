@@ -261,18 +261,7 @@ pub fn DataGrid<T: Clone + 'static>(props: DataGridProps<T>) -> VNode {
     // The scrollbar sits in the gap between the last column and the border.
     let scrollbar = (len > fit).then(|| {
         let track = fit + if row_lines { fit.saturating_sub(1) } else { 0 };
-        let thumb = (track * fit / len).clamp(1, track);
-        let start = (track - thumb) * first / len.saturating_sub(fit).max(1);
-        let bar: String = (0..track)
-            .map(|i| {
-                if (start..start + thumb).contains(&i) {
-                    "█"
-                } else {
-                    "│"
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+        let bar = crate::scrollbar::column(track, fit, len, first);
         let header_rows = 1 + u16::from(header_line);
         view! {
             <View position=Position::Absolute inset=Inset::new().top(header_rows).right(0)>

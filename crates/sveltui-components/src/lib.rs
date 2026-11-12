@@ -3,6 +3,7 @@ pub mod alert_dialog;
 pub mod badge;
 pub mod button;
 pub mod checkbox;
+mod clock;
 pub mod combobox;
 mod controllable;
 pub mod data_grid;
@@ -16,6 +17,7 @@ pub mod menu;
 pub mod popover;
 pub mod progress_bar;
 pub mod resizable;
+mod scrollbar;
 pub mod select;
 pub mod switch;
 pub mod table;
@@ -25,6 +27,7 @@ pub mod text_buffer;
 pub mod text_input;
 pub mod toast;
 pub mod tooltip;
+pub mod tree_view;
 
 pub use alert::{Alert, AlertKind, AlertProps};
 pub use alert_dialog::OutsidePress;
@@ -155,4 +158,11 @@ pub mod Tooltip {
 #[allow(non_snake_case)]
 pub mod HoverCard {
     pub use crate::hover_card::{Content, ContentProps, Root, RootProps, Trigger, TriggerProps};
+}
+pub use tree_view::{TreeItemState, TreeModel, TreeRoots, TreeView, TreeViewProps};
+/// A tree written as markup: `TreeView::Root` around `TreeView::Branch` and
+/// `TreeView::Item`. For data, use the `TreeView` component itself.
+#[allow(non_snake_case)]
+pub mod TreeView {
+    pub use crate::tree_view::{Branch, BranchProps, Item, ItemProps, PartNode, Root, RootProps};
 }
