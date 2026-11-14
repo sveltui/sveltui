@@ -8,6 +8,9 @@ pub struct ComputedLayoutNode {
     pub rect: Rect,
     /// Border plus padding on each side: where the children's area starts.
     pub content_inset: Padding,
+    /// Just the border on each side. Scrollbars sit just inside it, outside
+    /// the padding, the way a browser draws them.
+    pub border_inset: Padding,
     pub viewport_size: (u16, u16),
     pub content_size: (u16, u16),
     pub scroll_size: (u16, u16),
@@ -337,6 +340,16 @@ impl LayoutEngine {
         } else {
             Padding::zero()
         };
+        let border_inset = if matches!(vnode, VNode::View(_)) {
+            Padding::only(
+                cells(l.border.top),
+                cells(l.border.right),
+                cells(l.border.bottom),
+                cells(l.border.left),
+            )
+        } else {
+            Padding::zero()
+        };
 
         let (content_w, content_h, viewport_w, viewport_h) = if matches!(vnode, VNode::View(_)) {
             // Taffy measures content from inside the border, and its extent
@@ -394,6 +407,7 @@ impl LayoutEngine {
         ComputedLayoutNode {
             rect: Rect::new(x, y, width, height),
             content_inset,
+            border_inset,
             rules,
             viewport_size: (viewport_w, viewport_h),
             content_size: (content_w, content_h),

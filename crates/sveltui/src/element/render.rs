@@ -25,6 +25,119 @@ fn scrollbar_thumb(track: u16, viewport: u16, content: u16, offset: u16) -> std:
     start..start + length
 }
 
+/// One scrollbar's track: where it starts on screen along its axis, how
+/// long it is, and the sizes that set its thumb.
+#[derive(Clone, Copy)]
+struct Bar {
+    start: i32,
+    track: u16,
+    viewport: u16,
+    content: u16,
+}
+
+impl Bar {
+    fn max(&self) -> u16 {
+        self.content.saturating_sub(self.viewport)
+    }
+
+    /// The pointer's place along the track, held to its ends.
+    fn along(&self, at: u16) -> u16 {
+        (i32::from(at) - self.start).clamp(0, i32::from(self.track) - 1) as u16
+    }
+
+    /// The offset that puts the thumb's top (or left) at `start`. It rounds
+    /// up, so the thumb drawn for it lands back on `start`.
+    fn offset_for(&self, start: u16) -> u16 {
+        let length = scrollbar_thumb(self.track, self.viewport, self.content, 0).len() as u16;
+        let room = self.track.saturating_sub(length);
+        if room == 0 {
+            return 0;
+        }
+        let max = u32::from(self.max());
+        (u32::from(start.min(room)) * max).div_ceil(u32::from(room)) as u16
+    }
+}
+
+/// A scroll view's bars, for presses on them. A press on the track pages
+/// one viewport towards it; a press on the thumb grabs it, and dragging
+/// then scrolls so the thumb stays under the pointer.
+#[derive(Clone, Copy)]
+struct ScrollBars {
+    id: crate::element::FocusId,
+    vertical: Bar,
+    horizontal: Bar,
+    /// The vertical bar's column, which tells a press on it from one on the
+    /// horizontal bar.
+    column: i32,
+}
+
+impl ScrollBars {
+    fn pointer(&self, event: crate::element::PointerEvent, wheel: &Rc<dyn Fn(i16, i16)>) {
+        use crate::element::PointerPhase;
+        use crate::element::scroll::{ThumbDrag, get_scroll, set_thumb_drag, thumb_drag};
+
+        // The offset is read fresh each time: several drags can arrive
+        // before the next frame redraws the bar.
+        let offset = |vertical: bool| {
+            let (x, y) = get_scroll(self.id);
+            if vertical { y } else { x }
+        };
+        let scroll_to = |vertical: bool, to: u16| {
+            let by = (i32::from(to) - i32::from(offset(vertical)))
+                .clamp(i32::from(i16::MIN), i32::from(i16::MAX)) as i16;
+            match (by, vertical) {
+                (0, _) => {}
+                (by, true) => wheel(0, by),
+                (by, false) => wheel(by, 0),
+            }
+        };
+        let bar = |vertical: bool| {
+            if vertical {
+                (self.vertical, event.y)
+            } else {
+                (self.horizontal, event.x)
+            }
+        };
+
+        match event.phase {
+            PointerPhase::Down => {
+                let vertical = self.vertical.track > 0 && i32::from(event.x) == self.column;
+                let (bar, at) = bar(vertical);
+                let at = bar.along(at);
+                let current = offset(vertical);
+                let thumb = scrollbar_thumb(bar.track, bar.viewport, bar.content, current);
+                if thumb.contains(&at) {
+                    set_thumb_drag(Some(ThumbDrag {
+                        id: self.id,
+                        vertical,
+                        grab: at - thumb.start,
+                    }));
+                } else {
+                    set_thumb_drag(None);
+                    let to = if at < thumb.start {
+                        current.saturating_sub(bar.viewport)
+                    } else {
+                        current.saturating_add(bar.viewport).min(bar.max())
+                    };
+                    scroll_to(vertical, to);
+                }
+            }
+            PointerPhase::Drag => {
+                if let Some(drag) = thumb_drag().filter(|d| d.id == self.id) {
+                    let (bar, at) = bar(drag.vertical);
+                    let start = bar.along(at).saturating_sub(drag.grab);
+                    scroll_to(drag.vertical, bar.offset_for(start));
+                }
+            }
+            PointerPhase::Up => {
+                if thumb_drag().is_some_and(|d| d.id == self.id) {
+                    set_thumb_drag(None);
+                }
+            }
+        }
+    }
+}
+
 struct PendingOverlay {
     overlay: OverlayElement,
     anchor_rect: Option<Rect>,
@@ -540,8 +653,6 @@ fn render_node_offset_internal(
             let inset = layout.map(|l| l.content_inset).unwrap_or_default();
             let inner_x = x + inset.left as i32;
             let inner_y = y + inset.top as i32;
-            let inner_w = width.saturating_sub(inset.left + inset.right);
-            let inner_h = height.saturating_sub(inset.top + inset.bottom);
 
             if let Some(vis) = &v.visual {
                 if let Some((cx_off, cy_off)) = vis.cursor_offset {
@@ -622,6 +733,7 @@ fn render_node_offset_internal(
                     (0, 0, None)
                 };
 
+                let mut wheel: Option<Rc<dyn Fn(i16, i16)>> = None;
                 if is_scrollable && let Some(id) = scroll_fid {
                     crate::element::scroll::set_viewport(id, (viewport_w, viewport_h));
                     let custom_on_scroll = v.scroll.as_ref().and_then(|s| s.on_scroll.clone());
@@ -637,6 +749,7 @@ fn render_node_offset_internal(
                             custom(dx, dy);
                         }
                     });
+                    wheel = Some(on_scroll.clone());
 
                     let clipped_rect = Rect::new(x.max(0) as u16, y.max(0) as u16, width, height)
                         .intersect(&ctx.buffer.active_clip())
@@ -769,17 +882,35 @@ fn render_node_offset_internal(
                         crate::layout::ScrollbarVisibility::Auto => max_scroll_x > 0,
                     };
 
-                if show_v_sb && inner_w > 0 && inner_h > 0 {
-                    let track_h = inner_h.saturating_sub(u16::from(show_h_sb));
+                // The bars sit just inside the border, outside any padding,
+                // and run its whole length; padding only insets the content.
+                let edge = computed.border_inset;
+                let bar_x = x + i32::from(edge.left);
+                let bar_y = y + i32::from(edge.top);
+                let bar_w = width.saturating_sub(edge.left + edge.right);
+                let bar_h = height.saturating_sub(edge.top + edge.bottom);
+                let v_track = if show_v_sb && bar_w > 0 {
+                    bar_h.saturating_sub(u16::from(show_h_sb))
+                } else {
+                    0
+                };
+                let h_track = if show_h_sb && bar_h > 0 {
+                    bar_w.saturating_sub(u16::from(show_v_sb))
+                } else {
+                    0
+                };
+                let v_column = bar_x + i32::from(bar_w) - 1;
+                let h_row = bar_y + i32::from(bar_h) - 1;
+
+                if v_track > 0 {
                     let thumb =
-                        scrollbar_thumb(track_h, viewport_h, computed.content_size.1, scroll_y);
-                    for row in 0..track_h {
-                        let sb_x = inner_x + i32::from(inner_w) - 1;
-                        let sb_y = inner_y + i32::from(row);
-                        if sb_x >= 0 && sb_y >= 0 {
+                        scrollbar_thumb(v_track, viewport_h, computed.content_size.1, scroll_y);
+                    for row in 0..v_track {
+                        let sb_y = bar_y + i32::from(row);
+                        if v_column >= 0 && sb_y >= 0 {
                             let active = thumb.contains(&row);
                             ctx.buffer.set_char(
-                                sb_x as u16,
+                                v_column as u16,
                                 sb_y as u16,
                                 if active { v_thumb_ch } else { v_track_ch },
                                 if active { v_thumb_fg } else { v_track_fg },
@@ -790,23 +921,21 @@ fn render_node_offset_internal(
                     }
                 }
 
-                if show_h_sb && inner_w > 0 && inner_h > 0 {
+                if h_track > 0 {
                     let h_track_ch = sb_style.chars.horizontal_track;
                     let h_thumb_ch = sb_style.chars.horizontal_thumb;
                     let h_track_fg = sb_style.track_color.or(border_color);
                     let h_thumb_fg = sb_style.thumb_color.or(border_color);
 
-                    let track_w = inner_w.saturating_sub(u16::from(show_v_sb));
                     let thumb =
-                        scrollbar_thumb(track_w, viewport_w, computed.content_size.0, scroll_x);
-                    for col in 0..track_w {
-                        let sb_x = inner_x + i32::from(col);
-                        let sb_y = inner_y + i32::from(inner_h) - 1;
-                        if sb_x >= 0 && sb_y >= 0 {
+                        scrollbar_thumb(h_track, viewport_w, computed.content_size.0, scroll_x);
+                    for col in 0..h_track {
+                        let sb_x = bar_x + i32::from(col);
+                        if sb_x >= 0 && h_row >= 0 {
                             let active = thumb.contains(&col);
                             ctx.buffer.set_char(
                                 sb_x as u16,
-                                sb_y as u16,
+                                h_row as u16,
                                 if active { h_thumb_ch } else { h_track_ch },
                                 if active { h_thumb_fg } else { h_track_fg },
                                 None,
@@ -815,18 +944,62 @@ fn render_node_offset_internal(
                         }
                     }
                 }
-                if show_v_sb && show_h_sb && inner_w > 0 && inner_h > 0 {
-                    let sb_x = inner_x + i32::from(inner_w) - 1;
-                    let sb_y = inner_y + i32::from(inner_h) - 1;
-                    if sb_x >= 0 && sb_y >= 0 {
-                        ctx.buffer.set_char(
-                            sb_x as u16,
-                            sb_y as u16,
-                            sb_style.chars.corner,
-                            v_track_fg,
-                            None,
-                            false,
-                        );
+                if v_track > 0 && h_track > 0 && v_column >= 0 && h_row >= 0 {
+                    ctx.buffer.set_char(
+                        v_column as u16,
+                        h_row as u16,
+                        sb_style.chars.corner,
+                        v_track_fg,
+                        None,
+                        false,
+                    );
+                }
+
+                // Each bar takes presses: one on the track pages towards it,
+                // and one on the thumb drags it.
+                if let (Some(id), Some(wheel)) = (scroll_fid, wheel) {
+                    let bars = ScrollBars {
+                        id,
+                        vertical: Bar {
+                            start: bar_y,
+                            track: v_track,
+                            viewport: viewport_h,
+                            content: computed.content_size.1,
+                        },
+                        horizontal: Bar {
+                            start: bar_x,
+                            track: h_track,
+                            viewport: viewport_w,
+                            content: computed.content_size.0,
+                        },
+                        column: v_column,
+                    };
+                    let handler: crate::element::PointerHandler = {
+                        let wheel = wheel.clone();
+                        Rc::new(move |event| bars.pointer(event, &wheel))
+                    };
+                    let mut bar_target = |bx: i32, by: i32, bw: u16, bh: u16| {
+                        let target = HitTarget {
+                            rect: Rect::new(bx.max(0) as u16, by.max(0) as u16, bw, bh),
+                            layer: ctx.layer,
+                            dismiss: None,
+                            on_click: None,
+                            on_click_at: None,
+                            focus_id: Some(id),
+                            on_key: None,
+                            on_scroll: Some(wheel.clone()),
+                            on_pointer_enter: None,
+                            on_hover: None,
+                            on_pointer: Some(handler.clone()),
+                            pointer: None,
+                        };
+                        register_target(ctx, bx, by, target);
+                    };
+                    if v_track > 0 {
+                        bar_target(v_column, bar_y, 1, v_track);
+                    }
+                    if h_track > 0 {
+                        bar_target(bar_x, h_row, h_track, 1);
                     }
                 }
             }

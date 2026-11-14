@@ -26,3 +26,25 @@ pub fn set_viewport(id: FocusId, size: (u16, u16)) {
         m.borrow_mut().insert(id, size);
     });
 }
+
+/// A scrollbar thumb being dragged: whose bar, which way it runs, and how
+/// far into the thumb the pointer grabbed it, so the thumb doesn't jump to
+/// put its top under the pointer.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct ThumbDrag {
+    pub id: FocusId,
+    pub vertical: bool,
+    pub grab: u16,
+}
+
+thread_local! {
+    static THUMB_DRAG: std::cell::Cell<Option<ThumbDrag>> = const { std::cell::Cell::new(None) };
+}
+
+pub(crate) fn thumb_drag() -> Option<ThumbDrag> {
+    THUMB_DRAG.with(|d| d.get())
+}
+
+pub(crate) fn set_thumb_drag(drag: Option<ThumbDrag>) {
+    THUMB_DRAG.with(|d| d.set(drag));
+}
