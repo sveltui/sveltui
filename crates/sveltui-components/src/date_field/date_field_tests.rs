@@ -108,6 +108,14 @@ impl Harness {
             .unwrap_or_else(|| panic!("{text:?} not on screen:\n{}", self.screen))
     }
 
+    /// Scrolls the wheel over `(x, y)`; negative `dy` is up.
+    pub(crate) fn scroll(&mut self, x: u16, y: u16, dy: i16) {
+        let target = self.hits.scroll_target(x, y).expect("a scroll target");
+        let on_scroll = target.on_scroll.clone().expect("a scroll handler");
+        on_scroll(0, dy);
+        self.render();
+    }
+
     pub(crate) fn click(&mut self, x: u16, y: u16) {
         let target = self.hits.hit_test(x, y).expect("a target").clone();
         self.focus.pointer_down(&target, x, y);
@@ -238,4 +246,33 @@ fn alt_down_asks_to_open() {
     f.key(KeyCode::Tab);
     f.key_with(KeyCode::Down, KeyModifiers::ALT);
     assert_eq!(opened.get(), 1);
+}
+
+#[test]
+fn page_keys_take_big_steps_and_home_end_go_to_the_ends() {
+    let value = state(Some(date(2026, 1, 13)));
+    let mut f = Harness::new(field(value, DateOrder::Ymd));
+    f.key(KeyCode::Tab);
+    f.key(KeyCode::Right);
+    f.key(KeyCode::PageUp);
+    assert_eq!(value.get(), Some(date(2026, 3, 13)));
+    f.key(KeyCode::End);
+    assert_eq!(value.get(), Some(date(2026, 12, 13)));
+    f.key(KeyCode::Home);
+    assert_eq!(value.get(), Some(date(2026, 1, 13)));
+    f.key(KeyCode::Right);
+    f.key(KeyCode::PageDown);
+    assert_eq!(value.get(), Some(date(2026, 1, 6)), "a week back");
+}
+
+#[test]
+fn scrolling_over_a_segment_steps_it() {
+    let value = state(Some(TODAY));
+    let mut f = Harness::new(field(value, DateOrder::Ymd));
+    let (x, y) = f.find("13", 0);
+    f.scroll(x, y, -1);
+    assert_eq!(value.get(), Some(date(2026, 2, 14)));
+    f.scroll(x, y, 1);
+    f.scroll(x, y, 1);
+    assert_eq!(value.get(), Some(date(2026, 2, 12)));
 }

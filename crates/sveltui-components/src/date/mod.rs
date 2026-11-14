@@ -10,6 +10,11 @@ pub fn today() -> Date {
     crate::clock::today()
 }
 
+/// The time of day where the user is, to the nanosecond.
+pub fn now_time() -> Time {
+    crate::clock::time_of_day()
+}
+
 /// `date` moved by `days`, stopping at the first and last dates there are.
 pub fn add_days(date: Date, days: i64) -> Date {
     date.saturating_add(days.days())

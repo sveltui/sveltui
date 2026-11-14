@@ -22,6 +22,7 @@ pub mod popover;
 pub mod progress_bar;
 pub mod resizable;
 mod scrollbar;
+mod segmented_field;
 pub mod select;
 pub mod switch;
 pub mod table;
@@ -29,6 +30,7 @@ pub mod tabs;
 pub mod text_area;
 pub mod text_buffer;
 pub mod text_input;
+pub mod time_field;
 pub mod toast;
 pub mod tooltip;
 pub mod tree_view;
@@ -51,6 +53,7 @@ pub use checkbox::{Checkbox, CheckboxProps};
 pub use combobox::{Combobox, ComboboxProps};
 pub use date_field::{DateField, DateFieldProps, DateOrder};
 pub use date_picker::{DatePicker, DatePickerProps};
+pub use time_field::{Granularity, HourCycle, TimeField, TimeFieldProps};
 /// The combobox parts: `Root`, `Input`, `Trigger`, `Content`, `Item`,
 /// `Empty`, `Group`, `GroupHeading` and `Separator`.
 #[allow(non_snake_case)]

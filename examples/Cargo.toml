@@ -171,6 +171,11 @@ path = "components/date_picker/main.rs"
 test = true
 
 [[example]]
+name = "component_time_field"
+path = "components/time_field/main.rs"
+test = true
+
+[[example]]
 name = "component_toast"
 path = "components/toast/main.rs"
 test = true

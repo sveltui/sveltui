@@ -9,6 +9,8 @@ thread_local! {
         const { std::cell::Cell::new(None) };
     pub(crate) static TEST_TODAY: std::cell::Cell<Option<jiff::civil::Date>> =
         const { std::cell::Cell::new(None) };
+    pub(crate) static TEST_TIME: std::cell::Cell<Option<jiff::civil::Time>> =
+        const { std::cell::Cell::new(None) };
 }
 
 pub(crate) fn now() -> Instant {
@@ -26,4 +28,13 @@ pub(crate) fn today() -> jiff::civil::Date {
         return today;
     }
     jiff::Zoned::now().date()
+}
+
+/// The time of day where the user is.
+pub(crate) fn time_of_day() -> jiff::civil::Time {
+    #[cfg(test)]
+    if let Some(time) = TEST_TIME.with(std::cell::Cell::get) {
+        return time;
+    }
+    jiff::Zoned::now().time()
 }
