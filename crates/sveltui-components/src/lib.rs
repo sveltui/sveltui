@@ -2,11 +2,15 @@ pub mod alert;
 pub mod alert_dialog;
 pub mod badge;
 pub mod button;
+pub mod calendar;
 pub mod checkbox;
 mod clock;
 pub mod combobox;
 mod controllable;
 pub mod data_grid;
+pub mod date;
+pub mod date_field;
+pub mod date_picker;
 pub mod dialog;
 pub mod divider;
 pub mod hover_card;
@@ -42,8 +46,11 @@ pub mod AlertDialog {
 }
 pub use badge::{Badge, BadgeProps};
 pub use button::{Button, ButtonProps};
+pub use calendar::{Calendar, CalendarProps};
 pub use checkbox::{Checkbox, CheckboxProps};
 pub use combobox::{Combobox, ComboboxProps};
+pub use date_field::{DateField, DateFieldProps, DateOrder};
+pub use date_picker::{DatePicker, DatePickerProps};
 /// The combobox parts: `Root`, `Input`, `Trigger`, `Content`, `Item`,
 /// `Empty`, `Group`, `GroupHeading` and `Separator`.
 #[allow(non_snake_case)]

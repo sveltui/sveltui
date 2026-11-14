@@ -161,6 +161,16 @@ path = "components/tree_view/main.rs"
 test = true
 
 [[example]]
+name = "component_calendar"
+path = "components/calendar/main.rs"
+test = true
+
+[[example]]
+name = "component_date_picker"
+path = "components/date_picker/main.rs"
+test = true
+
+[[example]]
 name = "component_toast"
 path = "components/toast/main.rs"
 test = true

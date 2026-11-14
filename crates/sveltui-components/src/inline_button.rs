@@ -23,6 +23,24 @@ pub(crate) fn inline_button(
     content: Option<VNode>,
     press: Press,
 ) -> VNode {
+    inline_button_with(
+        id,
+        Semantics::new(Role::Button, name),
+        label,
+        content,
+        press,
+    )
+}
+
+/// `inline_button` with its semantics spelled out, for a button that says
+/// more than its name, like one that opens a popup.
+pub(crate) fn inline_button_with(
+    id: FocusId,
+    semantics: Semantics,
+    label: String,
+    content: Option<VNode>,
+    press: Press,
+) -> VNode {
     let focused = use_focus(id).is_focused();
     let (fg, bg) = if focused {
         (Color::Black, Some(Color::White))
@@ -40,7 +58,7 @@ pub(crate) fn inline_button(
     let by_click = press.by_click;
     let content = content.unwrap_or_else(|| view! { <TextSpan>{label}</TextSpan> }.into_node());
     view! {
-        <Pressable focus_id=id tab_stop=true semantics={Semantics::new(Role::Button, name)}
+        <Pressable focus_id=id tab_stop=true semantics=semantics
             on_key=on_key on_click={move || by_click()}>
             <View flex_direction=FlexDirection::Row foreground_color=fg background_color=bg>
                 <TextSpan>"["</TextSpan>

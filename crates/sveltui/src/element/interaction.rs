@@ -122,6 +122,9 @@ pub enum Role {
     /// A short description of another element, shown on hover or focus
     /// (`role="tooltip"`).
     Tooltip,
+    /// A number the user steps up and down, like one part of a date field
+    /// (`role="spinbutton"`).
+    SpinButton,
 }
 
 /// How assistive tech announces changes inside an element (`aria-live`).
@@ -158,9 +161,18 @@ pub struct Semantics {
     pub value: Option<f64>,
     /// How deep an item sits in a tree, from 1 (`aria-level`).
     pub level: Option<usize>,
+    /// Marks the current item of a set, like today in a calendar
+    /// (`aria-current`).
+    pub current: Option<bool>,
     /// Bounds for `value` (`aria-valuemin`, `aria-valuemax`).
     pub value_min: Option<f64>,
     pub value_max: Option<f64>,
+    /// `value` in words, when the number alone says too little: "February"
+    /// rather than 2 (`aria-valuetext`).
+    pub value_text: Option<String>,
+    /// The value isn't acceptable, like a date outside the allowed range
+    /// (`aria-invalid`).
+    pub invalid: Option<bool>,
     /// Axis of a separator or slider (`aria-orientation`).
     pub orientation: Option<Orientation>,
     /// How changes inside are announced (`aria-live`).
@@ -206,6 +218,10 @@ impl Semantics {
         self.level = Some(level);
         self
     }
+    pub fn current(mut self, current: bool) -> Self {
+        self.current = Some(current);
+        self
+    }
     pub fn active_descendant(mut self, id: Option<FocusId>) -> Self {
         self.active_descendant = id;
         self
@@ -216,6 +232,14 @@ impl Semantics {
     }
     pub fn atomic(mut self, atomic: bool) -> Self {
         self.atomic = Some(atomic);
+        self
+    }
+    pub fn value_text(mut self, text: impl Into<String>) -> Self {
+        self.value_text = Some(text.into());
+        self
+    }
+    pub fn invalid(mut self, invalid: bool) -> Self {
+        self.invalid = Some(invalid);
         self
     }
 }

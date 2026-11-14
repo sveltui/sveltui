@@ -351,13 +351,15 @@ impl IntoPropOption<usize> for usize {
     }
 }
 
-impl<T: 'static, F: Fn(T) + 'static> IntoPropOption<Rc<dyn Fn(T)>> for F {
-    fn into_prop_option(self) -> Option<Rc<dyn Fn(T)>> {
+/// One-argument callbacks, with or without a result (`on_change`,
+/// `is_date_unavailable`).
+impl<A: 'static, R: 'static, F: Fn(A) -> R + 'static> IntoPropOption<Rc<dyn Fn(A) -> R>> for F {
+    fn into_prop_option(self) -> Option<Rc<dyn Fn(A) -> R>> {
         Some(Rc::new(self))
     }
 }
-impl<T: 'static> IntoPropOption<Rc<dyn Fn(T)>> for Rc<dyn Fn(T)> {
-    fn into_prop_option(self) -> Option<Rc<dyn Fn(T)>> {
+impl<A: 'static, R: 'static> IntoPropOption<Rc<dyn Fn(A) -> R>> for Rc<dyn Fn(A) -> R> {
+    fn into_prop_option(self) -> Option<Rc<dyn Fn(A) -> R>> {
         Some(self)
     }
 }

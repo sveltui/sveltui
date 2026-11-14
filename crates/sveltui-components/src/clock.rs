@@ -7,6 +7,8 @@ use std::time::Instant;
 thread_local! {
     pub(crate) static TEST_NOW: std::cell::Cell<Option<Instant>> =
         const { std::cell::Cell::new(None) };
+    pub(crate) static TEST_TODAY: std::cell::Cell<Option<jiff::civil::Date>> =
+        const { std::cell::Cell::new(None) };
 }
 
 pub(crate) fn now() -> Instant {
@@ -15,4 +17,13 @@ pub(crate) fn now() -> Instant {
         return now;
     }
     Instant::now()
+}
+
+/// Today's date where the user is.
+pub(crate) fn today() -> jiff::civil::Date {
+    #[cfg(test)]
+    if let Some(today) = TEST_TODAY.with(std::cell::Cell::get) {
+        return today;
+    }
+    jiff::Zoned::now().date()
 }
